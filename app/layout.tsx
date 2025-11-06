@@ -5,9 +5,6 @@ import { GeistMono } from "geist/font/mono"
 import { Playfair_Display } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
-import { TripProvider } from "@/components/trip-context"
-import { AuthProvider } from "@/components/auth-context"
-import { FavoritesProvider } from "@/components/favorites-context"
 import { Suspense } from "react"
 
 const playfair = Playfair_Display({
@@ -17,10 +14,8 @@ const playfair = Playfair_Display({
 })
 
 export const metadata: Metadata = {
-  title: "The Wandering Lens | Your journey, curated your way",
-  description:
-    "Discover and book the world's most extraordinary travel experiences. Curated tours, activities, and adventures.",
-  generator: "v0.app",
+  title: "The Wandering Lens | Admin Portal",
+  description: "Administration console for The Wandering Lens platform.",
 }
 
 export default function RootLayout({
@@ -32,11 +27,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable} ${playfair.variable} antialiased`}>
         <Suspense fallback={null}>
-          <AuthProvider>
-            <FavoritesProvider>
-              <TripProvider>{children}</TripProvider>
-            </FavoritesProvider>
-          </AuthProvider>
+          {children}
           <Analytics />
         </Suspense>
       </body>
