@@ -9,18 +9,23 @@ import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { AdminHeader } from "@/components/admin/admin-header"
 
 function AdminLayoutContent({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAdmin()
+  const { isAuthenticated, isLoading } = useAdmin()
   const router = useRouter()
   const pathname = usePathname()
 
   useEffect(() => {
+    if (isLoading) return
     if (!isAuthenticated && pathname !== "/admin/login") {
       router.push("/admin/login")
     }
-  }, [isAuthenticated, pathname, router])
+  }, [isAuthenticated, pathname, router, isLoading])
 
   if (pathname === "/admin/login") {
     return <>{children}</>
+  }
+
+  if (isLoading) {
+    return null
   }
 
   if (!isAuthenticated) {

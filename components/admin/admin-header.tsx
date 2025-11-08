@@ -15,21 +15,25 @@ import { LogOut, User } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 export function AdminHeader() {
-  const { admin, signOut } = useAdmin()
+  const { profile, user, signOut, isLoading } = useAdmin()
   const router = useRouter()
 
-  const handleSignOut = () => {
-    signOut()
+  const handleSignOut = async () => {
+    await signOut()
     router.push("/admin/login")
   }
 
-  if (!admin) return null
+  if (isLoading || !user) return null
+
+  const displayName = profile?.full_name || user.email || "Administrator"
+  const role = profile?.role ?? "support"
+  const badgeLetter = displayName.charAt(0).toUpperCase()
 
   return (
     <header className="h-16 border-b bg-card flex items-center justify-between px-6">
       <div>
-        <h2 className="text-lg font-semibold">Welcome back, {admin.name}</h2>
-        <p className="text-sm text-muted-foreground capitalize">{admin.role} Account</p>
+        <h2 className="text-lg font-semibold">Welcome back, {displayName}</h2>
+        <p className="text-sm text-muted-foreground capitalize">{role} Account</p>
       </div>
 
       <DropdownMenu>
@@ -37,7 +41,7 @@ export function AdminHeader() {
           <Button variant="ghost" className="relative h-10 w-10 rounded-full">
             <Avatar>
               <AvatarFallback className="bg-gradient-to-br from-teal-500 to-coral-500 text-white">
-                {admin.name.charAt(0)}
+                {badgeLetter}
               </AvatarFallback>
             </Avatar>
           </Button>
@@ -45,8 +49,8 @@ export function AdminHeader() {
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel>
             <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium">{admin.name}</p>
-              <p className="text-xs text-muted-foreground">{admin.email}</p>
+              <p className="text-sm font-medium">{displayName}</p>
+              <p className="text-xs text-muted-foreground">{user.email}</p>
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />

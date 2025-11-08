@@ -1,102 +1,98 @@
 "use client"
 
+import { useEffect, useMemo, useState } from "react"
+import { useAdmin } from "@/components/admin-context"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { DollarSign, Users, Calendar, MapPin } from "lucide-react"
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
+import { getDashboardData, type DashboardData } from "@/lib/supabase/admin-data"
 
-// Mock data for dashboard
-const stats = [
-  {
-    title: "Total Revenue",
-    value: "$45,231",
-    change: "+20.1% from last month",
-    icon: DollarSign,
-    trend: "up",
-  },
-  {
-    title: "Total Bookings",
-    value: "573",
-    change: "+12.5% from last month",
-    icon: Calendar,
-    trend: "up",
-  },
-  {
-    title: "Active Users",
-    value: "2,350",
-    change: "+8.2% from last month",
-    icon: Users,
-    trend: "up",
-  },
-  {
-    title: "Total Experiences",
-    value: "18",
-    change: "+2 new this month",
-    icon: MapPin,
-    trend: "up",
-  },
-]
+const currencyFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 0,
+})
 
-const bookingTrend = [
-  { date: "Jan", bookings: 45 },
-  { date: "Feb", bookings: 52 },
-  { date: "Mar", bookings: 61 },
-  { date: "Apr", bookings: 58 },
-  { date: "May", bookings: 70 },
-  { date: "Jun", bookings: 85 },
-]
+const numberFormatter = new Intl.NumberFormat("en-US", {
+  maximumFractionDigits: 0,
+})
 
-const revenueTrend = [
-  { date: "Jan", revenue: 3200 },
-  { date: "Feb", revenue: 3800 },
-  { date: "Mar", revenue: 4200 },
-  { date: "Apr", revenue: 4100 },
-  { date: "May", revenue: 5200 },
-  { date: "Jun", revenue: 6500 },
-]
+const dateFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: "UTC",
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+})
 
-const topDestinations = [
-  { name: "Indonesia", bookings: 245, revenue: "$18,450" },
-  { name: "Thailand", bookings: 189, revenue: "$14,230" },
-  { name: "Japan", bookings: 98, revenue: "$9,850" },
-  { name: "Greece", bookings: 41, revenue: "$2,701" },
-]
-
-const recentBookings = [
-  {
-    id: "BK123",
-    customer: "Sarah Johnson",
-    experience: "Sunrise at Mount Batur",
-    date: "2024-06-15",
-    amount: "$85",
-    status: "confirmed",
-  },
-  {
-    id: "BK124",
-    customer: "Mike Chen",
-    experience: "Tokyo Food Tour",
-    date: "2024-06-14",
-    amount: "$75",
-    status: "confirmed",
-  },
-  {
-    id: "BK125",
-    customer: "Emma Wilson",
-    experience: "Santorini Sunset Sailing",
-    date: "2024-06-14",
-    amount: "$110",
-    status: "pending",
-  },
-  {
-    id: "BK126",
-    customer: "David Lee",
-    experience: "Bangkok Street Food Tour",
-    date: "2024-06-13",
-    amount: "$45",
-    status: "confirmed",
-  },
-]
+const normalizeDate = (value: string | null) => {
+  if (!value) return null
+  return new Date(`${value}T12:00:00.000Z`)
+}
 
 export default function AdminDashboard() {
+  const { supabase } = useAdmin()
+  const [data, setData] = useState<DashboardData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let isMounted = true
+
+    const loadData = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const response = await getDashboardData(supabase)
+        if (!isMounted) return
+        setData(response)
+      } catch (err) {
+        console.error("Failed to load dashboard data", err)
+        if (!isMounted) return
+        setError("Unable to load dashboard data. Please try again.")
+        setData(null)
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    void loadData()
+
+    return () => {
+      isMounted = false
+    }
+  }, [supabase])
+
+  const stats = useMemo(() => {
+    if (!data) {
+      return []
+    }
+    return [
+      {
+        title: "Total Revenue",
+        value: currencyFormatter.format(data.metrics.totalRevenue ?? 0),
+        icon: DollarSign,
+      },
+      {
+        title: "Total Bookings",
+        value: numberFormatter.format(data.metrics.totalBookings ?? 0),
+        icon: Calendar,
+      },
+      {
+        title: "Active Users",
+        value: numberFormatter.format(data.metrics.activeUsers ?? 0),
+        icon: Users,
+      },
+      {
+        title: "Total Experiences",
+        value: numberFormatter.format(data.metrics.totalExperiences ?? 0),
+        icon: MapPin,
+      },
+    ]
+  }, [data])
+
   return (
     <div className="space-y-6">
       <div>
@@ -104,38 +100,56 @@ export default function AdminDashboard() {
         <p className="text-muted-foreground">Overview of your travel booking platform</p>
       </div>
 
-      {/* Stats Grid */}
+      {error && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="py-4 text-sm text-red-700">{error}</CardContent>
+        </Card>
+      )}
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
-          <Card key={stat.title}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{stat.title}</CardTitle>
-              <stat.icon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground mt-1">{stat.change}</p>
-            </CardContent>
-          </Card>
-        ))}
+        {loading &&
+          [0, 1, 2, 3].map((item) => (
+            <Card key={`stat-skeleton-${item}`}>
+              <CardContent className="p-6 space-y-3">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-6 w-32" />
+              </CardContent>
+            </Card>
+          ))}
+
+        {!loading &&
+          stats.map((stat) => (
+            <Card key={stat.title}>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">{stat.title}</CardTitle>
+                <stat.icon className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stat.value}</div>
+              </CardContent>
+            </Card>
+          ))}
       </div>
 
-      {/* Charts */}
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Booking Trend</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={bookingTrend}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="bookings" stroke="hsl(var(--primary))" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
+          <CardContent className="h-[320px]">
+            {loading ? (
+              <Skeleton className="h-full w-full" />
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={data?.bookingTrend ?? []}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="bookings" stroke="hsl(var(--primary))" strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -143,43 +157,66 @@ export default function AdminDashboard() {
           <CardHeader>
             <CardTitle>Revenue Trend</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={revenueTrend}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="revenue" fill="hsl(var(--primary))" />
-              </BarChart>
-            </ResponsiveContainer>
+          <CardContent className="h-[320px]">
+            {loading ? (
+              <Skeleton className="h-full w-full" />
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data?.revenueTrend ?? []}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="revenue" fill="hsl(var(--primary))" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Top Destinations and Recent Bookings */}
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Top Destinations</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {topDestinations.map((dest) => (
-                <div key={dest.name} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-coral-500 flex items-center justify-center">
-                      <MapPin className="w-5 h-5 text-white" />
+            {loading ? (
+              <div className="space-y-4">
+                {[0, 1, 2, 3].map((item) => (
+                  <div key={`dest-skeleton-${item}`} className="flex items-center gap-3">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-4 w-40" />
+                      <Skeleton className="h-3 w-24" />
                     </div>
-                    <div>
-                      <p className="font-medium">{dest.name}</p>
-                      <p className="text-sm text-muted-foreground">{dest.bookings} bookings</p>
-                    </div>
+                    <Skeleton className="h-4 w-16" />
                   </div>
-                  <p className="font-semibold">{dest.revenue}</p>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {(data?.topDestinations ?? []).map((dest) => (
+                  <div key={dest.country} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-coral-500 flex items-center justify-center">
+                        <MapPin className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <p className="font-medium">{dest.country}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {numberFormatter.format(dest.bookings)} bookings
+                        </p>
+                      </div>
+                    </div>
+                    <p className="font-semibold">{currencyFormatter.format(dest.revenue ?? 0)}</p>
+                  </div>
+                ))}
+                {(data?.topDestinations?.length ?? 0) === 0 && (
+                  <p className="text-sm text-muted-foreground">No destination analytics yet.</p>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -188,27 +225,42 @@ export default function AdminDashboard() {
             <CardTitle>Recent Bookings</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {recentBookings.map((booking) => (
-                <div key={booking.id} className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">{booking.customer}</p>
-                    <p className="text-sm text-muted-foreground">{booking.experience}</p>
-                    <p className="text-xs text-muted-foreground">{booking.date}</p>
+            {loading ? (
+              <div className="space-y-4">
+                {[0, 1, 2, 3].map((item) => (
+                  <div key={`booking-skeleton-${item}`} className="flex items-center justify-between">
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-40" />
+                      <Skeleton className="h-3 w-32" />
+                    </div>
+                    <Skeleton className="h-4 w-16" />
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold">{booking.amount}</p>
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full ${
-                        booking.status === "confirmed" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
-                      }`}
-                    >
-                      {booking.status}
-                    </span>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {(data?.recentBookings ?? []).map((booking) => (
+                  <div key={booking.id} className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">{booking.customer_name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {booking.experiences.map((item) => item.title).join(", ") || "Itinerary pending"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {booking.travel_date ? dateFormatter.format(normalizeDate(booking.travel_date)!) : "TBC"}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold">{currencyFormatter.format(booking.total_cost ?? 0)}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{booking.status}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+                {(data?.recentBookings?.length ?? 0) === 0 && (
+                  <p className="text-sm text-muted-foreground">No bookings yet.</p>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

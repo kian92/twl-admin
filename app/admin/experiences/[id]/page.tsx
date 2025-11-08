@@ -1,10 +1,9 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { getExperienceById } from "@/lib/data/experiences"
+import { useAdmin } from "@/components/admin-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,32 +13,164 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, Upload } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
+import { Skeleton } from "@/components/ui/skeleton"
+import { getExperienceById, updateExperience } from "@/lib/supabase/admin-data"
+import type { Database } from "@/types/database"
+import { toast } from "sonner"
+
+type ExperienceRow = Database["public"]["Tables"]["experiences"]["Row"]
+
+interface FormState {
+  title: string
+  location: string
+  country: string
+  description: string
+  duration: string
+  price: string
+  category: string
+  image_url: string
+  highlights: string
+  inclusions: string
+  cancellation_policy: string
+}
+
+const countries = ["Indonesia", "Thailand", "Japan", "Greece"]
+const categories = ["Adventure", "Culture", "Relaxation", "Wellness", "Nature"]
 
 export default function EditExperiencePage({ params }: { params: { id: string } }) {
   const router = useRouter()
-  const [loading, setLoading] = useState(false)
-  const experience = getExperienceById(params.id)
+  const { supabase } = useAdmin()
+  const [experience, setExperience] = useState<ExperienceRow | null>(null)
+  const [form, setForm] = useState<FormState | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  if (!experience) {
+  useEffect(() => {
+    let isMounted = true
+
+    const loadExperience = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const data = await getExperienceById(supabase, params.id)
+        if (!isMounted) return
+        if (!data) {
+          setError("Experience not found.")
+          setExperience(null)
+          setForm(null)
+          return
+        }
+        setExperience(data as ExperienceRow)
+        setForm({
+          title: data.title,
+          location: data.location,
+          country: data.country,
+          description: data.description ?? "",
+          duration: data.duration,
+          price: data.price.toString(),
+          category: data.category,
+          image_url: data.image_url ?? "",
+          highlights: (data.highlights ?? []).join("\n"),
+          inclusions: (data.inclusions ?? []).join("\n"),
+          cancellation_policy: data.cancellation_policy ?? "",
+        })
+      } catch (err) {
+        console.error("Failed to load experience", err)
+        if (!isMounted) return
+        setError("Unable to load experience. Please try again.")
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    void loadExperience()
+
+    return () => {
+      isMounted = false
+    }
+  }, [supabase, params.id])
+
+  const handleChange = (field: keyof FormState) => (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const value = event.target.value
+    setForm((prev) => (prev ? { ...prev, [field]: value } : prev))
+  }
+
+  const handleSelectChange = (field: keyof FormState) => (value: string) => {
+    setForm((prev) => (prev ? { ...prev, [field]: value } : prev))
+  }
+
+  const highlightsList = useMemo(() => form?.highlights.split("\n").filter(Boolean) ?? [], [form])
+  const inclusionsList = useMemo(() => form?.inclusions.split("\n").filter(Boolean) ?? [], [form])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!form || !experience) return
+    setSaving(true)
+    setError(null)
+    try {
+      await updateExperience(supabase, experience.id, {
+        title: form.title,
+        location: form.location,
+        country: form.country,
+        description: form.description,
+        duration: form.duration,
+        price: Number.parseFloat(form.price),
+        category: form.category,
+        image_url: form.image_url,
+        highlights: highlightsList,
+        inclusions: inclusionsList,
+        cancellation_policy: form.cancellation_policy,
+      })
+      toast.success("Experience updated successfully")
+      router.push("/admin/experiences")
+    } catch (err) {
+      console.error("Failed to update experience", err)
+      setError("Unable to save changes. Please try again.")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) {
     return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">Experience not found</p>
-        <Button asChild className="mt-4">
-          <Link href="/admin/experiences">Back to Experiences</Link>
-        </Button>
+      <div className="space-y-6 max-w-4xl">
+        <Skeleton className="h-8 w-1/3" />
+        <Skeleton className="h-[32rem] w-full" />
       </div>
     )
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <Button variant="ghost" size="icon" asChild>
+          <Link href="/admin/experiences">
+            <ArrowLeft className="w-4 h-4" />
+          </Link>
+        </Button>
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="py-6 text-center text-red-700">{error}</CardContent>
+        </Card>
+      </div>
+    )
+  }
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    setLoading(false)
-    router.push("/admin/experiences")
+  if (!experience || !form) {
+    return (
+      <div className="space-y-6">
+        <Button variant="ghost" size="icon" asChild>
+          <Link href="/admin/experiences">
+            <ArrowLeft className="w-4 h-4" />
+          </Link>
+        </Button>
+        <Card>
+          <CardContent className="py-6 text-center text-muted-foreground">Experience not found.</CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -64,25 +195,26 @@ export default function EditExperiencePage({ params }: { params: { id: string } 
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="title">Experience Title</Label>
-              <Input id="title" defaultValue={experience.title} required />
+              <Input id="title" value={form.title} onChange={handleChange("title")} required />
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="location">Location</Label>
-                <Input id="location" defaultValue={experience.location} required />
+                <Input id="location" value={form.location} onChange={handleChange("location")} required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="country">Country</Label>
-                <Select defaultValue={experience.country}>
+                <Select value={form.country} onValueChange={handleSelectChange("country")} required>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Indonesia">Indonesia</SelectItem>
-                    <SelectItem value="Thailand">Thailand</SelectItem>
-                    <SelectItem value="Japan">Japan</SelectItem>
-                    <SelectItem value="Greece">Greece</SelectItem>
+                    {countries.map((country) => (
+                      <SelectItem key={country} value={country}>
+                        {country}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -90,30 +222,38 @@ export default function EditExperiencePage({ params }: { params: { id: string } 
 
             <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
-              <Textarea id="description" defaultValue={experience.description} rows={4} required />
+              <Textarea
+                id="description"
+                value={form.description}
+                onChange={handleChange("description")}
+                rows={4}
+                required
+              />
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>
-                <Select defaultValue={experience.category}>
+                <Select value={form.category} onValueChange={handleSelectChange("category")} required>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Adventure">Adventure</SelectItem>
-                    <SelectItem value="Culture">Culture</SelectItem>
-                    <SelectItem value="Relaxation">Relaxation</SelectItem>
+                    {categories.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="duration">Duration</Label>
-                <Input id="duration" defaultValue={experience.duration} required />
+                <Input id="duration" value={form.duration} onChange={handleChange("duration")} required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="price">Price (USD)</Label>
-                <Input id="price" type="number" defaultValue={experience.price} required />
+                <Input id="price" type="number" value={form.price} onChange={handleChange("price")} min="0" step="1" required />
               </div>
             </div>
           </CardContent>
@@ -125,18 +265,21 @@ export default function EditExperiencePage({ params }: { params: { id: string } 
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="relative h-64 rounded-lg overflow-hidden">
-              <Image
-                src={experience.image || "/placeholder.svg"}
-                alt={experience.title}
-                fill
-                className="object-cover"
+              <Image src={form.image_url || "/placeholder.svg"} alt={form.title} fill className="object-cover" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="image_url">Image URL</Label>
+              <Input
+                id="image_url"
+                placeholder="https://..."
+                value={form.image_url}
+                onChange={handleChange("image_url")}
               />
             </div>
             <div className="border-2 border-dashed rounded-lg p-8 text-center">
               <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground mb-2">Click to upload new image</p>
-              <p className="text-xs text-muted-foreground">PNG, JPG up to 10MB</p>
-              <Input type="file" className="hidden" accept="image/*" />
+              <p className="text-sm text-muted-foreground mb-2">Image uploads coming soon</p>
+              <p className="text-xs text-muted-foreground">Use the image URL field above to update imagery.</p>
             </div>
           </CardContent>
         </Card>
@@ -148,24 +291,28 @@ export default function EditExperiencePage({ params }: { params: { id: string } 
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="highlights">Highlights (one per line)</Label>
-              <Textarea id="highlights" defaultValue={experience.highlights.join("\n")} rows={4} />
+              <Textarea id="highlights" value={form.highlights} onChange={handleChange("highlights")} rows={4} />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="inclusions">Inclusions (one per line)</Label>
-              <Textarea id="inclusions" defaultValue={experience.inclusions.join("\n")} rows={4} />
+              <Textarea id="inclusions" value={form.inclusions} onChange={handleChange("inclusions")} rows={4} />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="cancellation">Cancellation Policy</Label>
-              <Input id="cancellation" defaultValue={experience.cancellationPolicy} />
+              <Input
+                id="cancellation"
+                value={form.cancellation_policy}
+                onChange={handleChange("cancellation_policy")}
+              />
             </div>
           </CardContent>
         </Card>
 
         <div className="flex gap-4">
-          <Button type="submit" disabled={loading}>
-            {loading ? "Saving..." : "Save Changes"}
+          <Button type="submit" disabled={saving}>
+            {saving ? "Saving..." : "Save Changes"}
           </Button>
           <Button type="button" variant="outline" asChild>
             <Link href="/admin/experiences">Cancel</Link>

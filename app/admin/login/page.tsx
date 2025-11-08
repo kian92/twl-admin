@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAdmin } from "@/components/admin-context"
 import { Button } from "@/components/ui/button"
@@ -17,20 +17,26 @@ export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
-  const { signIn } = useAdmin()
+  const { signIn, isAuthenticated, isLoading } = useAdmin()
   const router = useRouter()
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace("/admin")
+    }
+  }, [isAuthenticated, isLoading, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
     setLoading(true)
 
-    const success = await signIn(email, password)
+    const { success, error: signInError } = await signIn(email, password)
 
     if (success) {
       router.push("/admin")
     } else {
-      setError("Invalid email or password")
+      setError(signInError ?? "Invalid email or password")
     }
 
     setLoading(false)
