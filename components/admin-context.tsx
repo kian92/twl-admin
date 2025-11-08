@@ -9,7 +9,7 @@ import {
   useCallback,
   type ReactNode,
 } from "react"
-import type { SupabaseClient, User } from "@supabase/supabase-js"
+import type { Session, SupabaseClient, User } from "@supabase/supabase-js"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 import type { Database } from "@/types/database"
 
@@ -40,6 +40,12 @@ interface AdminContextType {
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined)
 
+interface AdminProviderProps {
+  children: ReactNode
+  initialSession?: Session | null
+  initialProfile?: AdminProfile | null
+}
+
 const normalizeRole = (role?: string | null): AdminRole => {
   if (role === "admin" || role === "manager" || role === "support") {
     return role
@@ -47,11 +53,16 @@ const normalizeRole = (role?: string | null): AdminRole => {
   return "support"
 }
 
-export function AdminProvider({ children }: { children: ReactNode }) {
+export function AdminProvider({
+  children,
+  initialSession = null,
+  initialProfile = null,
+}: AdminProviderProps) {
   const supabase = useMemo(() => createSupabaseBrowserClient(), [])
-  const [user, setUser] = useState<User | null>(null)
-  const [profile, setProfile] = useState<AdminProfile | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [user, setUser] = useState<User | null>(initialSession?.user ?? null)
+  const [profile, setProfile] = useState<AdminProfile | null>(initialProfile)
+  const [isLoading, setIsLoading] = useState(!initialSession)
+  const hasInitialSession = !!initialSession?.user
 
   const fetchProfile = useCallback(
     async (userId: string) => {
@@ -107,7 +118,14 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       setIsLoading(false)
     }
 
-    init()
+    if (!hasInitialSession) {
+      void init()
+    } else {
+      setIsLoading(false)
+      if (!initialProfile && initialSession?.user) {
+        void fetchProfile(initialSession.user.id)
+      }
+    }
 
     const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null)
@@ -125,7 +143,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       isMounted = false
       listener.subscription.unsubscribe()
     }
-  }, [supabase, fetchProfile])
+  }, [supabase, fetchProfile, hasInitialSession, initialProfile, initialSession?.user?.id])
 
   const refreshProfile = useCallback(async () => {
     if (!user) return

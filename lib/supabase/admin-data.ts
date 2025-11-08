@@ -233,3 +233,16 @@ export async function getRewardCampaigns(supabase: PublicClient) {
   }
   return data ?? []
 }
+
+export async function getAdminStaff(supabase: PublicClient) {
+  const { data, error } = await supabase
+    .from("admin_profiles")
+    .select("id, full_name, role, avatar_url, created_at, updated_at")
+    .order("created_at", { ascending: false })
+
+  if (error) {
+    throw error
+  }
+
+  return data ?? []
+}

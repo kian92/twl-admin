@@ -1,52 +1,72 @@
-"use client"
+import type { ReactNode } from "react"
+import type { Session } from "@supabase/supabase-js"
 
-import type React from "react"
+import { AdminLayoutShell } from "@/components/admin/admin-layout-shell"
+import { createSupabaseServerClient } from "@/lib/supabase/server"
+import type { AdminProfile, AdminRole } from "@/components/admin-context"
+import type { Database } from "@/types/database"
 
-import { useEffect } from "react"
-import { useRouter, usePathname } from "next/navigation"
-import { AdminProvider, useAdmin } from "@/components/admin-context"
-import { AdminSidebar } from "@/components/admin/admin-sidebar"
-import { AdminHeader } from "@/components/admin/admin-header"
+export const dynamic = "force-dynamic"
 
-function AdminLayoutContent({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAdmin()
-  const router = useRouter()
-  const pathname = usePathname()
-
-  useEffect(() => {
-    if (isLoading) return
-    if (!isAuthenticated && pathname !== "/admin/login") {
-      router.push("/admin/login")
-    }
-  }, [isAuthenticated, pathname, router, isLoading])
-
-  if (pathname === "/admin/login") {
-    return <>{children}</>
+const normalizeRole = (role?: string | null): AdminRole => {
+  if (role === "admin" || role === "manager" || role === "support") {
+    return role
   }
-
-  if (isLoading) {
-    return null
-  }
-
-  if (!isAuthenticated) {
-    return null
-  }
-
-  return (
-    <div className="flex h-screen bg-background">
-      <AdminSidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <AdminHeader />
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
-      </div>
-    </div>
-  )
+  return "support"
 }
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+async function getInitialState(): Promise<{
+  session: Session | null
+  profile: AdminProfile | null
+}> {
+  const supabase = await createSupabaseServerClient()
+  const {
+    data: { session },
+    error: sessionError,
+  } = await supabase.auth.getSession()
+
+  if (sessionError) {
+    console.error("Failed to read server auth session", sessionError)
+  }
+
+  if (!session?.user) {
+    return { session: null, profile: null }
+  }
+
+  type AdminProfileRow = Pick<Database["public"]["Tables"]["admin_profiles"]["Row"], "id" | "full_name" | "role" | "avatar_url">
+
+  const { data, error } = await supabase
+    .from("admin_profiles")
+    .select("id, full_name, role, avatar_url")
+    .eq("id", session.user.id)
+    .maybeSingle<AdminProfileRow>()
+
+  if (error) {
+    console.error("Failed to fetch admin profile on server", error)
+    return { session, profile: null }
+  }
+
+  if (!data) {
+    return { session, profile: null }
+  }
+
+  return {
+    session,
+    profile: {
+      id: data.id,
+      full_name: data.full_name,
+      role: normalizeRole(data.role),
+      avatar_url: data.avatar_url,
+    },
+  }
+}
+
+export default async function AdminLayout({ children }: { children: ReactNode }) {
+  const { session, profile } = await getInitialState()
+
   return (
-    <AdminProvider>
-      <AdminLayoutContent>{children}</AdminLayoutContent>
-    </AdminProvider>
+    <AdminLayoutShell initialSession={session} initialProfile={profile}>
+      {children}
+    </AdminLayoutShell>
   )
 }

@@ -22,9 +22,28 @@ export default function AdminLoginPage() {
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
+      // Use replace to avoid adding to history stack
       router.replace("/admin")
     }
   }, [isAuthenticated, isLoading, router])
+
+  // Show loading state while redirecting after successful login
+  if (loading || (!isLoading && isAuthenticated)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 via-coral-50 to-orange-50">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center justify-center space-y-4">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-teal-500 to-coral-500 flex items-center justify-center">
+                <Compass className="w-6 h-6 text-white animate-spin" />
+              </div>
+              <p className="text-sm text-muted-foreground">Signing in...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -33,13 +52,12 @@ export default function AdminLoginPage() {
 
     const { success, error: signInError } = await signIn(email, password)
 
-    if (success) {
-      router.push("/admin")
-    } else {
+    if (!success) {
       setError(signInError ?? "Invalid email or password")
+      setLoading(false)
     }
-
-    setLoading(false)
+    // Don't set loading to false on success - let the useEffect redirect handle it
+    // This prevents the UI from flickering while auth state is updating
   }
 
   return (

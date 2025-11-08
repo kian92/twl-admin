@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { CountryCombobox } from "@/components/ui/country-combobox"
 import { ArrowLeft, Upload } from "lucide-react"
 import Link from "next/link"
 import { createExperience } from "@/lib/supabase/admin-data"
@@ -32,7 +33,6 @@ const initialForm: ExperienceInsert = {
   cancellation_policy: "",
 }
 
-const countries = ["Indonesia", "Thailand", "Japan", "Greece"]
 const categories = ["Adventure", "Culture", "Relaxation", "Wellness", "Nature"]
 
 export default function NewExperiencePage() {
@@ -127,18 +127,12 @@ export default function NewExperiencePage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="country">Country</Label>
-                <Select value={form.country ?? ""} onValueChange={handleSelectChange("country")} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select country" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {countries.map((country) => (
-                      <SelectItem key={country} value={country}>
-                        {country}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <CountryCombobox
+                  value={form.country ?? ""}
+                  onValueChange={handleSelectChange("country")}
+                  placeholder="Select country"
+                  required
+                />
               </div>
             </div>
 
