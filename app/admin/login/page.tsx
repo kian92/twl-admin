@@ -114,14 +114,14 @@ export default function AdminLoginPage() {
             </Button>
           </form>
 
-          <div className="mt-6 p-4 bg-muted rounded-lg">
+          {/* <div className="mt-6 p-4 bg-muted rounded-lg">
             <p className="text-xs font-semibold mb-2">Demo Accounts:</p>
             <div className="space-y-1 text-xs text-muted-foreground">
               <p>Admin: admin@wanderinglens.com / admin123</p>
               <p>Manager: manager@wanderinglens.com / manager123</p>
               <p>Support: support@wanderinglens.com / support123</p>
             </div>
-          </div>
+          </div> */}
         </CardContent>
       </Card>
     </div>

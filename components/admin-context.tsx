@@ -70,7 +70,12 @@ export function AdminProvider({
         .from("admin_profiles")
         .select("id, full_name, role, avatar_url")
         .eq("id", userId)
-        .maybeSingle()
+        .maybeSingle<{
+          id: string
+          full_name: string | null
+          role: string | null
+          avatar_url: string | null
+        }>()
 
       if (error) {
         console.error("Failed to load admin profile", error)
