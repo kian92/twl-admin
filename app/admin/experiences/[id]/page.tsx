@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CountryCombobox } from "@/components/ui/country-combobox"
-import { ArrowLeft, Upload } from "lucide-react"
+import { ArrowLeft, Upload, Plus, X } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -20,6 +20,16 @@ import type { Database } from "@/types/database"
 import { toast } from "sonner"
 
 type ExperienceRow = Database["public"]["Tables"]["experiences"]["Row"]
+
+interface ItineraryItem {
+  time: string
+  activity: string
+}
+
+interface FAQItem {
+  question: string
+  answer: string
+}
 
 interface FormState {
   title: string
@@ -32,16 +42,23 @@ interface FormState {
   image_url: string
   highlights: string
   inclusions: string
+  exclusions: string
+  not_suitable_for: string
+  meeting_point: string
+  what_to_bring: string
+  gallery: string
   cancellation_policy: string
 }
 
 const categories = ["Adventure", "Culture", "Relaxation", "Wellness", "Nature"]
 
-export default function EditExperiencePage({ params }: { params: { id: string } }) {
+export default function EditExperiencePage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
   const { supabase } = useAdmin()
   const [experience, setExperience] = useState<ExperienceRow | null>(null)
   const [form, setForm] = useState<FormState | null>(null)
+  const [itinerary, setItinerary] = useState<ItineraryItem[]>([{ time: "", activity: "" }])
+  const [faqs, setFaqs] = useState<FAQItem[]>([{ question: "", answer: "" }])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -53,7 +70,8 @@ export default function EditExperiencePage({ params }: { params: { id: string } 
       setLoading(true)
       setError(null)
       try {
-        const data = await getExperienceById(supabase, params.id)
+        const { id } = await params
+        const data = await getExperienceById(supabase, id)
         if (!isMounted) return
         if (!data) {
           setError("Experience not found.")
@@ -61,20 +79,39 @@ export default function EditExperiencePage({ params }: { params: { id: string } 
           setForm(null)
           return
         }
-        setExperience(data as ExperienceRow)
+
+        const experienceData = data as ExperienceRow
+        setExperience(experienceData)
         setForm({
-          title: data.title,
-          location: data.location,
-          country: data.country,
-          description: data.description ?? "",
-          duration: data.duration,
-          price: data.price.toString(),
-          category: data.category,
-          image_url: data.image_url ?? "",
-          highlights: (data.highlights ?? []).join("\n"),
-          inclusions: (data.inclusions ?? []).join("\n"),
-          cancellation_policy: data.cancellation_policy ?? "",
+          title: experienceData.title,
+          location: experienceData.location,
+          country: experienceData.country,
+          description: experienceData.description ?? "",
+          duration: experienceData.duration,
+          price: experienceData.price.toString(),
+          category: experienceData.category,
+          image_url: experienceData.image_url ?? "",
+          highlights: (experienceData.highlights ?? []).join("\n"),
+          inclusions: (experienceData.inclusions ?? []).join("\n"),
+          exclusions: (experienceData.exclusions ?? []).join("\n"),
+          not_suitable_for: (experienceData.not_suitable_for ?? []).join("\n"),
+          meeting_point: experienceData.meeting_point ?? "",
+          what_to_bring: (experienceData.what_to_bring ?? []).join("\n"),
+          gallery: (experienceData.gallery ?? []).join("\n"),
+          cancellation_policy: experienceData.cancellation_policy ?? "",
         })
+
+        // Load itinerary if exists
+        if (experienceData.itinerary && Array.isArray(experienceData.itinerary)) {
+          const itineraryData = experienceData.itinerary as unknown as ItineraryItem[]
+          setItinerary(itineraryData.length > 0 ? itineraryData : [{ time: "", activity: "" }])
+        }
+
+        // Load FAQs if exists
+        if (experienceData.faqs && Array.isArray(experienceData.faqs)) {
+          const faqsData = experienceData.faqs as unknown as FAQItem[]
+          setFaqs(faqsData.length > 0 ? faqsData : [{ question: "", answer: "" }])
+        }
       } catch (err) {
         console.error("Failed to load experience", err)
         if (!isMounted) return
@@ -91,7 +128,7 @@ export default function EditExperiencePage({ params }: { params: { id: string } 
     return () => {
       isMounted = false
     }
-  }, [supabase, params.id])
+  }, [supabase, params])
 
   const handleChange = (field: keyof FormState) => (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const value = event.target.value
@@ -102,8 +139,40 @@ export default function EditExperiencePage({ params }: { params: { id: string } 
     setForm((prev) => (prev ? { ...prev, [field]: value } : prev))
   }
 
+  const addItineraryItem = () => {
+    setItinerary([...itinerary, { time: "", activity: "" }])
+  }
+
+  const removeItineraryItem = (index: number) => {
+    setItinerary(itinerary.filter((_, i) => i !== index))
+  }
+
+  const updateItineraryItem = (index: number, field: keyof ItineraryItem, value: string) => {
+    const updated = [...itinerary]
+    updated[index][field] = value
+    setItinerary(updated)
+  }
+
+  const addFAQItem = () => {
+    setFaqs([...faqs, { question: "", answer: "" }])
+  }
+
+  const removeFAQItem = (index: number) => {
+    setFaqs(faqs.filter((_, i) => i !== index))
+  }
+
+  const updateFAQItem = (index: number, field: keyof FAQItem, value: string) => {
+    const updated = [...faqs]
+    updated[index][field] = value
+    setFaqs(updated)
+  }
+
   const highlightsList = useMemo(() => form?.highlights.split("\n").filter(Boolean) ?? [], [form])
   const inclusionsList = useMemo(() => form?.inclusions.split("\n").filter(Boolean) ?? [], [form])
+  const exclusionsList = useMemo(() => form?.exclusions.split("\n").filter(Boolean) ?? [], [form])
+  const notSuitableForList = useMemo(() => form?.not_suitable_for.split("\n").filter(Boolean) ?? [], [form])
+  const whatToBringList = useMemo(() => form?.what_to_bring.split("\n").filter(Boolean) ?? [], [form])
+  const galleryList = useMemo(() => form?.gallery.split("\n").filter(Boolean) ?? [], [form])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -122,13 +191,26 @@ export default function EditExperiencePage({ params }: { params: { id: string } 
         image_url: form.image_url,
         highlights: highlightsList,
         inclusions: inclusionsList,
+        exclusions: exclusionsList,
+        not_suitable_for: notSuitableForList,
+        meeting_point: form.meeting_point,
+        what_to_bring: whatToBringList,
+        gallery: galleryList,
         cancellation_policy: form.cancellation_policy,
+        itinerary: itinerary.filter(item => item.time && item.activity).length > 0
+          ? (itinerary.filter(item => item.time && item.activity) as any)
+          : null,
+        faqs: faqs.filter(item => item.question && item.answer).length > 0
+          ? (faqs.filter(item => item.question && item.answer) as any)
+          : null,
       })
       toast.success("Experience updated successfully")
       router.push("/admin/experiences")
     } catch (err) {
       console.error("Failed to update experience", err)
-      setError("Unable to save changes. Please try again.")
+      const errorMessage = (err as any)?.message || "Unable to save changes. Please try again."
+      setError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setSaving(false)
     }
@@ -280,27 +362,208 @@ export default function EditExperiencePage({ params }: { params: { id: string } 
 
         <Card>
           <CardHeader>
-            <CardTitle>Details</CardTitle>
+            <CardTitle>Gallery</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="gallery">Gallery URLs (one per line)</Label>
+              <Textarea
+                id="gallery"
+                placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
+                rows={4}
+                value={form.gallery}
+                onChange={handleChange("gallery")}
+              />
+              <p className="text-xs text-muted-foreground">Enter multiple image URLs, one per line</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Highlights & Inclusions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="highlights">Highlights (one per line)</Label>
-              <Textarea id="highlights" value={form.highlights} onChange={handleChange("highlights")} rows={4} />
+              <Textarea
+                id="highlights"
+                placeholder="Trek to the summit of an active volcano&#10;Witness spectacular sunrise views"
+                value={form.highlights}
+                onChange={handleChange("highlights")}
+                rows={4}
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="inclusions">Inclusions (one per line)</Label>
-              <Textarea id="inclusions" value={form.inclusions} onChange={handleChange("inclusions")} rows={4} />
+              <Textarea
+                id="inclusions"
+                placeholder="Hotel pickup&#10;Professional guide&#10;Breakfast"
+                value={form.inclusions}
+                onChange={handleChange("inclusions")}
+                rows={4}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="exclusions">Exclusions (one per line)</Label>
+              <Textarea
+                id="exclusions"
+                placeholder="Personal expenses&#10;Travel insurance&#10;Gratuities"
+                value={form.exclusions}
+                onChange={handleChange("exclusions")}
+                rows={3}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Itinerary</CardTitle>
+              <Button type="button" size="sm" onClick={addItineraryItem}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Item
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {itinerary.map((item, index) => (
+              <div key={index} className="flex gap-4 items-start">
+                <div className="flex-1 grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor={`time-${index}`}>Time</Label>
+                    <Input
+                      id={`time-${index}`}
+                      placeholder="e.g., 02:00 AM"
+                      value={item.time}
+                      onChange={(e) => updateItineraryItem(index, "time", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor={`activity-${index}`}>Activity</Label>
+                    <Input
+                      id={`activity-${index}`}
+                      placeholder="e.g., Hotel pickup"
+                      value={item.activity}
+                      onChange={(e) => updateItineraryItem(index, "activity", e.target.value)}
+                    />
+                  </div>
+                </div>
+                {itinerary.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeItineraryItem(index)}
+                    className="mt-8"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Additional Details</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="what_to_bring">What to Bring (one per line)</Label>
+              <Textarea
+                id="what_to_bring"
+                placeholder="Hiking shoes&#10;Warm jacket&#10;Camera&#10;Water bottle"
+                value={form.what_to_bring}
+                onChange={handleChange("what_to_bring")}
+                rows={4}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="not_suitable_for">Not Suitable For (one per line)</Label>
+              <Textarea
+                id="not_suitable_for"
+                placeholder="Pregnant women&#10;People with mobility issues&#10;Children under 5"
+                value={form.not_suitable_for}
+                onChange={handleChange("not_suitable_for")}
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="meeting_point">Meeting Point</Label>
+              <Input
+                id="meeting_point"
+                placeholder="e.g., Hotel lobby or specific address"
+                value={form.meeting_point}
+                onChange={handleChange("meeting_point")}
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="cancellation">Cancellation Policy</Label>
               <Input
                 id="cancellation"
+                placeholder="e.g., Free cancellation up to 24 hours before"
                 value={form.cancellation_policy}
                 onChange={handleChange("cancellation_policy")}
               />
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>FAQs</CardTitle>
+              <Button type="button" size="sm" onClick={addFAQItem}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add FAQ
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {faqs.map((item, index) => (
+              <div key={index} className="space-y-4 pb-4 border-b last:border-0">
+                <div className="flex justify-between items-start">
+                  <Label htmlFor={`faq-question-${index}`}>FAQ #{index + 1}</Label>
+                  {faqs.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeFAQItem(index)}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor={`faq-question-${index}`}>Question</Label>
+                  <Input
+                    id={`faq-question-${index}`}
+                    placeholder="e.g., What is the difficulty level of this trek?"
+                    value={item.question}
+                    onChange={(e) => updateFAQItem(index, "question", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor={`faq-answer-${index}`}>Answer</Label>
+                  <Textarea
+                    id={`faq-answer-${index}`}
+                    placeholder="Provide a detailed answer..."
+                    rows={3}
+                    value={item.answer}
+                    onChange={(e) => updateFAQItem(index, "answer", e.target.value)}
+                  />
+                </div>
+              </div>
+            ))}
           </CardContent>
         </Card>
 

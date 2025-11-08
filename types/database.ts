@@ -48,8 +48,14 @@ export interface Database {
           description: string | null
           highlights: string[] | null
           inclusions: string[] | null
+          exclusions: string[] | null
+          not_suitable_for: string[] | null
+          meeting_point: string | null
+          what_to_bring: string[] | null
           cancellation_policy: string | null
           itinerary: Json | null
+          gallery: string[] | null
+          faqs: Json | null
           created_at: string | null
           updated_at: string | null
         }
@@ -67,8 +73,14 @@ export interface Database {
           description?: string | null
           highlights?: string[] | null
           inclusions?: string[] | null
+          exclusions?: string[] | null
+          not_suitable_for?: string[] | null
+          meeting_point?: string | null
+          what_to_bring?: string[] | null
           cancellation_policy?: string | null
           itinerary?: Json | null
+          gallery?: string[] | null
+          faqs?: Json | null
           created_at?: string | null
           updated_at?: string | null
         }
@@ -85,8 +97,14 @@ export interface Database {
           description?: string | null
           highlights?: string[] | null
           inclusions?: string[] | null
+          exclusions?: string[] | null
+          not_suitable_for?: string[] | null
+          meeting_point?: string | null
+          what_to_bring?: string[] | null
           cancellation_policy?: string | null
           itinerary?: Json | null
+          gallery?: string[] | null
+          faqs?: Json | null
           updated_at?: string | null
         }
       }

@@ -122,7 +122,7 @@ export async function getExperiences(supabase: PublicClient) {
   const { data, error } = await supabase
     .from("experiences")
     .select(
-      "id, title, location, country, duration, price, category, image_url, rating, review_count, description, highlights, inclusions, cancellation_policy",
+      "id, title, location, country, duration, price, category, image_url, rating, review_count, description, highlights, inclusions, exclusions, not_suitable_for, meeting_point, what_to_bring, cancellation_policy, itinerary, gallery, faqs",
     )
     .order("created_at", { ascending: false })
 
@@ -136,7 +136,7 @@ export async function getExperienceById(supabase: PublicClient, id: string) {
   const { data, error } = await supabase
     .from("experiences")
     .select(
-      "id, title, location, country, duration, price, category, image_url, rating, review_count, description, highlights, inclusions, cancellation_policy, itinerary",
+      "id, title, location, country, duration, price, category, image_url, rating, review_count, description, highlights, inclusions, exclusions, not_suitable_for, meeting_point, what_to_bring, cancellation_policy, itinerary, gallery, faqs",
     )
     .eq("id", id)
     .maybeSingle()
