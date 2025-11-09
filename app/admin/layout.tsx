@@ -33,11 +33,14 @@ async function getInitialState(): Promise<{
     return { session: null, profile: null }
   }
 
-  type AdminProfileRow = Pick<Database["public"]["Tables"]["admin_profiles"]["Row"], "id" | "full_name" | "role" | "avatar_url">
+  type AdminProfileRow = Pick<
+    Database["public"]["Tables"]["admin_profiles"]["Row"],
+    "id" | "full_name" | "role" | "avatar_url" | "is_active"
+  >
 
   const { data, error } = await supabase
     .from("admin_profiles")
-    .select("id, full_name, role, avatar_url")
+    .select("id, full_name, role, avatar_url, is_active")
     .eq("id", session.user.id)
     .maybeSingle<AdminProfileRow>()
 
@@ -50,6 +53,11 @@ async function getInitialState(): Promise<{
     return { session, profile: null }
   }
 
+  if (!data.is_active) {
+    console.warn("Admin profile disabled (server)")
+    return { session, profile: null }
+  }
+
   return {
     session,
     profile: {
@@ -57,6 +65,7 @@ async function getInitialState(): Promise<{
       full_name: data.full_name,
       role: normalizeRole(data.role),
       avatar_url: data.avatar_url,
+      is_active: data.is_active,
     },
   }
 }

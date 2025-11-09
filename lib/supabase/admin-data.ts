@@ -34,12 +34,20 @@ type BookingItem = {
   quantity?: number
 }
 
+type DashboardMetricsRow = Database["public"]["Functions"]["admin_dashboard_metrics"]["Returns"]
+type BookingTrendRow = Database["public"]["Functions"]["booking_trend"]["Returns"][number]
+type RevenueTrendRow = Database["public"]["Functions"]["revenue_trend"]["Returns"][number]
+type TopDestinationRow = Database["public"]["Functions"]["top_destinations"]["Returns"][number]
+type RecentBookingRow = Database["public"]["Tables"]["bookings"]["Row"] & {
+  booking_items?: BookingItem[] | null
+}
+
 export async function getDashboardData(supabase: PublicClient): Promise<DashboardData> {
   const [metricsRes, bookingTrendRes, revenueTrendRes, topDestinationsRes, recentBookingsRes] = await Promise.all([
     supabase.rpc("admin_dashboard_metrics"),
-    supabase.rpc("booking_trend", { months: 6 }),
-    supabase.rpc("revenue_trend", { months: 6 }),
-    supabase.rpc("top_destinations", { limit_val: 4 }),
+    supabase.rpc("booking_trend", { months: 6 } as never),
+    supabase.rpc("revenue_trend", { months: 6 } as never),
+    supabase.rpc("top_destinations", { limit_val: 4 } as never),
     supabase
       .from("bookings")
       .select(
@@ -65,39 +73,39 @@ export async function getDashboardData(supabase: PublicClient): Promise<Dashboar
     throw recentBookingsRes.error
   }
 
-  const bookingTrend =
-    bookingTrendRes.data?.map((point) => ({
-      month: point.month,
-      bookings: point.booking_count,
-    })) ?? []
+  const bookingTrendData = (bookingTrendRes.data ?? []) as BookingTrendRow[]
+  const bookingTrend = bookingTrendData.map((point) => ({
+    month: point.month,
+    bookings: point.booking_count,
+  }))
 
-  const revenueTrend =
-    revenueTrendRes.data?.map((point) => ({
-      month: point.month,
-      revenue: point.revenue,
-    })) ?? []
+  const revenueTrendData = (revenueTrendRes.data ?? []) as RevenueTrendRow[]
+  const revenueTrend = revenueTrendData.map((point) => ({
+    month: point.month,
+    revenue: point.revenue,
+  }))
 
-  const topDestinations =
-    topDestinationsRes.data?.map((row) => ({
-      country: row.country,
-      bookings: row.booking_count,
-      revenue: row.revenue,
-    })) ?? []
+  const topDestinationsData = (topDestinationsRes.data ?? []) as TopDestinationRow[]
+  const topDestinations = topDestinationsData.map((row) => ({
+    country: row.country,
+    bookings: row.booking_count,
+    revenue: row.revenue,
+  }))
 
-  const recentBookings =
-    recentBookingsRes.data?.map((booking) => ({
-      id: booking.id,
-      customer_name: booking.customer_name,
-      travel_date: booking.travel_date,
-      total_cost: booking.total_cost,
-      status: booking.status,
-      experiences:
-        (booking.booking_items as BookingItem[] | null | undefined)?.map((item) => ({
-          title: item.experience_title,
-        })) ?? [],
-    })) ?? []
+  const recentBookingsData = (recentBookingsRes.data ?? []) as RecentBookingRow[]
+  const recentBookings = recentBookingsData.map((booking) => ({
+    id: booking.id,
+    customer_name: booking.customer_name,
+    travel_date: booking.travel_date,
+    total_cost: booking.total_cost,
+    status: booking.status,
+    experiences:
+      booking.booking_items?.map((item) => ({
+        title: item.experience_title,
+      })) ?? [],
+  }))
 
-  const metrics = metricsRes.data ?? {
+  const metrics = (metricsRes.data as DashboardMetricsRow | null) ?? {
     total_revenue: 0,
     total_bookings: 0,
     active_users: 0,
@@ -115,62 +123,6 @@ export async function getDashboardData(supabase: PublicClient): Promise<Dashboar
     revenueTrend,
     topDestinations,
     recentBookings,
-  }
-}
-
-export async function getExperiences(supabase: PublicClient) {
-  const { data, error } = await supabase
-    .from("experiences")
-    .select(
-      "id, title, location, country, duration, price, category, image_url, rating, review_count, description, highlights, inclusions, exclusions, not_suitable_for, meeting_point, what_to_bring, cancellation_policy, itinerary, gallery, faqs",
-    )
-    .order("created_at", { ascending: false })
-
-  if (error) {
-    throw error
-  }
-  return data ?? []
-}
-
-export async function getExperienceById(supabase: PublicClient, id: string) {
-  const { data, error } = await supabase
-    .from("experiences")
-    .select(
-      "id, title, location, country, duration, price, category, image_url, rating, review_count, description, highlights, inclusions, exclusions, not_suitable_for, meeting_point, what_to_bring, cancellation_policy, itinerary, gallery, faqs",
-    )
-    .eq("id", id)
-    .maybeSingle()
-
-  if (error) {
-    throw error
-  }
-  return data
-}
-
-export async function createExperience(supabase: PublicClient, payload: Database["public"]["Tables"]["experiences"]["Insert"]) {
-  const { data, error } = await supabase.from("experiences").insert(payload).select().single()
-  if (error) {
-    throw error
-  }
-  return data
-}
-
-export async function updateExperience(
-  supabase: PublicClient,
-  id: string,
-  payload: Database["public"]["Tables"]["experiences"]["Update"],
-) {
-  const { data, error } = await supabase.from("experiences").update(payload).eq("id", id).select().single()
-  if (error) {
-    throw error
-  }
-  return data
-}
-
-export async function deleteExperience(supabase: PublicClient, id: string) {
-  const { error } = await supabase.from("experiences").delete().eq("id", id)
-  if (error) {
-    throw error
   }
 }
 
@@ -231,18 +183,5 @@ export async function getRewardCampaigns(supabase: PublicClient) {
   if (error) {
     throw error
   }
-  return data ?? []
-}
-
-export async function getAdminStaff(supabase: PublicClient) {
-  const { data, error } = await supabase
-    .from("admin_profiles")
-    .select("id, full_name, role, avatar_url, created_at, updated_at")
-    .order("created_at", { ascending: false })
-
-  if (error) {
-    throw error
-  }
-
   return data ?? []
 }

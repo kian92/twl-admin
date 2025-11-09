@@ -33,7 +33,9 @@ export function ExperienceHero({ experience }: ExperienceHeroProps) {
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
 
   const handleAddToTrip = () => {
-    addToTrip(experience as any)
+    // Default booking date is today, with 1 adult and 0 children for quick adds from the hero section.
+    const today = new Date().toISOString().split("T")[0]
+    addToTrip(experience as any, today, 1, 0)
     setJustAdded(true)
     setTimeout(() => setJustAdded(false), 2000)
   }

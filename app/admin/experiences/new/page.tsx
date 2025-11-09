@@ -3,7 +3,6 @@
 import type React from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAdmin } from "@/components/admin-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,7 +12,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CountryCombobox } from "@/components/ui/country-combobox"
 import { ArrowLeft, Plus, X } from "lucide-react"
 import Link from "next/link"
-import { createExperience } from "@/lib/supabase/admin-data"
 import type { Database } from "@/types/database"
 import { toast } from "sonner"
 
@@ -54,7 +52,6 @@ const categories = ["Adventure", "Culture", "Relaxation", "Wellness", "Nature"]
 
 export default function NewExperiencePage() {
   const router = useRouter()
-  const { supabase } = useAdmin()
   const [form, setForm] = useState(initialForm)
   const [highlightsText, setHighlightsText] = useState("")
   const [inclusionsText, setInclusionsText] = useState("")
@@ -129,7 +126,17 @@ export default function NewExperiencePage() {
       }
 
       console.log("Submitting experience payload:", payload)
-      await createExperience(supabase, payload)
+      const response = await fetch("/api/admin/experiences", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+
+      const result = (await response.json().catch(() => ({}))) as { error?: string; id?: string }
+      if (!response.ok) {
+        throw new Error(result.error ?? "Unable to create experience. Please try again.")
+      }
+
       toast.success("Experience created")
       router.push("/admin/experiences")
     } catch (err: any) {

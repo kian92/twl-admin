@@ -12,7 +12,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
-import { getAdminStaff } from "@/lib/supabase/admin-data"
 import type { Database } from "@/types/database"
 
 type StaffMember = Database["public"]["Tables"]["admin_profiles"]["Row"]
@@ -51,7 +50,7 @@ const roleBadgeStyles = (role: string) => {
 }
 
 export default function StaffPage() {
-  const { supabase, profile } = useAdmin()
+  const { profile } = useAdmin()
   const [staff, setStaff] = useState<StaffMember[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -67,15 +66,20 @@ export default function StaffPage() {
     setLoading(true)
     setError(null)
     try {
-      const data = await getAdminStaff(supabase)
-      setStaff(data as StaffMember[])
+      const response = await fetch("/api/admin/staff")
+      const payload = (await response.json().catch(() => null)) as StaffMember[] | { error?: string } | null
+      if (!response.ok) {
+        const message = (payload as { error?: string } | null)?.error ?? "Unable to load staff directory. Please try again."
+        throw new Error(message)
+      }
+      setStaff(Array.isArray(payload) ? payload : [])
     } catch (err) {
       console.error("Failed to load staff directory", err)
-      setError("Unable to load staff directory. Please try again.")
+      setError(err instanceof Error ? err.message : "Unable to load staff directory. Please try again.")
     } finally {
       setLoading(false)
     }
-  }, [supabase])
+  }, [])
 
   useEffect(() => {
     void loadStaff()
@@ -120,6 +124,43 @@ export default function StaffPage() {
       })
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleStaffAction = async (member: StaffMember, action: "disable" | "enable" | "delete") => {
+    if (action === "delete") {
+      if (!window.confirm(`Permanently delete ${member.full_name ?? member.id}? This cannot be undone.`)) {
+        return
+      }
+    }
+
+    setInviteStatus(null)
+
+    try {
+      const endpoint = `/api/admin/staff/${member.id}`
+      const options: RequestInit = action === "delete"
+        ? { method: "DELETE" }
+        : {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action }),
+          }
+
+      const response = await fetch(endpoint, options)
+      const payload = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Failed to update staff member")
+      }
+
+      setInviteStatus({ type: "success", message: "Staff updated." })
+      await loadStaff()
+    } catch (err) {
+      console.error("Staff action failed", err)
+      setInviteStatus({
+        type: "error",
+        message: err instanceof Error ? err.message : "Failed to update staff member",
+      })
     }
   }
 
@@ -274,30 +315,55 @@ export default function StaffPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {staff.map((member) => {
-                const initials = member.full_name?.charAt(0)?.toUpperCase() ?? "?"
-                return (
-                  <div key={member.id} className="flex items-center justify-between rounded-lg border p-4">
-                    <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarFallback>{initials}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium">{member.full_name ?? "Pending invite"}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Added {formatDate(member.created_at)}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <Badge className={roleBadgeStyles(member.role || "support")}>
-                        {(member.role || "support").charAt(0).toUpperCase() + (member.role || "support").slice(1)}
-                      </Badge>
-                      <p className="mt-1 text-xs text-muted-foreground">Updated {formatDate(member.updated_at)}</p>
-                    </div>
+          {staff.map((member) => {
+            const initials = member.full_name?.charAt(0)?.toUpperCase() ?? "?"
+            return (
+              <div key={member.id} className="flex items-center justify-between rounded-lg border p-4">
+                <div className="flex items-center gap-3">
+                  <Avatar>
+                    <AvatarFallback>{initials}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-medium">{member.full_name ?? "Pending invite"}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Added {formatDate(member.created_at)}
+                    </p>
                   </div>
-                )
-              })}
+                </div>
+                <div className="text-right space-y-2">
+                  <div className="flex items-center gap-2 justify-end">
+                    <Badge className={roleBadgeStyles(member.role || "support")}>
+                      {(member.role || "support").charAt(0).toUpperCase() + (member.role || "support").slice(1)}
+                    </Badge>
+                    <Badge variant={member.is_active ? "outline" : "destructive"}>
+                      {member.is_active ? "Active" : "Disabled"}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Updated {formatDate(member.updated_at)}</p>
+                  {canInvite && (
+                    <div className="flex gap-2 justify-end">
+                      <Button
+                        size="sm"
+                        variant={member.is_active ? "outline" : "secondary"}
+                        onClick={() =>
+                          handleStaffAction(member, member.is_active ? "disable" : "enable")
+                        }
+                      >
+                        {member.is_active ? "Disable" : "Enable"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleStaffAction(member, "delete")}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
             </div>
           )}
         </CardContent>

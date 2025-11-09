@@ -20,6 +20,7 @@ export interface AdminProfile {
   full_name: string | null
   role: AdminRole
   avatar_url: string | null
+  is_active: boolean
 }
 
 interface SignInResult {
@@ -68,13 +69,14 @@ export function AdminProvider({
     async (userId: string) => {
       const { data, error } = await supabase
         .from("admin_profiles")
-        .select("id, full_name, role, avatar_url")
+        .select("id, full_name, role, avatar_url, is_active")
         .eq("id", userId)
         .maybeSingle<{
           id: string
           full_name: string | null
           role: string | null
           avatar_url: string | null
+          is_active: boolean
         }>()
 
       if (error) {
@@ -84,11 +86,19 @@ export function AdminProvider({
       }
 
       if (data) {
+        if (!data.is_active) {
+          console.warn("Admin profile disabled")
+          await supabase.auth.signOut()
+          setUser(null)
+          setProfile(null)
+          return
+        }
         setProfile({
           id: data.id,
           full_name: data.full_name,
           role: normalizeRole(data.role),
           avatar_url: data.avatar_url,
+          is_active: data.is_active,
         })
       } else {
         setProfile(null)

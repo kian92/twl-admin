@@ -15,6 +15,7 @@ export interface Database {
           full_name: string | null
           role: string | null
           avatar_url: string | null
+          is_active: boolean
           created_at: string | null
           updated_at: string | null
         }
@@ -23,6 +24,7 @@ export interface Database {
           full_name?: string | null
           role?: string | null
           avatar_url?: string | null
+          is_active?: boolean
           created_at?: string | null
           updated_at?: string | null
         }
@@ -30,6 +32,7 @@ export interface Database {
           full_name?: string | null
           role?: string | null
           avatar_url?: string | null
+          is_active?: boolean
           updated_at?: string | null
         }
       }

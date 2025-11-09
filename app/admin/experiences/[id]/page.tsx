@@ -3,7 +3,6 @@
 import type React from "react"
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAdmin } from "@/components/admin-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,7 +14,6 @@ import { ArrowLeft, Upload, Plus, X } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { Skeleton } from "@/components/ui/skeleton"
-import { getExperienceById, updateExperience } from "@/lib/supabase/admin-data"
 import type { Database } from "@/types/database"
 import { toast } from "sonner"
 
@@ -54,7 +52,6 @@ const categories = ["Adventure", "Culture", "Relaxation", "Wellness", "Nature"]
 
 export default function EditExperiencePage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
-  const { supabase } = useAdmin()
   const [experience, setExperience] = useState<ExperienceRow | null>(null)
   const [form, setForm] = useState<FormState | null>(null)
   const [itinerary, setItinerary] = useState<ItineraryItem[]>([{ time: "", activity: "" }])
@@ -71,7 +68,12 @@ export default function EditExperiencePage({ params }: { params: Promise<{ id: s
       setError(null)
       try {
         const { id } = await params
-        const data = await getExperienceById(supabase, id)
+        const response = await fetch(`/api/admin/experiences/${id}`)
+        const payload = (await response.json().catch(() => null)) as ExperienceRow | { error?: string } | null
+        if (!response.ok) {
+          throw new Error((payload as { error?: string } | null)?.error ?? "Experience not found.")
+        }
+        const data = payload as ExperienceRow
         if (!isMounted) return
         if (!data) {
           setError("Experience not found.")
@@ -128,7 +130,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ id: s
     return () => {
       isMounted = false
     }
-  }, [supabase, params])
+  }, [params])
 
   const handleChange = (field: keyof FormState) => (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const value = event.target.value
@@ -180,7 +182,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ id: s
     setSaving(true)
     setError(null)
     try {
-      await updateExperience(supabase, experience.id, {
+      const payload = {
         title: form.title,
         location: form.location,
         country: form.country,
@@ -197,13 +199,25 @@ export default function EditExperiencePage({ params }: { params: Promise<{ id: s
         what_to_bring: whatToBringList,
         gallery: galleryList,
         cancellation_policy: form.cancellation_policy,
-        itinerary: itinerary.filter(item => item.time && item.activity).length > 0
-          ? (itinerary.filter(item => item.time && item.activity) as any)
-          : null,
-        faqs: faqs.filter(item => item.question && item.answer).length > 0
-          ? (faqs.filter(item => item.question && item.answer) as any)
-          : null,
+        itinerary:
+          itinerary.filter((item) => item.time && item.activity).length > 0
+            ? itinerary.filter((item) => item.time && item.activity)
+            : null,
+        faqs:
+          faqs.filter((item) => item.question && item.answer).length > 0 ? faqs.filter((item) => item.question && item.answer) : null,
+      }
+
+      const response = await fetch(`/api/admin/experiences/${experience.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       })
+
+      const result = (await response.json().catch(() => ({}))) as { error?: string }
+      if (!response.ok) {
+        throw new Error(result.error ?? "Unable to save changes. Please try again.")
+      }
+
       toast.success("Experience updated successfully")
       router.push("/admin/experiences")
     } catch (err) {

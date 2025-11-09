@@ -92,7 +92,10 @@ export default function MembershipPage() {
     try {
       await Promise.all(
         Object.entries(settings).map(async ([key, value]) => {
-          const { error: updateError } = await supabase.from("reward_settings").update({ value }).eq("key", key)
+          const { error: updateError } = await (supabase as any)
+            .from("reward_settings")
+            .update({ value })
+            .eq("key", key)
           if (updateError) {
             throw updateError
           }

@@ -1,7 +1,6 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { useAdmin } from "@/components/admin-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
@@ -10,14 +9,12 @@ import { Plus, Search, Edit, Trash2, Star } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { Skeleton } from "@/components/ui/skeleton"
-import { getExperiences, deleteExperience } from "@/lib/supabase/admin-data"
 import type { Database } from "@/types/database"
 import { toast } from "sonner"
 
 type ExperienceRow = Database["public"]["Tables"]["experiences"]["Row"]
 
 export default function ExperiencesPage() {
-  const { supabase } = useAdmin()
   const [experiences, setExperiences] = useState<ExperienceRow[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
@@ -28,15 +25,20 @@ export default function ExperiencesPage() {
     setLoading(true)
     setError(null)
     try {
-      const data = await getExperiences(supabase)
-      setExperiences(data as ExperienceRow[])
+      const response = await fetch("/api/admin/experiences")
+      const payload = (await response.json().catch(() => null)) as ExperienceRow[] | { error?: string } | null
+      if (!response.ok) {
+        const message = (payload as { error?: string } | null)?.error ?? "Unable to load experiences."
+        throw new Error(message)
+      }
+      setExperiences(Array.isArray(payload) ? payload : [])
     } catch (err) {
       console.error("Failed to load experiences", err)
-      setError("Unable to load experiences. Please try again.")
+      setError(err instanceof Error ? err.message : "Unable to load experiences. Please try again.")
     } finally {
       setLoading(false)
     }
-  }, [supabase])
+  }, [])
 
   useEffect(() => {
     void loadExperiences()
@@ -68,12 +70,18 @@ export default function ExperiencesPage() {
       return
     }
     try {
-      await deleteExperience(supabase, experience.id)
+      const response = await fetch(`/api/admin/experiences/${experience.id}`, {
+        method: "DELETE",
+      })
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => ({}))) as { error?: string }
+        throw new Error(payload.error ?? "Unable to delete experience.")
+      }
       toast.success("Experience removed")
       void loadExperiences()
     } catch (err) {
       console.error("Failed to delete experience", err)
-      toast.error("Unable to delete experience. Please try again.")
+      toast.error(err instanceof Error ? err.message : "Unable to delete experience. Please try again.")
     }
   }
 
