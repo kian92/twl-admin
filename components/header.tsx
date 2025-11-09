@@ -23,7 +23,7 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-white">
       <div className="container mx-auto px-4 max-w-7xl flex h-16 items-center justify-between">
         <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-70">
-          <Camera className="h-5 w-5 text-foreground" />
+          {/* <Camera className="h-5 w-5 text-foreground" /> */}
           <span className="font-serif text-xl font-normal tracking-wide">The Wandering Lens</span>
         </Link>
 

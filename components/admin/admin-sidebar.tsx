@@ -11,8 +11,8 @@ const navigation = [
   { name: "Bookings", href: "/admin/bookings", icon: Calendar },
   { name: "Users", href: "/admin/users", icon: Users },
   { name: "Team", href: "/admin/staff", icon: UserPlus },
-  { name: "Membership", href: "/admin/membership", icon: Award },
-  { name: "Content", href: "/admin/content", icon: FileText },
+  // { name: "Membership", href: "/admin/membership", icon: Award },
+  // { name: "Content", href: "/admin/content", icon: FileText },
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ]
 
@@ -23,9 +23,9 @@ export function AdminSidebar() {
     <div className="w-64 bg-card border-r flex flex-col">
       <div className="p-6 border-b">
         <Link href="/admin" className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-coral-500 flex items-center justify-center">
+          {/* <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-coral-500 flex items-center justify-center">
             <Compass className="w-5 h-5 text-white" />
-          </div>
+          </div> */}
           <div>
             <h1 className="font-bold text-lg">The Wandering Lens</h1>
             <p className="text-xs text-muted-foreground">Admin Portal</p>
