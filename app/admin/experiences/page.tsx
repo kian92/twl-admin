@@ -70,7 +70,7 @@ export default function ExperiencesPage() {
       return
     }
     try {
-      const response = await fetch(`/api/admin/experiences/${experience.id}`, {
+      const response = await fetch(`/api/admin/experiences/${experience.slug}/${experience.id}`, {
         method: "DELETE",
       })
       if (!response.ok) {
@@ -173,7 +173,7 @@ export default function ExperiencesPage() {
                     <span className="text-lg font-bold">${experience.price}</span>
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" asChild>
-                        <Link href={`/admin/experiences/${experience.id}`}>
+                        <Link href={`/admin/experiences/${experience.slug}/${experience.id}`}>
                           <Edit className="w-4 h-4" />
                         </Link>
                       </Button>
