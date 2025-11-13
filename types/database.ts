@@ -61,6 +61,7 @@ export interface Database {
           faqs: Json | null
           created_at: string | null
           updated_at: string | null
+          status: "active" | "draft" | "deleted"
         }
         Insert: {
           id?: string
@@ -86,6 +87,7 @@ export interface Database {
           faqs?: Json | null
           created_at?: string | null
           updated_at?: string | null
+          status: "active" | "draft" | "deleted"
         }
         Update: {
           title?: string
@@ -109,6 +111,7 @@ export interface Database {
           gallery?: string[] | null
           faqs?: Json | null
           updated_at?: string | null
+          status: "active" | "draft" | "deleted"
         }
       }
       bookings: {

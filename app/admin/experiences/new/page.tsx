@@ -46,6 +46,7 @@ const initialForm: ExperienceInsert = {
   itinerary: null,
   gallery: [],
   faqs: null,
+  status: "active"
 }
 
 const categories = ["Adventure", "Culture", "Relaxation", "Wellness", "Nature"]
@@ -277,6 +278,7 @@ export default function NewExperiencePage() {
                 placeholder="https://..."
                 value={form.image_url ?? ""}
                 onChange={handleInputChange("image_url")}
+                required
               />
             </div>
             <div className="space-y-2">
@@ -287,6 +289,7 @@ export default function NewExperiencePage() {
                 rows={4}
                 value={galleryText}
                 onChange={(event) => setGalleryText(event.target.value)}
+                required
               />
               <p className="text-xs text-muted-foreground">Enter multiple image URLs, one per line</p>
             </div>
@@ -307,6 +310,7 @@ export default function NewExperiencePage() {
                 rows={4}
                 value={highlightsText}
                 onChange={(event) => setHighlightsText(event.target.value)}
+                required
               />
             </div>
 
@@ -318,6 +322,7 @@ export default function NewExperiencePage() {
                 rows={4}
                 value={inclusionsText}
                 onChange={(event) => setInclusionsText(event.target.value)}
+                required
               />
             </div>
 
@@ -356,6 +361,7 @@ export default function NewExperiencePage() {
                       placeholder="e.g., 02:00 AM"
                       value={item.time}
                       onChange={(e) => updateItineraryItem(index, "time", e.target.value)}
+                      required
                     />
                   </div>
                   <div className="space-y-2">
@@ -365,6 +371,7 @@ export default function NewExperiencePage() {
                       placeholder="e.g., Hotel pickup"
                       value={item.activity}
                       onChange={(e) => updateItineraryItem(index, "activity", e.target.value)}
+                      required
                     />
                   </div>
                 </div>

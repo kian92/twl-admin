@@ -17,7 +17,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { data, error } = await supabase.from("experiences").select(EXPERIENCE_SELECT_FIELDS).order("created_at", {
+    const { data, error } = await supabase.from("experiences").select(EXPERIENCE_SELECT_FIELDS).in("status", ["active", "draft"]).order("created_at", {
       ascending: false,
     })
 

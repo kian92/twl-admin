@@ -101,7 +101,10 @@ export async function DELETE(
     }
 
     const { id } = await params
-    const { error } = await supabase.from("experiences").delete().eq("id", id)
+    const { error } = await supabase
+    .from("experiences")
+    .update({ status: "deleted" })
+    .eq("id", id)
 
     if (error) {
       console.error("Failed to delete experience", error)
