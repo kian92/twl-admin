@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -50,7 +50,8 @@ interface FormState {
 
 const categories = ["Adventure", "Culture", "Relaxation", "Wellness", "Nature"]
 
-export default function EditExperiencePage({ params }: { params: Promise<{ id: string }> }) {
+export default function EditExperiencePage({ params }: { params: Promise<{ slug: string; id: string }> }) {
+
   const router = useRouter()
   const [experience, setExperience] = useState<ExperienceRow | null>(null)
   const [form, setForm] = useState<FormState | null>(null)
@@ -59,6 +60,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ id: s
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { slug, id } = React.use(params) 
 
   useEffect(() => {
     let isMounted = true
@@ -67,8 +69,8 @@ export default function EditExperiencePage({ params }: { params: Promise<{ id: s
       setLoading(true)
       setError(null)
       try {
-        const { id } = await params
-        const response = await fetch(`/api/admin/experiences/${id}`)
+        
+        const response = await fetch(`/api/admin/experiences/${slug}/${id}`)
         const payload = (await response.json().catch(() => null)) as ExperienceRow | { error?: string } | null
         if (!response.ok) {
           throw new Error((payload as { error?: string } | null)?.error ?? "Experience not found.")
@@ -207,13 +209,14 @@ export default function EditExperiencePage({ params }: { params: Promise<{ id: s
           faqs.filter((item) => item.question && item.answer).length > 0 ? faqs.filter((item) => item.question && item.answer) : null,
       }
 
-      const response = await fetch(`/api/admin/experiences/${experience.id}`, {
+      const response = await fetch(`/api/admin/experiences/${experience.slug}/${experience.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       })
 
       const result = (await response.json().catch(() => ({}))) as { error?: string }
+
       if (!response.ok) {
         throw new Error(result.error ?? "Unable to save changes. Please try again.")
       }

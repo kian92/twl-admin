@@ -15,7 +15,9 @@ import Link from "next/link"
 import type { Database } from "@/types/database"
 import { toast } from "sonner"
 
-type ExperienceInsert = Database["public"]["Tables"]["experiences"]["Insert"]
+type ExperienceInsert = Omit<Database["public"]["Tables"]["experiences"]["Insert"], "slug"> & {
+  slug?: string
+}
 
 interface ItineraryItem {
   time: string
@@ -28,6 +30,7 @@ interface FAQItem {
 }
 
 const initialForm: ExperienceInsert = {
+  slug: "", 
   title: "",
   location: "",
   country: "Indonesia",
@@ -125,7 +128,6 @@ export default function NewExperiencePage() {
           : null,
       }
 
-      console.log("Submitting experience payload:", payload)
       const response = await fetch("/api/admin/experiences", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

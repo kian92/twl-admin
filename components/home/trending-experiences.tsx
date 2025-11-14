@@ -18,7 +18,7 @@ export function TrendingExperiences() {
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {experiences.map((experience) => (
-            <Link key={experience.id} href={`/experiences/${experience.id}`}>
+            <Link key={experience.id} href={`/experiences/${experience.slug}/${experience.id}`}>
               <Card className="group overflow-hidden border-0 shadow-sm hover:shadow-xl transition-all duration-300">
                 <div className="relative h-[320px] overflow-hidden">
                   <img

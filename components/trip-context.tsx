@@ -13,6 +13,7 @@ export interface Experience {
   rating: number
   description: string
   inclusions: string[]
+  slug: string
 }
 
 export interface TripItem extends Experience {

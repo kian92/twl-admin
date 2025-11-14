@@ -34,7 +34,8 @@ export function ExperienceCard({ experience }: ExperienceCardProps) {
 
   return (
     <>
-      <Link href={`/experiences/${experience.id}`}>
+      <Link href={`/experiences/${experience.slug}/${experience.id}`}>
+
         <Card className="group overflow-hidden border-0 shadow-sm hover:shadow-xl transition-all duration-300 h-full">
           <div className="relative h-64 overflow-hidden">
             <img
@@ -59,7 +60,7 @@ export function ExperienceCard({ experience }: ExperienceCardProps) {
             <div className="flex items-center gap-2 mb-3 text-sm text-muted-foreground">
               <div className="flex items-center gap-1">
                 <Star className="h-4 w-4 fill-foreground text-foreground" />
-                <span className="font-medium text-foreground">{experience.rating}</span>
+                <span className="font-medium text-foreground">{experience.rating? experience.rating: 0}</span>
               </div>
               <span>•</span>
               <div className="flex items-center gap-1">

@@ -42,7 +42,8 @@ export function PlaylistItem({ experience, index }: PlaylistItemProps) {
 
           {/* Content */}
           <div className="flex-1 min-w-0">
-            <Link href={`/experiences/${experience.id}`}>
+            <Link href={`/experiences/${experience.slug}/${experience.id}`}>
+
               <h3 className="font-semibold text-lg mb-1 line-clamp-1 hover:text-primary transition-colors">
                 {experience.title}
               </h3>

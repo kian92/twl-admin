@@ -1,14 +1,18 @@
 import { NextResponse } from "next/server"
-
+import { slugify } from "@/lib/utils/slugify" 
 import { createSupabaseServerClient } from "@/lib/supabase/server"
 import { experiencePayloadSchema, normalizeExperiencePayload } from "@/lib/validations/experience"
 
-const EXPERIENCE_SELECT_FIELDS =
-  "id, title, location, country, duration, price, category, image_url, rating, review_count, description, highlights, inclusions, exclusions, not_suitable_for, meeting_point, what_to_bring, cancellation_policy, itinerary, gallery, faqs, created_at, updated_at"
+import { EXPERIENCE_SELECT_FIELDS } from "@/lib/constants/experience"
+
+interface ExperienceSlugInfo {
+  slug: string
+  title: string
+}
 
 export async function GET(
   _request: Request,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ slug: string; id: string }> },
 ) {
   try {
     const supabase = await createSupabaseServerClient()
@@ -20,12 +24,12 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { id } = await params
+    const { id, slug } = await params
 
     const { data, error } = await supabase
       .from("experiences")
       .select(EXPERIENCE_SELECT_FIELDS)
-      .eq("id", id)
+      .eq("slug", slug)
       .maybeSingle()
 
     if (error) {
@@ -71,6 +75,42 @@ export async function PUT(
 
     const normalized = normalizeExperiencePayload(parsed.data)
     const { id } = await params
+
+    // ✅ Fetch the current experience
+    const { data: current } = await supabase
+    .from("experiences")
+    .select("slug, title")
+    .eq("id", id)
+    .maybeSingle<ExperienceSlugInfo>()
+
+    if (!current) {
+    return NextResponse.json({ error: "Experience not found" }, { status: 404 })
+    }
+
+    // ✅ Determine new slug
+    let newSlug = normalized.slug || slugify(normalized.title)
+
+    if (newSlug !== current.slug) {
+    // Ensure uniqueness among other records
+    let baseSlug = newSlug
+    let suffix = 1
+
+    while (true) {
+      const { data: existing } = await supabase
+        .from("experiences")
+        .select("id")
+        .eq("slug", newSlug)
+        .neq("id", id)
+        .maybeSingle()
+
+      if (!existing) break
+      newSlug = `${baseSlug}-${suffix++}`
+    }
+
+    normalized.slug = newSlug
+    }
+
+
     // @ts-expect-error - Supabase type inference issue
     const { error } = await supabase.from("experiences").update(normalized).eq("id", id)
 

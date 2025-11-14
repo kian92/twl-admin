@@ -38,6 +38,7 @@ export interface Database {
       }
       experiences: {
         Row: {
+          slug: string
           id: string
           title: string
           location: string
@@ -63,6 +64,7 @@ export interface Database {
           updated_at: string | null
         }
         Insert: {
+          slug: string
           id?: string
           title: string
           location: string
@@ -88,6 +90,7 @@ export interface Database {
           updated_at?: string | null
         }
         Update: {
+          slug: string
           title?: string
           location?: string
           country?: string
