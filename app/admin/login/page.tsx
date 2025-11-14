@@ -73,7 +73,7 @@ export default function AdminLoginPage() {
           <CardDescription>Sign in to access the admin dashboard</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -82,6 +82,7 @@ export default function AdminLoginPage() {
                 placeholder="admin@wanderinglens.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoComplete="username"
                 required
               />
             </div>
@@ -95,6 +96,7 @@ export default function AdminLoginPage() {
                   placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="new-password"
                   required
                 />
                 <button
@@ -113,6 +115,15 @@ export default function AdminLoginPage() {
               {loading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
+          <div className="text-right mt-4">
+            <button
+              type="button"
+              onClick={() => router.push("/forgot-password")}
+              className="text-sm text-muted-foreground hover:underline"
+            >
+              Forgot password?
+            </button>
+          </div>
 
           {/* <div className="mt-6 p-4 bg-muted rounded-lg">
             <p className="text-xs font-semibold mb-2">Demo Accounts:</p>
