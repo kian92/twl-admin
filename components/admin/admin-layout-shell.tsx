@@ -14,14 +14,23 @@ function AdminLayoutContent({ children }: { children: ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
 
+  const publicRoutes = [
+    "/admin/login",
+    "/auth/callback",          
+    "/reset-password",         
+    "/forgot-password",
+  ]
+
+  const isPublic = publicRoutes.includes(pathname)
+
   useEffect(() => {
     if (isLoading) return
-    if (!isAuthenticated && pathname !== "/admin/login") {
+    if (!isAuthenticated && !isPublic) {
       router.push("/admin/login")
     }
-  }, [isAuthenticated, pathname, router, isLoading])
+  }, [isAuthenticated, isPublic, pathname, router, isLoading])
 
-  if (pathname === "/admin/login") {
+  if (isPublic) {
     return <>{children}</>
   }
 
