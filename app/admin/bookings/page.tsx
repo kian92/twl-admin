@@ -90,13 +90,13 @@ export default function BookingsPage() {
         booking.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         booking.customer_email.toLowerCase().includes(searchQuery.toLowerCase());
 
-      const matchesStatus = statusFilter === "all" || booking.status === statusFilter;
+      const matchesStatus = statusFilter === "all" || booking.payment_status === statusFilter;
       return matchesSearch && matchesStatus;
     });
   }, [bookings, searchQuery, statusFilter]);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
+  const getStatusColor = (payment_status: string) => {
+    switch (payment_status) {
       case "confirmed":
         return "bg-green-100 text-green-700";
       case "pending":
@@ -122,7 +122,7 @@ export default function BookingsPage() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        status: selectedBooking.status,
+        payment_status: selectedBooking.payment_status,
         notes: notes,
       }),
     });
@@ -175,7 +175,7 @@ export default function BookingsPage() {
 
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filter by status" />
+            <SelectValue placeholder="Filter by payment_status" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
@@ -203,6 +203,7 @@ export default function BookingsPage() {
                     <th className="p-4 text-left">Customer</th>
                     <th className="p-4 text-left">Experiences</th>
                     <th className="p-4 text-left">Travel Date</th>
+                    <th className="p-4 text-left">Payment Method</th>
                     <th className="p-4 text-left">Total</th>
                     <th className="p-4 text-left">Status</th>
                     <th className="p-4 text-left">Actions</th>
@@ -224,11 +225,12 @@ export default function BookingsPage() {
                       </td>
 
                       <td className="p-4">{booking.travel_date}</td>
+                      <td className="p-4">{booking.payment_method}</td>
 
                       <td className="p-4 font-semibold">{currency.format(booking.total_cost)}</td>
 
                       <td className="p-4">
-                        <Badge className={getStatusColor(booking.status)}>{booking.status}</Badge>
+                        <Badge className={getStatusColor(booking.payment_status)}>{booking.payment_status}</Badge>
                       </td>
 
                       <td className="p-4">
@@ -356,10 +358,10 @@ export default function BookingsPage() {
               <div className="space-y-2">
                 <Label>Status</Label>
                 <Select
-                  value={selectedBooking.status}
+                  value={selectedBooking.payment_status}
                   onValueChange={(value) =>
                     setSelectedBooking((prev) =>
-                      prev ? { ...prev, status: value } : prev
+                      prev ? { ...prev, payment_status: value } : prev
                     )
                   }
                 >
