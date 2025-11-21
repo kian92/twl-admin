@@ -183,41 +183,41 @@ export interface Database {
       customer_profiles: {
         Row: {
           id: string
-          full_name: string
+          name: string
           email: string
-          membership_tier: string
-          points_balance: number
+          membershipTier: string
+          points: number
           total_bookings: number
           total_spent: number
           status: string
-          joined_at: string
+          joinedDate: string
           avatar_url: string | null
           created_at: string | null
           updated_at: string | null
         }
         Insert: {
           id: string
-          full_name: string
+          name: string
           email: string
-          membership_tier: string
+          membershipTier: string
           points_balance?: number
           total_bookings?: number
           total_spent?: number
           status?: string
-          joined_at?: string
+          joinedDate?: string
           avatar_url?: string | null
           created_at?: string | null
           updated_at?: string | null
         }
         Update: {
-          full_name?: string
+          name?: string
           email?: string
-          membership_tier?: string
+          membershipTier?: string
           points_balance?: number
           total_bookings?: number
           total_spent?: number
           status?: string
-          joined_at?: string
+          joinedDate?: string
           avatar_url?: string | null
           updated_at?: string | null
         }
