@@ -122,6 +122,7 @@ export interface Database {
           customer_phone: string | null
           booking_date: string
           travel_date: string
+          booking_status: string
           payment_status: string
           payment_method: string
           total_cost: number
@@ -136,6 +137,7 @@ export interface Database {
           customer_phone?: string | null
           booking_date?: string
           travel_date: string
+          booking_status: string
           payment_status: string
           payment_method: string
           total_cost: number
@@ -149,6 +151,7 @@ export interface Database {
           customer_phone?: string | null
           booking_date?: string
           travel_date?: string
+          booking_status: string
           payment_status?: string
           payment_method: string
           total_cost?: number

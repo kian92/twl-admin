@@ -10,11 +10,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   
   try {
     const body = await req.json();
-    const { payment_status, notes } = body;
+    const { booking_status, notes } = body;
 
     const { data, error } = await supabase
       .from("bookings")
-      .update({ payment_status, notes })
+      .update({ booking_status, notes })
       .eq("id", params.id)
       .select("*")
       .single();
