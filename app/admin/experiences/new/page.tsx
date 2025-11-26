@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CountryCombobox } from "@/components/ui/country-combobox"
-import { ArrowLeft, Plus, X } from "lucide-react"
+import { ArrowLeft, Plus, X, Upload } from "lucide-react"
 import Link from "next/link"
 import type { Database } from "@/types/database"
 import { toast } from "sonner"
@@ -20,6 +20,7 @@ type ExperienceInsert = Omit<Database["public"]["Tables"]["experiences"]["Insert
 }
 
 interface ItineraryItem {
+  day: number
   time: string
   activity: string
 }
@@ -38,7 +39,7 @@ const initialForm: ExperienceInsert = {
   price: 0,
   category: "Adventure",
   description: "",
-  image_url: "",
+  // image_url: "",
   highlights: [],
   inclusions: [],
   exclusions: [],
@@ -61,8 +62,12 @@ export default function NewExperiencePage() {
   const [exclusionsText, setExclusionsText] = useState("")
   const [notSuitableForText, setNotSuitableForText] = useState("")
   const [whatToBringText, setWhatToBringText] = useState("")
-  const [galleryText, setGalleryText] = useState("")
-  const [itinerary, setItinerary] = useState<ItineraryItem[]>([{ time: "", activity: "" }])
+  const [itinerary, setItinerary] = useState<ItineraryItem[]>([])
+  const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
+  const [galleryPreviewUrls, setGalleryPreviewUrls] = useState<string[]>([]);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [faqs, setFaqs] = useState<FAQItem[]>([{ question: "", answer: "" }])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -77,19 +82,23 @@ export default function NewExperiencePage() {
   }
 
   const addItineraryItem = () => {
-    setItinerary([...itinerary, { time: "", activity: "" }])
+    setItinerary([...itinerary, { day: 1, time: "", activity: "" }])
   }
 
   const removeItineraryItem = (index: number) => {
     setItinerary(itinerary.filter((_, i) => i !== index))
   }
 
-  const updateItineraryItem = (index: number, field: keyof ItineraryItem, value: string) => {
+  const updateItineraryItem = <K extends keyof ItineraryItem>(
+    index: number,
+    field: K,
+    value: ItineraryItem[K]
+  ) => {
     const updated = [...itinerary]
     updated[index][field] = value
     setItinerary(updated)
   }
-
+  
   const addFAQItem = () => {
     setFaqs([...faqs, { question: "", answer: "" }])
   }
@@ -104,6 +113,25 @@ export default function NewExperiencePage() {
     setFaqs(updated)
   }
 
+  const handleSelectFiles = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+  
+    const newFiles = Array.from(files);
+    
+    setGalleryFiles(prev => [...prev, ...newFiles]);
+    setGalleryPreviewUrls(prev => [
+      ...prev,
+      ...newFiles.map(file => URL.createObjectURL(file))
+    ]);
+  };
+
+  const removeImage = (index: number) => {
+    setGalleryFiles(prev => prev.filter((_, i) => i !== index));
+    setGalleryPreviewUrls(prev => prev.filter((_, i) => i !== index));
+  };
+  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     console.log("Form submitted - handleSubmit called")
@@ -111,6 +139,16 @@ export default function NewExperiencePage() {
     setError(null)
 
     try {
+      //  Upload images here
+      const uploadedUrls: string[] = [];
+      for (const file of galleryFiles) {
+        const fd = new FormData();
+        fd.append("file", file);
+        const res = await fetch("/api/admin/upload-image/bunny", { method: "POST", body: fd });
+        const data = await res.json();
+        if (data.url) uploadedUrls.push(data.url);
+      }
+
       const payload: ExperienceInsert = {
         ...form,
         price: Number.isFinite(form.price) ? form.price : 0,
@@ -119,9 +157,10 @@ export default function NewExperiencePage() {
         exclusions: exclusionsText.split("\n").filter(Boolean),
         not_suitable_for: notSuitableForText.split("\n").filter(Boolean),
         what_to_bring: whatToBringText.split("\n").filter(Boolean),
-        gallery: galleryText.split("\n").filter(Boolean),
-        itinerary: itinerary.filter(item => item.time && item.activity).length > 0
-          ? (itinerary.filter(item => item.time && item.activity) as any)
+        gallery: uploadedUrls,
+
+        itinerary: itinerary.filter(item => item.day && item.time && item.activity).length > 0
+          ? (itinerary.filter(item => item.day && item.time && item.activity) as any)
           : null,
         faqs: faqs.filter(item => item.question && item.answer).length > 0
           ? (faqs.filter(item => item.question && item.answer) as any)
@@ -271,26 +310,89 @@ export default function NewExperiencePage() {
           <CardHeader>
             <CardTitle>Images</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="image_url">Main Image URL</Label>
-              <Input
-                id="image_url"
-                placeholder="https://..."
-                value={form.image_url ?? ""}
-                onChange={handleInputChange("image_url")}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="gallery">Gallery URLs (one per line)</Label>
-              <Textarea
-                id="gallery"
-                placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
-                rows={4}
-                value={galleryText}
-                onChange={(event) => setGalleryText(event.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">Enter multiple image URLs, one per line</p>
+          <CardContent className="space-y-6">
+            <div className="space-y-4">
+
+              {/* Section Header */}
+              <div>
+                <Label>Upload Images</Label>
+                <p className="text-sm text-muted-foreground">
+                  Add multiple images for the gallery
+                </p>
+              </div>
+
+              {/* Thumbnails (only if images exist) */}
+              {galleryPreviewUrls.length > 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {galleryPreviewUrls.map((url, index) => (
+                    <div
+                      key={index}
+                      className="relative aspect-video rounded-lg overflow-hidden border group"
+                    >
+                      <img
+                        src={url}
+                        alt={`Image ${index + 1}`}
+                        className="object-cover w-full h-full"
+                      />
+
+                      {/* Labels */}
+                      {index === 0 ? (
+                        <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                          Main
+                        </div>
+                      ) : (
+                        <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                          Image {index + 1}
+                        </div>
+                      )}
+
+                      <Button
+                        type="button"
+                        size="icon"
+                        onClick={() => removeImage(index)}
+                        className="absolute top-2 right-2
+                        bg-red-500 text-white 
+                        w-8 h-8 rounded flex items-center justify-center
+                        hover:bg-red-500
+                        opacity-0 group-hover:opacity-100 
+                        transition-opacity duration-200"
+                      >
+                        <X className="w-6 h-6" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Upload Box */}
+              <div
+                className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground mb-2">
+                  Click to upload or drag and drop
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  PNG, JPG up to 10MB (multiple files allowed)
+                </p>
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleSelectFiles}
+                />
+              </div>
+
+              {/* No images message */}
+              {galleryPreviewUrls.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No images uploaded yet
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -348,41 +450,65 @@ export default function NewExperiencePage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {itinerary.map((item, index) => (
-              <div key={index} className="flex gap-4 items-start">
-                <div className="flex-1 grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor={`time-${index}`}>Time</Label>
-                    <Input
-                      id={`time-${index}`}
-                      placeholder="e.g., 02:00 AM"
-                      value={item.time}
-                      onChange={(e) => updateItineraryItem(index, "time", e.target.value)}
-                    />
+            { 
+              itinerary.length === 0 ? 
+                (
+                  <div className="flex items-center justify-center py-10">
+                    <p className="text-sm text-muted-foreground text-center">
+                      No itinerary items yet. Click "Add Item" to create one.
+                    </p>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor={`activity-${index}`}>Activity</Label>
-                    <Input
-                      id={`activity-${index}`}
-                      placeholder="e.g., Hotel pickup"
-                      value={item.activity}
-                      onChange={(e) => updateItineraryItem(index, "activity", e.target.value)}
-                    />
+                )
+              :
+                itinerary.map((item, index) => (
+                  <div key={index} className="flex gap-4 items-start">
+                    <div className="flex-1 grid gap-4 md:grid-cols-3">
+                      {/* Day Field */}
+                      <div className="space-y-2">
+                        <Label htmlFor={`day-${index}`}>Day</Label>
+                        <Input
+                          id={`day-${index}`}
+                          type="number"
+                          min={1}
+                          value={item.day.toString()} // Convert number -> string
+                          onChange={(e) =>
+                            updateItineraryItem(index, "day", Number(e.target.value))
+                          }
+                        />
+                      </div>
+                      {/* Time Field */}
+                      <div className="space-y-2">
+                        <Label htmlFor={`time-${index}`}>Time</Label>
+                        <Input
+                          id={`time-${index}`}
+                          placeholder="e.g., 02:00 AM"
+                          value={item.time}
+                          onChange={(e) => updateItineraryItem(index, "time", e.target.value)}
+                        />
+                      </div>
+                      {/* Activity Field */}
+                      <div className="space-y-2">
+                        <Label htmlFor={`activity-${index}`}>Activity</Label>
+                        <Input
+                          id={`activity-${index}`}
+                          placeholder="e.g., Hotel pickup"
+                          value={item.activity}
+                          onChange={(e) => updateItineraryItem(index, "activity", e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeItineraryItem(index)}
+                      className="mt-5"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
                   </div>
-                </div>
-                {itinerary.length > 1 && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeItineraryItem(index)}
-                    className="mt-8"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                )}
-              </div>
-            ))}
+                ))
+            }
           </CardContent>
         </Card>
 

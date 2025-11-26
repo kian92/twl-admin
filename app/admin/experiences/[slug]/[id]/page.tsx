@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import React, { useRef } from "react"
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -20,6 +20,7 @@ import { toast } from "sonner"
 type ExperienceRow = Database["public"]["Tables"]["experiences"]["Row"]
 
 interface ItineraryItem {
+  day: number
   time: string
   activity: string
 }
@@ -37,7 +38,7 @@ interface FormState {
   duration: string
   price: string
   category: string
-  image_url: string
+  // image_url: string
   highlights: string
   inclusions: string
   exclusions: string
@@ -55,12 +56,20 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
   const router = useRouter()
   const [experience, setExperience] = useState<ExperienceRow | null>(null)
   const [form, setForm] = useState<FormState | null>(null)
-  const [itinerary, setItinerary] = useState<ItineraryItem[]>([{ time: "", activity: "" }])
+  const [itinerary, setItinerary] = useState<ItineraryItem[]>([])
+
   const [faqs, setFaqs] = useState<FAQItem[]>([{ question: "", answer: "" }])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { slug, id } = React.use(params) 
+
+  // Gallery
+  const [galleryPreviewUrls, setGalleryPreviewUrls] = useState<string[]>([])
+  const [galleryFiles, setGalleryFiles] = useState<File[]>([])
+  const [existingGallery, setExistingGallery] = useState<string[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
 
   useEffect(() => {
     let isMounted = true
@@ -94,7 +103,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
           duration: experienceData.duration,
           price: experienceData.price.toString(),
           category: experienceData.category,
-          image_url: experienceData.image_url ?? "",
+          // image_url: experienceData.image_url ?? "",
           highlights: (experienceData.highlights ?? []).join("\n"),
           inclusions: (experienceData.inclusions ?? []).join("\n"),
           exclusions: (experienceData.exclusions ?? []).join("\n"),
@@ -105,10 +114,17 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
           cancellation_policy: experienceData.cancellation_policy ?? "",
         })
 
+        // Load gallery (FULL URLs)
+        if (Array.isArray(data.gallery)) {
+          setGalleryPreviewUrls(data.gallery)
+          setExistingGallery(data.gallery) // Full URLs
+        }
+
+
         // Load itinerary if exists
         if (experienceData.itinerary && Array.isArray(experienceData.itinerary)) {
           const itineraryData = experienceData.itinerary as unknown as ItineraryItem[]
-          setItinerary(itineraryData.length > 0 ? itineraryData : [{ time: "", activity: "" }])
+          setItinerary(itineraryData.length > 0 ? itineraryData : [{ day: 1, time: "", activity: "" }])
         }
 
         // Load FAQs if exists
@@ -144,14 +160,18 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
   }
 
   const addItineraryItem = () => {
-    setItinerary([...itinerary, { time: "", activity: "" }])
+    setItinerary([...itinerary, { day: 1, time: "", activity: "" }])
   }
 
   const removeItineraryItem = (index: number) => {
     setItinerary(itinerary.filter((_, i) => i !== index))
   }
 
-  const updateItineraryItem = (index: number, field: keyof ItineraryItem, value: string) => {
+  const updateItineraryItem = <K extends keyof ItineraryItem>(
+    index: number,
+    field: K,
+    value: ItineraryItem[K]
+  ) => {
     const updated = [...itinerary]
     updated[index][field] = value
     setItinerary(updated)
@@ -171,6 +191,35 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
     setFaqs(updated)
   }
 
+  const handleSelectFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files) return
+
+    const newFiles = Array.from(files)
+    const newUrls = newFiles.map((file) => URL.createObjectURL(file))
+
+    setGalleryFiles((prev) => [...prev, ...newFiles])
+    setGalleryPreviewUrls((prev) => [...prev, ...newUrls])
+  }
+
+  // Remove image
+  const removeImage = (index: number) => {
+    const url = galleryPreviewUrls[index]
+
+    // If existing URL, remove from existingGallery
+    if (!url.startsWith("blob:")) {
+      setExistingGallery((prev) => prev.filter((item) => item !== url))
+    } else {
+      // Remove file
+      setGalleryFiles((prev) => prev.filter((_, i) => i !== index))
+    }
+
+    // Remove preview
+    setGalleryPreviewUrls((prev) => prev.filter((_, i) => i !== index))
+  }
+  
+  
+
   const highlightsList = useMemo(() => form?.highlights.split("\n").filter(Boolean) ?? [], [form])
   const inclusionsList = useMemo(() => form?.inclusions.split("\n").filter(Boolean) ?? [], [form])
   const exclusionsList = useMemo(() => form?.exclusions.split("\n").filter(Boolean) ?? [], [form])
@@ -184,6 +233,27 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
     setSaving(true)
     setError(null)
     try {
+      // Upload new images
+      const uploadedUrls: string[] = []
+
+      for (const file of galleryFiles) {
+        const fd = new FormData()
+        fd.append("file", file)
+
+        const res = await fetch("/api/admin/upload-image/bunny", {
+          method: "POST",
+          body: fd,
+        })
+
+        const data = await res.json()
+        if (data.url) uploadedUrls.push(data.url) // full URL
+      }
+
+      // Combine full URLs
+      const updatedGallery = [...existingGallery, ...uploadedUrls]
+
+
+      // Step 2: Prepare payload with uploaded gallery filenames
       const payload = {
         title: form.title,
         location: form.location,
@@ -192,23 +262,24 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
         duration: form.duration,
         price: Number.parseFloat(form.price),
         category: form.category,
-        image_url: form.image_url,
+        // image_url: form.image_url,
         highlights: highlightsList,
         inclusions: inclusionsList,
         exclusions: exclusionsList,
         not_suitable_for: notSuitableForList,
         meeting_point: form.meeting_point,
         what_to_bring: whatToBringList,
-        gallery: galleryList,
+        gallery: updatedGallery,
         cancellation_policy: form.cancellation_policy,
         itinerary:
-          itinerary.filter((item) => item.time && item.activity).length > 0
-            ? itinerary.filter((item) => item.time && item.activity)
+          itinerary.filter((item) => item.day && item.time && item.activity).length > 0
+            ? itinerary.filter((item) => item.day && item.time && item.activity)
             : null,
         faqs:
           faqs.filter((item) => item.question && item.answer).length > 0 ? faqs.filter((item) => item.question && item.answer) : null,
       }
 
+     // Step 3: Update experience
       const response = await fetch(`/api/admin/experiences/${experience.slug}/${experience.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -352,46 +423,55 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
           </CardContent>
         </Card>
 
+        {/* Gallery Section */}
         <Card>
           <CardHeader>
-            <CardTitle>Current Image</CardTitle>
+            <CardTitle>Images</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="relative h-64 rounded-lg overflow-hidden">
-              <Image src={form.image_url || "/placeholder.svg"} alt={form.title} fill className="object-cover" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="image_url">Image URL</Label>
-              <Input
-                id="image_url"
-                placeholder="https://..."
-                value={form.image_url}
-                onChange={handleChange("image_url")}
-              />
-            </div>
-            <div className="border-2 border-dashed rounded-lg p-8 text-center">
-              <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground mb-2">Image uploads coming soon</p>
-              <p className="text-xs text-muted-foreground">Use the image URL field above to update imagery.</p>
-            </div>
-          </CardContent>
-        </Card>
+          <CardContent className="space-y-6">
+            <div className="space-y-4">
+              <div>
+                <Label>Upload Images</Label>
+                <p className="text-sm text-muted-foreground">Add multiple images for the gallery</p>
+              </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Gallery</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="gallery">Gallery URLs (one per line)</Label>
-              <Textarea
-                id="gallery"
-                placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
-                rows={4}
-                value={form.gallery}
-                onChange={handleChange("gallery")}
-              />
-              <p className="text-xs text-muted-foreground">Enter multiple image URLs, one per line</p>
+              {/* Thumbnails */}
+              {galleryPreviewUrls.length > 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {galleryPreviewUrls.map((url, index) => (
+                    <div key={index} className="relative aspect-video rounded-lg overflow-hidden border group">
+                      <img src={url} alt={`Image ${index + 1}`} className="object-cover w-full h-full" />
+                      <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                        {index === 0 ? "Main" : `Image ${index + 1}`}
+                      </div>
+                      <Button
+                        type="button"
+                        size="icon"
+                        onClick={() => removeImage(index)}
+                        className="absolute top-2 right-2 bg-red-500 text-white w-8 h-8 rounded flex items-center justify-center hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                      >
+                        <X className="w-6 h-6" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Upload Box */}
+              <div
+                className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground mb-2">Click to upload or drag and drop</p>
+                <p className="text-xs text-muted-foreground">PNG, JPG up to 10MB (multiple files allowed)</p>
+                <input ref={fileInputRef} type="file" multiple accept="image/*" className="hidden" onChange={handleSelectFiles} />
+              </div>
+
+              {/* No images message */}
+              {galleryPreviewUrls.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">No images uploaded yet</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -447,41 +527,65 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {itinerary.map((item, index) => (
-              <div key={index} className="flex gap-4 items-start">
-                <div className="flex-1 grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor={`time-${index}`}>Time</Label>
-                    <Input
-                      id={`time-${index}`}
-                      placeholder="e.g., 02:00 AM"
-                      value={item.time}
-                      onChange={(e) => updateItineraryItem(index, "time", e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor={`activity-${index}`}>Activity</Label>
-                    <Input
-                      id={`activity-${index}`}
-                      placeholder="e.g., Hotel pickup"
-                      value={item.activity}
-                      onChange={(e) => updateItineraryItem(index, "activity", e.target.value)}
-                    />
-                  </div>
+            {
+              itinerary.length === 0 ? 
+              (
+                <div className="flex items-center justify-center py-10">
+                  <p className="text-sm text-muted-foreground text-center">
+                    No itinerary items yet. Click "Add Item" to create one.
+                  </p>
                 </div>
-                {itinerary.length > 1 && (
+              )
+              :
+              itinerary.map((item, index) => (
+                <div key={index} className="flex gap-4 items-start">
+                  <div className="flex-1 grid gap-4 md:grid-cols-3">
+                    {/* Day Field */}
+                    <div className="space-y-2">
+                      <Label htmlFor={`day-${index}`}>Day</Label>
+                      <Input
+                        id={`day-${index}`}
+                        type="number"
+                        min={1}
+                        value={item.day}
+                        onChange={(e) =>
+                          updateItineraryItem(index, "day", Number(e.target.value))
+                        }
+                      />
+                    </div>
+                    {/* Time Field */}
+                    <div className="space-y-2">
+                      <Label htmlFor={`time-${index}`}>Time</Label>
+                      <Input
+                        id={`time-${index}`}
+                        placeholder="e.g., 02:00 AM"
+                        value={item.time}
+                        onChange={(e) => updateItineraryItem(index, "time", e.target.value)}
+                      />
+                    </div>
+                    {/* Activity Field */}
+                    <div className="space-y-2">
+                      <Label htmlFor={`activity-${index}`}>Activity</Label>
+                      <Input
+                        id={`activity-${index}`}
+                        placeholder="e.g., Hotel pickup"
+                        value={item.activity}
+                        onChange={(e) => updateItineraryItem(index, "activity", e.target.value)}
+                      />
+                    </div>
+                  </div>
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
                     onClick={() => removeItineraryItem(index)}
-                    className="mt-8"
+                    className="mt-5"
                   >
                     <X className="w-4 h-4" />
                   </Button>
-                )}
-              </div>
-            ))}
+                </div>
+              ))
+            }
           </CardContent>
         </Card>
 
