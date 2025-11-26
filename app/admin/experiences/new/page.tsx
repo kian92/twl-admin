@@ -144,7 +144,7 @@ export default function NewExperiencePage() {
       for (const file of galleryFiles) {
         const fd = new FormData();
         fd.append("file", file);
-        const res = await fetch("/api/admin/upload-image/bunny", { method: "POST", body: fd });
+        const res = await fetch("/api/admin/bunny/upload-image", { method: "POST", body: fd });
         const data = await res.json();
         if (data.url) uploadedUrls.push(data.url);
       }

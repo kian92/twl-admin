@@ -203,20 +203,34 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
   }
 
   // Remove image
-  const removeImage = (index: number) => {
-    const url = galleryPreviewUrls[index]
-
-    // If existing URL, remove from existingGallery
+  const removeImage = async (index: number) => {
+    const url = galleryPreviewUrls[index];
+  
+    // If it's an existing Bunny file, delete it
     if (!url.startsWith("blob:")) {
-      setExistingGallery((prev) => prev.filter((item) => item !== url))
+  
+      // DELETE from Bunny
+      try {
+        await fetch("/api/admin/bunny/delete-image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url }),
+        });
+      } catch (err) {
+        console.error("Failed to delete image from Bunny:", err);
+      }
+  
+      // Remove from existing gallery
+      setExistingGallery(prev => prev.filter(item => item !== url));
     } else {
-      // Remove file
-      setGalleryFiles((prev) => prev.filter((_, i) => i !== index))
+      // It's a new blob: image → remove from new file list
+      setGalleryFiles(prev => prev.filter((_, i) => i !== index));
     }
-
-    // Remove preview
-    setGalleryPreviewUrls((prev) => prev.filter((_, i) => i !== index))
-  }
+  
+    // Remove preview entry
+    setGalleryPreviewUrls(prev => prev.filter((_, i) => i !== index));
+  };
+  
   
   
 
@@ -240,7 +254,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
         const fd = new FormData()
         fd.append("file", file)
 
-        const res = await fetch("/api/admin/upload-image/bunny", {
+        const res = await fetch("/api/admin/bunny/upload-image", {
           method: "POST",
           body: fd,
         })

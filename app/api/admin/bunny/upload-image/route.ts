@@ -35,8 +35,7 @@ export async function POST(req: Request) {
     }
 
     const cdnHost = process.env.NEXT_PUBLIC_BUNNY_CDN_HOST!.replace("https://", "");
-
-    const cdnUrl = `https://${cdnHost}/${fileName}`;
+    const cdnUrl = `https://${cdnHost}/${folder}/${fileName}`;
 
     return NextResponse.json({ url: cdnUrl });
   } catch (error) {
