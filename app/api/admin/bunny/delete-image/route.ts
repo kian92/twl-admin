@@ -6,9 +6,7 @@ export async function POST(req: Request) {
 
     if (!url) {
       return NextResponse.json({ error: "URL is required" }, { status: 400 });
-    }
-    console.log('url', url);
-    
+    }    
 
     // Example URL:
     // https://twl-media.b-cdn.net/development/12345-photo.png

@@ -46,7 +46,7 @@ export interface Database {
           duration: string
           price: number
           category: string
-          image_url: string | null
+          // image_url: string | null
           rating: number | null
           review_count: number | null
           description: string | null
@@ -72,7 +72,7 @@ export interface Database {
           duration: string
           price: number
           category: string
-          image_url?: string | null
+          // image_url?: string | null
           rating?: number | null
           review_count?: number | null
           description?: string | null
@@ -97,7 +97,7 @@ export interface Database {
           duration?: string
           price?: number
           category?: string
-          image_url?: string | null
+          // image_url?: string | null
           rating?: number | null
           review_count?: number | null
           description?: string | null

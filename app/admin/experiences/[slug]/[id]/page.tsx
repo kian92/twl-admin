@@ -190,17 +190,63 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
     updated[index][field] = value
     setFaqs(updated)
   }
+  const handleSelectFiles = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+  
+    const acceptedTypes = ["image/jpeg", "image/png"];
+    const maxSize = 10 * 1024 * 1024; // 10MB
+  
+    const validFiles: File[] = [];
+  
+    for (const file of files) {
+      // Prevent duplicate filenames (same name + same size)
+      const alreadyExists =
+        galleryFiles.some(
+          (f) => f.name === file.name && f.size === file.size
+        );
+  
+      if (alreadyExists) {
+        toast.error(`"${file.name}" is already added.`);
+        continue;
+      }
+  
+      // Type validation
+      if (!acceptedTypes.includes(file.type)) {
+        toast.error(`"${file.name}" is not a valid image. Only PNG & JPG allowed.`);
+        continue;
+      }
+  
+      //  Size validation
+      if (file.size > maxSize) {
+        toast.error(`"${file.name}" is too large. Max allowed size is 10MB.`);
+        continue;
+      }
+  
+      validFiles.push(file);
+    }
+  
+    if (validFiles.length > 0) {
+      setGalleryFiles((prev) => [...prev, ...validFiles]);
+      setGalleryPreviewUrls((prev) => [
+        ...prev,
+        ...validFiles.map((file) => URL.createObjectURL(file)),
+      ]);
+    }
+  
+    // Reset input so choosing same file AGAIN works
+    event.target.value = "";
+  };
+  // const handleSelectFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const files = e.target.files
+  //   if (!files) return
 
-  const handleSelectFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (!files) return
+  //   const newFiles = Array.from(files)
+  //   const newUrls = newFiles.map((file) => URL.createObjectURL(file))
 
-    const newFiles = Array.from(files)
-    const newUrls = newFiles.map((file) => URL.createObjectURL(file))
-
-    setGalleryFiles((prev) => [...prev, ...newFiles])
-    setGalleryPreviewUrls((prev) => [...prev, ...newUrls])
-  }
+  //   setGalleryFiles((prev) => [...prev, ...newFiles])
+  //   setGalleryPreviewUrls((prev) => [...prev, ...newUrls])
+  // }
 
   // Remove image
   const removeImage = async (index: number) => {
