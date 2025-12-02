@@ -12,6 +12,7 @@ const normalizeStringArray = (values?: string[] | null) => {
 }
 
 const itineraryItemSchema = z.object({
+  day: z.number().min(1),
   time: z.string().min(1),
   activity: z.string().min(1),
 })
@@ -29,7 +30,7 @@ export const experiencePayloadSchema = z.object({
   price: z.number().nonnegative(),
   category: z.string().min(1),
   description: z.string().optional().nullable(),
-  image_url: z.string().url().optional().nullable(),
+  // image_url: z.string().url().optional().nullable(),
   highlights: z.array(z.string()).optional().nullable(),
   inclusions: z.array(z.string()).optional().nullable(),
   exclusions: z.array(z.string()).optional().nullable(),
@@ -50,6 +51,7 @@ const normalizeItinerary = (values?: ExperiencePayload["itinerary"]) => {
   if (!values) return null
   const cleaned = values
     .map((item) => ({
+      day: item.day, 
       time: item.time.trim(),
       activity: item.activity.trim(),
     }))
@@ -77,7 +79,7 @@ export function normalizeExperiencePayload(payload: ExperiencePayload): Experien
     price: payload.price,
     category: payload.category,
     description: payload.description ?? null,
-    image_url: trimString(payload.image_url),
+    // image_url: trimString(payload.image_url),
     highlights: normalizeStringArray(payload.highlights),
     inclusions: normalizeStringArray(payload.inclusions),
     exclusions: normalizeStringArray(payload.exclusions),

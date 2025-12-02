@@ -4,8 +4,20 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    unoptimized: true,
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "twl-media.b-cdn.net",
+        pathname: "/development/**",  
+      },
+      {
+        protocol: "https",
+        hostname: "twl-media.b-cdn.net",
+        pathname: "/production/**",  
+      },
+    ],
   },
+  
 }
 
 export default nextConfig

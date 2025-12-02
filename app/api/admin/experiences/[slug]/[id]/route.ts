@@ -131,26 +131,58 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const supabase = await createSupabaseServerClient()
+    const supabase = await createSupabaseServerClient();
     const {
       data: { session },
-    } = await supabase.auth.getSession()
+    } = await supabase.auth.getSession();
 
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = await params
-    const { error } = await supabase.from("experiences").delete().eq("id", id)
+    const { id } = await params;
+
+    // Fetch experience with gallery
+    const { data: experience, error: fetchError } = await supabase
+      .from("experiences")
+      .select("gallery")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (fetchError || !experience) {
+      return NextResponse.json({ error: "Experience not found" }, { status: 404 });
+    }
+
+    const gallery: string[] = experience?.gallery ?? [];
+
+    // Delete Bunny images (parallel)
+    await Promise.all(
+      gallery.map(async (file) => {
+        // file may be "filename.jpg" or a full CDN URL
+        const url = file.startsWith("http")
+          ? file
+          : `https://${process.env.NEXT_PUBLIC_BUNNY_CDN_HOST}/${process.env.BUNNY_FOLDER}/${file}`;
+
+        await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/admin/bunny/delete-image`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url }),
+        });
+      })
+    );
+
+    // Delete experience record
+    const { error } = await supabase.from("experiences").delete().eq("id", id);
 
     if (error) {
-      console.error("Failed to delete experience", error)
-      return NextResponse.json({ error: "Failed to delete experience" }, { status: 500 })
+      console.error("Failed to delete experience", error);
+      return NextResponse.json({ error: "Failed to delete experience" }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Unexpected experience delete error", error)
-    return NextResponse.json({ error: "Unexpected error" }, { status: 500 })
+    console.error("Unexpected experience delete error", error);
+    return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
   }
 }
+

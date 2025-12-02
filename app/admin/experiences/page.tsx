@@ -149,7 +149,7 @@ export default function ExperiencesPage() {
             <Card key={experience.id} className="overflow-hidden">
               <div className="relative h-48">
                 <Image
-                  src={experience.image_url || "/placeholder.svg"}
+                  src={experience.gallery?.[0] || "/placeholder.svg"}
                   alt={experience.title}
                   fill
                   className="object-cover"
