@@ -26,7 +26,7 @@ const roleDescriptions: Record<string, string> = {
 const ROLE_OPTIONS: Array<{ label: string; value: "admin" | "manager" | "support" | "sales" }> = [
   { label: "Administrator", value: "admin" },
   { label: "Manager", value: "manager" },
-  { label: "Support", value: "support" },
+  // { label: "Support", value: "support" }, // Hidden from UI
   { label: "Sales", value: "sales" },
 ]
 
@@ -62,7 +62,7 @@ export default function StaffPage() {
   const [inviteEmail, setInviteEmail] = useState("")
   const [inviteName, setInviteName] = useState("")
   const [invitePassword, setInvitePassword] = useState("")
-  const [inviteRole, setInviteRole] = useState<"admin" | "manager" | "support" | "sales">("support")
+  const [inviteRole, setInviteRole] = useState<"admin" | "manager" | "support" | "sales">("sales")
   const [inviteStatus, setInviteStatus] = useState<{ type: "success" | "error"; message: string } | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
