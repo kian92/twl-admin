@@ -13,7 +13,7 @@ export interface Database {
         Row: {
           id: string
           full_name: string | null
-          role: string | null
+          role: "admin" | "manager" | "support" | "sales" | null
           avatar_url: string | null
           is_active: boolean
           created_at: string | null
@@ -22,7 +22,7 @@ export interface Database {
         Insert: {
           id: string
           full_name?: string | null
-          role?: string | null
+          role?: "admin" | "manager" | "support" | "sales" | null
           avatar_url?: string | null
           is_active?: boolean
           created_at?: string | null
@@ -30,7 +30,7 @@ export interface Database {
         }
         Update: {
           full_name?: string | null
-          role?: string | null
+          role?: "admin" | "manager" | "support" | "sales" | null
           avatar_url?: string | null
           is_active?: boolean
           updated_at?: string | null
@@ -312,6 +312,129 @@ export interface Database {
           multiplier?: number | null
           status?: string
           ends_at?: string | null
+          updated_at?: string | null
+        }
+      }
+      payment_links: {
+        Row: {
+          id: string
+          title: string
+          description: string | null
+          destination: string
+          destination_description: string | null
+          price: number
+          currency: string
+          link_code: string
+          status: string
+          created_by: string
+          expires_at: string | null
+          max_uses: number | null
+          current_uses: number
+          custom_fields: Json | null
+          image_url: string | null
+          billing_type: string
+          recurring_interval: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          title: string
+          description?: string | null
+          destination: string
+          destination_description?: string | null
+          price: number
+          currency?: string
+          link_code: string
+          status?: string
+          created_by: string
+          expires_at?: string | null
+          max_uses?: number | null
+          current_uses?: number
+          custom_fields?: Json | null
+          image_url?: string | null
+          billing_type?: string
+          recurring_interval?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          title?: string
+          description?: string | null
+          destination?: string
+          destination_description?: string | null
+          price?: number
+          currency?: string
+          status?: string
+          expires_at?: string | null
+          max_uses?: number | null
+          current_uses?: number
+          custom_fields?: Json | null
+          image_url?: string | null
+          billing_type?: string
+          recurring_interval?: string | null
+          updated_at?: string | null
+        }
+      }
+      payment_submissions: {
+        Row: {
+          id: string
+          payment_link_id: string
+          stripe_session_id: string | null
+          stripe_payment_intent_id: string | null
+          first_name: string
+          last_name: string
+          email: string
+          phone_country_code: string
+          phone_number: string
+          travel_date: string
+          travelers: number
+          notes: string | null
+          amount: number
+          currency: string
+          payment_status: string
+          receipt_url: string | null
+          agree_to_terms: boolean
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          payment_link_id: string
+          stripe_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          first_name: string
+          last_name: string
+          email: string
+          phone_country_code?: string
+          phone_number: string
+          travel_date: string
+          travelers?: number
+          notes?: string | null
+          amount: number
+          currency?: string
+          payment_status?: string
+          receipt_url?: string | null
+          agree_to_terms?: boolean
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          stripe_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          first_name?: string
+          last_name?: string
+          email?: string
+          phone_country_code?: string
+          phone_number?: string
+          travel_date?: string
+          travelers?: number
+          notes?: string | null
+          amount?: number
+          currency?: string
+          payment_status?: string
+          receipt_url?: string | null
+          agree_to_terms?: boolean
           updated_at?: string | null
         }
       }

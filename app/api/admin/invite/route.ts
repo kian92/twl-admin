@@ -8,7 +8,7 @@ const inviteSchema = z.object({
   email: z.string().email(),
   full_name: z.string().min(2).max(120),
   password: z.string().min(6),
-  role: z.enum(["admin", "manager", "support"]),
+  role: z.enum(["admin", "manager", "support", "sales"]),
 })
 
 export async function POST(request: Request) {

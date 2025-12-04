@@ -20,12 +20,14 @@ const roleDescriptions: Record<string, string> = {
   admin: "Full access to manage settings, staff, and platform configuration.",
   manager: "Manage experiences, bookings, and customer operations.",
   support: "View data needed for support workflows.",
+  sales: "Access to payment links, submissions, and settings only.",
 }
 
-const ROLE_OPTIONS: Array<{ label: string; value: "admin" | "manager" | "support" }> = [
+const ROLE_OPTIONS: Array<{ label: string; value: "admin" | "manager" | "support" | "sales" }> = [
   { label: "Administrator", value: "admin" },
   { label: "Manager", value: "manager" },
   { label: "Support", value: "support" },
+  { label: "Sales", value: "sales" },
 ]
 
 const formatDate = (value?: string | null) => {
@@ -43,6 +45,8 @@ const roleBadgeStyles = (role: string) => {
       return "bg-rose-100 text-rose-700"
     case "manager":
       return "bg-blue-100 text-blue-700"
+    case "sales":
+      return "bg-purple-100 text-purple-700"
     case "support":
     default:
       return "bg-emerald-100 text-emerald-700"
@@ -58,7 +62,7 @@ export default function StaffPage() {
   const [inviteEmail, setInviteEmail] = useState("")
   const [inviteName, setInviteName] = useState("")
   const [invitePassword, setInvitePassword] = useState("")
-  const [inviteRole, setInviteRole] = useState<"admin" | "manager" | "support">("support")
+  const [inviteRole, setInviteRole] = useState<"admin" | "manager" | "support" | "sales">("support")
   const [inviteStatus, setInviteStatus] = useState<{ type: "success" | "error"; message: string } | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
