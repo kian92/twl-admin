@@ -19,6 +19,8 @@ export function ExperienceCard({ experience }: ExperienceCardProps) {
   const { isFavorite, toggleFavorite } = useFavorites()
   const { isAuthenticated } = useAuth()
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
+  const adultPrice = Number.isFinite(experience.adult_price) ? experience.adult_price : experience.price ?? 0
+  const childPrice = Number.isFinite(experience.child_price) ? experience.child_price : adultPrice * 0.7
 
   const handleToggleFavorite = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -78,7 +80,10 @@ export function ExperienceCard({ experience }: ExperienceCardProps) {
             <div className="flex items-center justify-between pt-4 border-t">
               <div>
                 <span className="text-xs text-muted-foreground uppercase tracking-wide">From</span>
-                <div className="text-xl font-semibold">${experience.price}</div>
+                <div className="text-sm text-muted-foreground leading-tight">
+                  <div className="font-semibold text-lg text-foreground">${adultPrice} adult</div>
+                  <div>${childPrice} child</div>
+                </div>
               </div>
             </div>
           </CardContent>

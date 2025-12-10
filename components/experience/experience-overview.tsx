@@ -21,7 +21,9 @@ interface ExperienceOverviewProps {
     title: string
     location: string
     duration: string
-    price: number
+    adult_price: number
+    child_price: number
+    price?: number
     category: string
     rating: number
     reviewCount: number
@@ -39,6 +41,9 @@ export function ExperienceOverview({ experience }: ExperienceOverviewProps) {
   const [selectedDate, setSelectedDate] = useState<Date>()
   const [adults, setAdults] = useState(2)
   const [children, setChildren] = useState(0)
+  const adultPrice = Number.isFinite(experience.adult_price) ? experience.adult_price : experience.price ?? 0
+  const childPrice = Number.isFinite(experience.child_price) ? experience.child_price : adultPrice * 0.7
+  const totalPrice = adultPrice * adults + childPrice * children
 
   const handleAddToTrip = () => {
     if (!selectedDate) {
@@ -60,7 +65,6 @@ export function ExperienceOverview({ experience }: ExperienceOverviewProps) {
 
   const isInTrip = tripItems.some((item) => item.id === experience.id)
   const favorited = isFavorite(experience.id)
-  const totalPrice = experience.price * adults + experience.price * 0.7 * children
 
   return (
     <>
@@ -127,8 +131,8 @@ export function ExperienceOverview({ experience }: ExperienceOverviewProps) {
               <Card className="p-6 sticky top-24">
                 <div className="mb-6">
                   <div className="text-sm text-muted-foreground mb-1">From</div>
-                  <div className="text-3xl font-bold">${experience.price}</div>
-                  <div className="text-sm text-muted-foreground">per person</div>
+                  <div className="text-3xl font-bold">${adultPrice}</div>
+                  <div className="text-sm text-muted-foreground">Adult · Child ${childPrice}</div>
                 </div>
 
                 {/* Date Selection */}
@@ -230,8 +234,8 @@ export function ExperienceOverview({ experience }: ExperienceOverviewProps) {
                   </div>
                   {children > 0 && (
                     <div className="text-xs text-muted-foreground mt-1">
-                      {adults} adult{adults > 1 ? "s" : ""} × ${experience.price} + {children} child
-                      {children > 1 ? "ren" : ""} × ${(experience.price * 0.7).toFixed(2)}
+                      {adults} adult{adults > 1 ? "s" : ""} × ${adultPrice.toFixed(2)} + {children} child
+                      {children > 1 ? "ren" : ""} × ${childPrice.toFixed(2)}
                     </div>
                   )}
                 </div>

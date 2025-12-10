@@ -37,6 +37,8 @@ const initialForm: ExperienceInsert = {
   country: "Indonesia",
   duration: "",
   price: 0,
+  adult_price: 0,
+  child_price: 0,
   category: "Adventure",
   description: "",
   // image_url: "",
@@ -73,8 +75,15 @@ export default function NewExperiencePage() {
   const [error, setError] = useState<string | null>(null)
 
   const handleInputChange = (field: keyof ExperienceInsert) => (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = field === "price" ? Number.parseFloat(event.target.value) : event.target.value
-    setForm((prev) => ({ ...prev, [field]: value }))
+    const numericField = field === "price" || field === "adult_price" || field === "child_price"
+    const value = numericField ? Number.parseFloat(event.target.value) : event.target.value
+    setForm((prev) => {
+      const next = { ...prev, [field]: value }
+      if (field === "adult_price") {
+        next.price = Number.isFinite(value as number) ? (value as number) : 0
+      }
+      return next
+    })
   }
 
   const handleSelectChange = (field: keyof ExperienceInsert) => (value: string) => {
@@ -184,9 +193,14 @@ export default function NewExperiencePage() {
         if (data.url) uploadedUrls.push(data.url);
       }
 
+      const adultPrice = Number.isFinite(form.adult_price) ? form.adult_price : 0
+      const childPrice = Number.isFinite(form.child_price) ? form.child_price : 0
+
       const payload: ExperienceInsert = {
         ...form,
-        price: Number.isFinite(form.price) ? form.price : 0,
+        price: adultPrice,
+        adult_price: adultPrice,
+        child_price: childPrice,
         highlights: highlightsText.split("\n").filter(Boolean),
         inclusions: inclusionsText.split("\n").filter(Boolean),
         exclusions: exclusionsText.split("\n").filter(Boolean),
@@ -297,7 +311,7 @@ export default function NewExperiencePage() {
               />
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>
                 <Select value={form.category ?? ""} onValueChange={handleSelectChange("category")} required>
@@ -324,13 +338,26 @@ export default function NewExperiencePage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="price">Price (USD)</Label>
+                <Label htmlFor="adult-price">Adult Price (USD)</Label>
                 <Input
-                  id="price"
+                  id="adult-price"
                   type="number"
                   placeholder="85"
-                  value={Number.isFinite(form.price) ? form.price : ""}
-                  onChange={handleInputChange("price")}
+                  value={Number.isFinite(form.adult_price) ? form.adult_price : ""}
+                  onChange={handleInputChange("adult_price")}
+                  min="0"
+                  step="1"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="child-price">Child Price (USD)</Label>
+                <Input
+                  id="child-price"
+                  type="number"
+                  placeholder="60"
+                  value={Number.isFinite(form.child_price) ? form.child_price : ""}
+                  onChange={handleInputChange("child_price")}
                   min="0"
                   step="1"
                   required

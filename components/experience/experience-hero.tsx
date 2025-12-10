@@ -15,7 +15,9 @@ interface ExperienceHeroProps {
     title: string
     location: string
     duration: string
-    price: number
+    adult_price: number
+    child_price: number
+    price?: number
     image: string
     category: string
     rating: number
@@ -31,6 +33,8 @@ export function ExperienceHero({ experience }: ExperienceHeroProps) {
   const { isAuthenticated } = useAuth()
   const [justAdded, setJustAdded] = useState(false)
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
+  const adultPrice = Number.isFinite(experience.adult_price) ? experience.adult_price : experience.price ?? 0
+  const childPrice = Number.isFinite(experience.child_price) ? experience.child_price : adultPrice * 0.7
 
   const handleAddToTrip = () => {
     // Default booking date is today, with 1 adult and 0 children for quick adds from the hero section.
@@ -115,8 +119,8 @@ export function ExperienceHero({ experience }: ExperienceHeroProps) {
                 <div className="bg-muted/50 rounded-xl p-6 border border-border">
                   <div className="mb-6">
                     <div className="text-sm text-muted-foreground mb-1">From</div>
-                    <div className="text-4xl font-bold">${experience.price}</div>
-                    <div className="text-sm text-muted-foreground">per person</div>
+                    <div className="text-4xl font-bold">${adultPrice}</div>
+                    <div className="text-sm text-muted-foreground">Adult · Child ${childPrice}</div>
                   </div>
 
                   <Button

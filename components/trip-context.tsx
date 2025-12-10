@@ -7,7 +7,9 @@ export interface Experience {
   title: string
   location: string
   duration: string
-  price: number
+  adult_price: number
+  child_price: number
+  price?: number
   image: string
   category: string
   rating: number
@@ -56,7 +58,13 @@ export function TripProvider({ children }: { children: ReactNode }) {
       if (prev.find((item) => item.id === experience.id)) {
         return prev
       }
-      const totalPrice = experience.price * adults + experience.price * 0.7 * children
+      const adultPrice = Number.isFinite(experience.adult_price) ? experience.adult_price : experience.price ?? 0
+      const childPrice = Number.isFinite(experience.child_price)
+        ? experience.child_price
+        : Number.isFinite(experience.price)
+          ? experience.price * 0.7
+          : 0
+      const totalPrice = adultPrice * adults + childPrice * children
       return [
         ...prev,
         {

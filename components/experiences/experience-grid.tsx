@@ -29,7 +29,8 @@ export function ExperienceGrid() {
 
   const filteredExperiences = allExperiences.filter((exp) => {
     const categoryMatch = selectedCategories.length === 0 || selectedCategories.includes(exp.category)
-    const priceMatch = exp.price >= priceRange[0] && exp.price <= priceRange[1]
+    const basePrice = Number.isFinite(exp.adult_price) ? exp.adult_price : exp.price
+    const priceMatch = basePrice >= priceRange[0] && basePrice <= priceRange[1]
 
     let durationMatch = true
     if (selectedDurations.length > 0) {

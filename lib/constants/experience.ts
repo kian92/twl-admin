@@ -5,6 +5,8 @@ export const EXPERIENCE_SELECT_FIELDS = `
   country,
   duration,
   price,
+  adult_price,
+  child_price,
   category,
   image_url,
   rating,

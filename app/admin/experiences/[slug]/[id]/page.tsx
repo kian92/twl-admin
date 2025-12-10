@@ -36,7 +36,8 @@ interface FormState {
   country: string
   description: string
   duration: string
-  price: string
+  adult_price: string
+  child_price: string
   category: string
   // image_url: string
   highlights: string
@@ -101,7 +102,8 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
           country: experienceData.country,
           description: experienceData.description ?? "",
           duration: experienceData.duration,
-          price: experienceData.price.toString(),
+          adult_price: (experienceData.adult_price ?? experienceData.price ?? 0).toString(),
+          child_price: (experienceData.child_price ?? experienceData.price ?? 0).toString(),
           category: experienceData.category,
           // image_url: experienceData.image_url ?? "",
           highlights: (experienceData.highlights ?? []).join("\n"),
@@ -293,6 +295,9 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
     setSaving(true)
     setError(null)
     try {
+      const adultPrice = Number.parseFloat(form.adult_price)
+      const childPrice = Number.parseFloat(form.child_price)
+
       // Upload new images
       const uploadedUrls: string[] = []
 
@@ -320,7 +325,9 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
         country: form.country,
         description: form.description,
         duration: form.duration,
-        price: Number.parseFloat(form.price),
+        price: Number.isFinite(adultPrice) ? adultPrice : 0,
+        adult_price: Number.isFinite(adultPrice) ? adultPrice : 0,
+        child_price: Number.isFinite(childPrice) ? childPrice : 0,
         category: form.category,
         // image_url: form.image_url,
         highlights: highlightsList,
@@ -455,7 +462,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
               />
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>
                 <Select value={form.category} onValueChange={handleSelectChange("category")} required>
@@ -476,8 +483,28 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                 <Input id="duration" value={form.duration} onChange={handleChange("duration")} required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="price">Price (USD)</Label>
-                <Input id="price" type="number" value={form.price} onChange={handleChange("price")} min="0" step="1" required />
+                <Label htmlFor="adult-price">Adult Price (USD)</Label>
+                <Input
+                  id="adult-price"
+                  type="number"
+                  value={form.adult_price}
+                  onChange={handleChange("adult_price")}
+                  min="0"
+                  step="1"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="child-price">Child Price (USD)</Label>
+                <Input
+                  id="child-price"
+                  type="number"
+                  value={form.child_price}
+                  onChange={handleChange("child_price")}
+                  min="0"
+                  step="1"
+                  required
+                />
               </div>
             </div>
           </CardContent>

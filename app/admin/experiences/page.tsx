@@ -170,7 +170,10 @@ export default function ExperiencesPage() {
                     </span>
                   </div>
                   <div className="flex items-center justify-between pt-2">
-                    <span className="text-lg font-bold">${experience.price}</span>
+                    <div className="text-sm text-muted-foreground leading-tight">
+                      <div className="font-semibold text-foreground">${experience.adult_price} adult</div>
+                      <div>${experience.child_price} child</div>
+                    </div>
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" asChild>
                         <Link href={`/admin/experiences/${experience.slug}/${experience.id}`}>

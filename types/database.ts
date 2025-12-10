@@ -45,6 +45,8 @@ export interface Database {
           country: string
           duration: string
           price: number
+          adult_price: number
+          child_price: number
           category: string
           // image_url: string | null
           rating: number | null
@@ -71,6 +73,8 @@ export interface Database {
           country: string
           duration: string
           price: number
+          adult_price: number
+          child_price: number
           category: string
           // image_url?: string | null
           rating?: number | null
@@ -96,6 +100,8 @@ export interface Database {
           country?: string
           duration?: string
           price?: number
+          adult_price?: number
+          child_price?: number
           category?: string
           // image_url?: string | null
           rating?: number | null

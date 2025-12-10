@@ -7,7 +7,9 @@ export interface Experience {
   title: string
   location: string
   duration: string
-  price: number
+  adult_price: number
+  child_price: number
+  price?: number
   image: string
   category: string
   rating: number
