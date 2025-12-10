@@ -354,6 +354,20 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form || !experience) return
+
+    console.log('=== SAVE HANDLER START ===');
+    console.log('Packages state at save time:', packages);
+    console.log('Number of packages:', packages.length);
+    packages.forEach((pkg, idx) => {
+      console.log(`Package ${idx}:`, {
+        name: pkg.package_name,
+        adult_price: pkg.adult_price,
+        child_price: pkg.child_price,
+        code: pkg.package_code
+      });
+    });
+    console.log('=========================');
+
     setSaving(true)
     setError(null)
     try {
@@ -469,12 +483,11 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
           display_order: pkg.display_order,
           available_from: pkg.available_from || null,
           available_to: pkg.available_to || null,
-          pricing_tiers: [
-            { tier_type: 'adult', base_price: adultPrice, min_age: 18, max_age: null },
-            { tier_type: 'child', base_price: childPrice, min_age: 3, max_age: 17 },
-            ...(infantPrice ? [{ tier_type: 'infant', base_price: infantPrice, min_age: 0, max_age: 2 }] : []),
-            ...(seniorPrice ? [{ tier_type: 'senior', base_price: seniorPrice, min_age: 60, max_age: null }] : [])
-          ]
+          // Send prices in the format the API expects
+          adult_price: adultPrice,
+          child_price: childPrice,
+          ...(infantPrice !== undefined && { infant_price: infantPrice }),
+          ...(seniorPrice !== undefined && { senior_price: seniorPrice })
         }
 
         console.log('Creating package with payload:', packagePayload);

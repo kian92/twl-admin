@@ -181,31 +181,31 @@ export function PackageFormSection({ packages, onChange }: PackageFormSectionPro
                     {/* Pricing */}
                     <div className="grid gap-4 md:grid-cols-4">
                       <div className="space-y-2">
-                        <Label>Adult Price (USD) *</Label>
+                        <Label>Adult Price (USD)</Label>
                         <Input
                           type="number"
                           min="0"
                           step="0.01"
-                          value={pkg.adult_price || ''}
+                          value={pkg.adult_price ?? ''}
                           onChange={(e) => {
-                            const value = parseFloat(e.target.value);
+                            const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
                             updatePackage(index, 'adult_price', isNaN(value) ? 0 : value);
                           }}
-                          required
+                          placeholder="0.00"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label>Child Price (USD) *</Label>
+                        <Label>Child Price (USD)</Label>
                         <Input
                           type="number"
                           min="0"
                           step="0.01"
-                          value={pkg.child_price || ''}
+                          value={pkg.child_price ?? ''}
                           onChange={(e) => {
-                            const value = parseFloat(e.target.value);
+                            const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
                             updatePackage(index, 'child_price', isNaN(value) ? 0 : value);
                           }}
-                          required
+                          placeholder="0.00"
                         />
                       </div>
                       <div className="space-y-2">
@@ -214,10 +214,10 @@ export function PackageFormSection({ packages, onChange }: PackageFormSectionPro
                           type="number"
                           min="0"
                           step="0.01"
-                          value={pkg.infant_price || ''}
+                          value={pkg.infant_price ?? ''}
                           onChange={(e) => {
-                            const value = parseFloat(e.target.value);
-                            updatePackage(index, 'infant_price', isNaN(value) || value === 0 ? undefined : value);
+                            const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
+                            updatePackage(index, 'infant_price', value === undefined || isNaN(value) ? undefined : value);
                           }}
                           placeholder="Optional"
                         />
@@ -228,10 +228,10 @@ export function PackageFormSection({ packages, onChange }: PackageFormSectionPro
                           type="number"
                           min="0"
                           step="0.01"
-                          value={pkg.senior_price || ''}
+                          value={pkg.senior_price ?? ''}
                           onChange={(e) => {
-                            const value = parseFloat(e.target.value);
-                            updatePackage(index, 'senior_price', isNaN(value) || value === 0 ? undefined : value);
+                            const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
+                            updatePackage(index, 'senior_price', value === undefined || isNaN(value) ? undefined : value);
                           }}
                           placeholder="Optional"
                         />
