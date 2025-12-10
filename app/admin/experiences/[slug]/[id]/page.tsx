@@ -16,6 +16,7 @@ import Image from "next/image"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { Database } from "@/types/database"
 import { toast } from "sonner"
+import { PackageFormSection, PackageFormData } from "@/components/admin/PackageFormSection"
 
 type ExperienceRow = Database["public"]["Tables"]["experiences"]["Row"]
 
@@ -67,7 +68,26 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { slug, id } = React.use(params) 
+  const { slug, id } = React.use(params)
+
+  // Package management state
+  const [packages, setPackages] = useState<PackageFormData[]>([{
+    package_name: 'Standard Package',
+    package_code: 'STD',
+    description: '',
+    min_group_size: 1,
+    max_group_size: 15,
+    adult_price: 0,
+    child_price: 0,
+    infant_price: 0,
+    senior_price: 0,
+    inclusions: [],
+    exclusions: [],
+    is_active: true,
+    display_order: 1,
+    available_from: '',
+    available_to: ''
+  }]) 
 
   // Gallery
   const [galleryPreviewUrls, setGalleryPreviewUrls] = useState<string[]>([])
@@ -141,6 +161,38 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
         if (experienceData.faqs && Array.isArray(experienceData.faqs)) {
           const faqsData = experienceData.faqs as unknown as FAQItem[]
           setFaqs(faqsData.length > 0 ? faqsData : [{ question: "", answer: "" }])
+        }
+
+        // Load packages with pricing tiers
+        try {
+          const packagesResponse = await fetch(`/api/admin/packages?experience_id=${experienceData.id}`)
+          if (packagesResponse.ok) {
+            const packagesData = await packagesResponse.json()
+            if (packagesData && packagesData.length > 0) {
+              const formattedPackages: PackageFormData[] = packagesData.map((pkg: any, index: number) => ({
+                id: pkg.id,
+                package_name: pkg.package_name,
+                package_code: pkg.package_code || '',
+                description: pkg.description || '',
+                min_group_size: pkg.min_group_size,
+                max_group_size: pkg.max_group_size,
+                adult_price: pkg.pricing_tiers?.find((t: any) => t.tier_type === 'adult')?.base_price || 0,
+                child_price: pkg.pricing_tiers?.find((t: any) => t.tier_type === 'child')?.base_price || 0,
+                infant_price: pkg.pricing_tiers?.find((t: any) => t.tier_type === 'infant')?.base_price || 0,
+                senior_price: pkg.pricing_tiers?.find((t: any) => t.tier_type === 'senior')?.base_price || 0,
+                inclusions: pkg.inclusions || [],
+                exclusions: pkg.exclusions || [],
+                is_active: pkg.is_active ?? true,
+                display_order: pkg.display_order ?? index + 1,
+                available_from: pkg.available_from || '',
+                available_to: pkg.available_to || ''
+              }))
+              setPackages(formattedPackages)
+            }
+          }
+        } catch (pkgErr) {
+          console.error("Failed to load packages", pkgErr)
+          // Don't fail the whole page if packages fail to load
         }
       } catch (err) {
         console.error("Failed to load experience", err)
@@ -373,6 +425,48 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
         throw new Error(result.error ?? "Unable to save changes. Please try again.")
       }
 
+      // Step 4: Update packages
+      // First, delete existing packages for this experience
+      const existingPackagesResponse = await fetch(`/api/admin/packages?experience_id=${experience.id}`)
+      if (existingPackagesResponse.ok) {
+        const existingPackages = await existingPackagesResponse.json()
+        for (const pkg of existingPackages) {
+          await fetch(`/api/admin/packages/${pkg.id}`, {
+            method: "DELETE"
+          })
+        }
+      }
+
+      // Then create new packages
+      for (const pkg of packages) {
+        const packagePayload = {
+          experience_id: experience.id,
+          package_name: pkg.package_name,
+          package_code: pkg.package_code,
+          description: pkg.description,
+          min_group_size: pkg.min_group_size,
+          max_group_size: pkg.max_group_size,
+          inclusions: pkg.inclusions,
+          exclusions: pkg.exclusions,
+          is_active: pkg.is_active,
+          display_order: pkg.display_order,
+          available_from: pkg.available_from || null,
+          available_to: pkg.available_to || null,
+          pricing_tiers: [
+            { tier_type: 'adult', base_price: pkg.adult_price, min_age: 18, max_age: null },
+            { tier_type: 'child', base_price: pkg.child_price, min_age: 3, max_age: 17 },
+            ...(pkg.infant_price ? [{ tier_type: 'infant', base_price: pkg.infant_price, min_age: 0, max_age: 2 }] : []),
+            ...(pkg.senior_price ? [{ tier_type: 'senior', base_price: pkg.senior_price, min_age: 60, max_age: null }] : [])
+          ]
+        }
+
+        await fetch("/api/admin/packages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(packagePayload),
+        })
+      }
+
       toast.success("Experience updated successfully")
       router.push("/admin/experiences")
     } catch (err) {
@@ -563,6 +657,12 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
             </div>
           </CardContent>
         </Card>
+
+        {/* Packages & Pricing */}
+        <PackageFormSection
+          packages={packages}
+          onChange={setPackages}
+        />
 
         {/* Gallery Section */}
         <Card>
