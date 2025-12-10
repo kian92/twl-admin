@@ -185,9 +185,12 @@ export function PackageFormSection({ packages, onChange }: PackageFormSectionPro
                         <Input
                           type="number"
                           min="0"
-                          step="1"
-                          value={pkg.adult_price}
-                          onChange={(e) => updatePackage(index, 'adult_price', Number(e.target.value))}
+                          step="0.01"
+                          value={pkg.adult_price || ''}
+                          onChange={(e) => {
+                            const value = parseFloat(e.target.value);
+                            updatePackage(index, 'adult_price', isNaN(value) ? 0 : value);
+                          }}
                           required
                         />
                       </div>
@@ -196,9 +199,12 @@ export function PackageFormSection({ packages, onChange }: PackageFormSectionPro
                         <Input
                           type="number"
                           min="0"
-                          step="1"
-                          value={pkg.child_price}
-                          onChange={(e) => updatePackage(index, 'child_price', Number(e.target.value))}
+                          step="0.01"
+                          value={pkg.child_price || ''}
+                          onChange={(e) => {
+                            const value = parseFloat(e.target.value);
+                            updatePackage(index, 'child_price', isNaN(value) ? 0 : value);
+                          }}
                           required
                         />
                       </div>
@@ -207,9 +213,12 @@ export function PackageFormSection({ packages, onChange }: PackageFormSectionPro
                         <Input
                           type="number"
                           min="0"
-                          step="1"
+                          step="0.01"
                           value={pkg.infant_price || ''}
-                          onChange={(e) => updatePackage(index, 'infant_price', Number(e.target.value) || undefined)}
+                          onChange={(e) => {
+                            const value = parseFloat(e.target.value);
+                            updatePackage(index, 'infant_price', isNaN(value) || value === 0 ? undefined : value);
+                          }}
                           placeholder="Optional"
                         />
                       </div>
@@ -218,9 +227,12 @@ export function PackageFormSection({ packages, onChange }: PackageFormSectionPro
                         <Input
                           type="number"
                           min="0"
-                          step="1"
+                          step="0.01"
                           value={pkg.senior_price || ''}
-                          onChange={(e) => updatePackage(index, 'senior_price', Number(e.target.value) || undefined)}
+                          onChange={(e) => {
+                            const value = parseFloat(e.target.value);
+                            updatePackage(index, 'senior_price', isNaN(value) || value === 0 ? undefined : value);
+                          }}
                           placeholder="Optional"
                         />
                       </div>

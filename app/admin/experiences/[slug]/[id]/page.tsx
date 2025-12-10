@@ -428,19 +428,34 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
       }
 
       // Step 4: Update packages
+      console.log('Starting package update process. Current packages state:', packages);
+
       // First, delete existing packages for this experience
       const existingPackagesResponse = await fetch(`/api/admin/packages?experience_id=${experience.id}`)
       if (existingPackagesResponse.ok) {
         const existingPackages = await existingPackagesResponse.json()
+        console.log('Existing packages to delete:', existingPackages);
         for (const pkg of existingPackages) {
-          await fetch(`/api/admin/packages/${pkg.id}`, {
+          const deleteResponse = await fetch(`/api/admin/packages/${pkg.id}`, {
             method: "DELETE"
           })
+          if (!deleteResponse.ok) {
+            console.error('Failed to delete package:', pkg.id);
+          }
         }
       }
 
       // Then create new packages
+      let successCount = 0;
+      let failCount = 0;
+
       for (const pkg of packages) {
+        // Ensure prices are numbers
+        const adultPrice = Number(pkg.adult_price) || 0;
+        const childPrice = Number(pkg.child_price) || 0;
+        const infantPrice = pkg.infant_price ? Number(pkg.infant_price) : undefined;
+        const seniorPrice = pkg.senior_price ? Number(pkg.senior_price) : undefined;
+
         const packagePayload = {
           experience_id: experience.id,
           package_name: pkg.package_name,
@@ -455,18 +470,36 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
           available_from: pkg.available_from || null,
           available_to: pkg.available_to || null,
           pricing_tiers: [
-            { tier_type: 'adult', base_price: pkg.adult_price, min_age: 18, max_age: null },
-            { tier_type: 'child', base_price: pkg.child_price, min_age: 3, max_age: 17 },
-            ...(pkg.infant_price ? [{ tier_type: 'infant', base_price: pkg.infant_price, min_age: 0, max_age: 2 }] : []),
-            ...(pkg.senior_price ? [{ tier_type: 'senior', base_price: pkg.senior_price, min_age: 60, max_age: null }] : [])
+            { tier_type: 'adult', base_price: adultPrice, min_age: 18, max_age: null },
+            { tier_type: 'child', base_price: childPrice, min_age: 3, max_age: 17 },
+            ...(infantPrice ? [{ tier_type: 'infant', base_price: infantPrice, min_age: 0, max_age: 2 }] : []),
+            ...(seniorPrice ? [{ tier_type: 'senior', base_price: seniorPrice, min_age: 60, max_age: null }] : [])
           ]
         }
 
-        await fetch("/api/admin/packages", {
+        console.log('Creating package with payload:', packagePayload);
+
+        const response = await fetch("/api/admin/packages", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(packagePayload),
         })
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Failed to create package:', errorText);
+          failCount++;
+        } else {
+          const createdPackage = await response.json();
+          console.log('Successfully created package:', createdPackage);
+          successCount++;
+        }
+      }
+
+      console.log(`Package creation complete. Success: ${successCount}, Failed: ${failCount}`);
+
+      if (failCount > 0) {
+        toast.warning(`Experience updated, but ${failCount} package(s) failed to save. Check console for details.`);
       }
 
       toast.success("Experience updated successfully")
