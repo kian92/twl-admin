@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: packagesError.message }, { status: 500 });
     }
 
-    return NextResponse.json({ packages }, { status: 200 });
+    return NextResponse.json(packages || [], { status: 200 });
   } catch (err) {
     console.error('Failed to fetch packages:', err);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });

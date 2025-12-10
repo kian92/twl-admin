@@ -167,8 +167,10 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
         try {
           const packagesResponse = await fetch(`/api/admin/packages?experience_id=${experienceData.id}`)
           if (packagesResponse.ok) {
-            const packagesData = await packagesResponse.json()
-            if (packagesData && packagesData.length > 0) {
+            const responseData = await packagesResponse.json()
+            const packagesData = responseData.packages || responseData // Handle both wrapped and unwrapped responses
+
+            if (packagesData && Array.isArray(packagesData) && packagesData.length > 0) {
               const formattedPackages: PackageFormData[] = packagesData.map((pkg: any, index: number) => ({
                 id: pkg.id,
                 package_name: pkg.package_name,
@@ -180,8 +182,8 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                 child_price: pkg.pricing_tiers?.find((t: any) => t.tier_type === 'child')?.base_price || 0,
                 infant_price: pkg.pricing_tiers?.find((t: any) => t.tier_type === 'infant')?.base_price || 0,
                 senior_price: pkg.pricing_tiers?.find((t: any) => t.tier_type === 'senior')?.base_price || 0,
-                inclusions: pkg.inclusions || [],
-                exclusions: pkg.exclusions || [],
+                inclusions: Array.isArray(pkg.inclusions) ? pkg.inclusions : [],
+                exclusions: Array.isArray(pkg.exclusions) ? pkg.exclusions : [],
                 is_active: pkg.is_active ?? true,
                 display_order: pkg.display_order ?? index + 1,
                 available_from: pkg.available_from || '',
