@@ -20,6 +20,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 type ExperienceRow = Database["public"]["Tables"]["experiences"]["Row"]
 
@@ -29,6 +30,7 @@ export default function ExperiencesPage() {
   const [experiences, setExperiences] = useState<ExperienceRow[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
+  const [selectedCountry, setSelectedCountry] = useState<string>("all")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
@@ -66,6 +68,16 @@ export default function ExperiencesPage() {
     return ["all", ...Array.from(unique)]
   }, [experiences])
 
+  const countries = useMemo(() => {
+    const unique = new Set<string>()
+    experiences.forEach((exp) => {
+      if (exp.country) {
+        unique.add(exp.country)
+      }
+    })
+    return ["all", ...Array.from(unique).sort()]
+  }, [experiences])
+
   const filteredExperiences = useMemo(() => {
     return experiences.filter((exp) => {
       const matchesSearch =
@@ -73,9 +85,10 @@ export default function ExperiencesPage() {
         exp.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
         exp.country.toLowerCase().includes(searchQuery.toLowerCase())
       const matchesCategory = selectedCategory === "all" || exp.category === selectedCategory
-      return matchesSearch && matchesCategory
+      const matchesCountry = selectedCountry === "all" || exp.country === selectedCountry
+      return matchesSearch && matchesCategory && matchesCountry
     })
-  }, [experiences, searchQuery, selectedCategory])
+  }, [experiences, searchQuery, selectedCategory, selectedCountry])
 
   // Pagination calculations
   const totalPages = Math.ceil(filteredExperiences.length / ITEMS_PER_PAGE)
@@ -86,7 +99,7 @@ export default function ExperiencesPage() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1)
-  }, [searchQuery, selectedCategory])
+  }, [searchQuery, selectedCategory, selectedCountry])
 
   const getPageNumbers = () => {
     const pages: (number | 'ellipsis')[] = []
@@ -142,7 +155,11 @@ export default function ExperiencesPage() {
         <div>
           <h1 className="text-3xl font-bold">Experience Management</h1>
           <p className="text-muted-foreground">
-            Manage all travel experiences and packages ({experiences.length.toLocaleString()} total)
+            {filteredExperiences.length === experiences.length ? (
+              <>{experiences.length.toLocaleString()} total experiences</>
+            ) : (
+              <>Showing {filteredExperiences.length.toLocaleString()} of {experiences.length.toLocaleString()} experiences</>
+            )}
           </p>
         </div>
         <Button asChild>
@@ -159,22 +176,40 @@ export default function ExperiencesPage() {
         </Card>
       )}
 
-      <div className="flex gap-4 flex-wrap md:flex-nowrap">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Search experiences..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
+      <div className="space-y-4">
+        {/* Search and Country Filter */}
+        <div className="flex gap-4 flex-wrap md:flex-nowrap">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search experiences..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select value={selectedCountry} onValueChange={setSelectedCountry}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="All Countries" />
+            </SelectTrigger>
+            <SelectContent>
+              {countries.map((country) => (
+                <SelectItem key={country} value={country}>
+                  {country === "all" ? "All Countries" : country}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        <div className="flex gap-2">
+
+        {/* Category Filter */}
+        <div className="flex gap-2 flex-wrap">
           {categories.map((cat) => (
             <Button
               key={cat}
               variant={selectedCategory === cat ? "default" : "outline"}
               onClick={() => setSelectedCategory(cat)}
+              size="sm"
             >
               {cat}
             </Button>
@@ -205,7 +240,12 @@ export default function ExperiencesPage() {
                   fill
                   className="object-cover"
                 />
-                <Badge className="absolute top-2 right-2">{experience.category}</Badge>
+                <div className="absolute top-2 right-2 flex gap-2">
+                  <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200">
+                    {experience.country}
+                  </Badge>
+                  <Badge className="bg-primary">{experience.category}</Badge>
+                </div>
               </div>
               <CardContent className="p-4">
                 <div className="space-y-2">
@@ -256,6 +296,7 @@ export default function ExperiencesPage() {
                         className="mt-4"
                         onClick={() => {
                           setSelectedCategory("all")
+                          setSelectedCountry("all")
                           setSearchQuery("")
                           void loadExperiences()
                         }}

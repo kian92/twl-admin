@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CountryCombobox } from "@/components/ui/country-combobox"
-import { ArrowLeft, Upload, Plus, X } from "lucide-react"
+import { ArrowLeft, Upload, Plus, X, Loader2 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -979,7 +979,14 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
 
         <div className="flex gap-4">
           <Button type="submit" disabled={saving}>
-            {saving ? "Saving..." : "Save Changes"}
+            {saving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Save Changes"
+            )}
           </Button>
           <Button type="button" variant="outline" asChild>
             <Link href="/admin/experiences">Cancel</Link>

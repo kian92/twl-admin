@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CountryCombobox } from "@/components/ui/country-combobox"
-import { ArrowLeft, Plus, X, Upload } from "lucide-react"
+import { ArrowLeft, Plus, X, Upload, Loader2 } from "lucide-react"
 import Link from "next/link"
 import type { Database } from "@/types/database"
 import { toast } from "sonner"
@@ -720,7 +720,14 @@ export default function NewExperiencePage() {
 
         <div className="flex gap-4">
           <Button type="submit" disabled={loading}>
-            {loading ? "Creating..." : "Create Experience"}
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Creating...
+              </>
+            ) : (
+              "Create Experience"
+            )}
           </Button>
           <Button type="button" variant="outline" asChild>
             <Link href="/admin/experiences">Cancel</Link>
