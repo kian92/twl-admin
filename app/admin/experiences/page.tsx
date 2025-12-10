@@ -11,8 +11,19 @@ import Link from "next/link"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { Database } from "@/types/database"
 import { toast } from "sonner"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 
 type ExperienceRow = Database["public"]["Tables"]["experiences"]["Row"]
+
+const ITEMS_PER_PAGE = 12
 
 export default function ExperiencesPage() {
   const [experiences, setExperiences] = useState<ExperienceRow[]>([])
@@ -20,6 +31,7 @@ export default function ExperiencesPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
 
   const loadExperiences = useCallback(async () => {
     setLoading(true)
@@ -64,6 +76,45 @@ export default function ExperiencesPage() {
       return matchesSearch && matchesCategory
     })
   }, [experiences, searchQuery, selectedCategory])
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredExperiences.length / ITEMS_PER_PAGE)
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+  const endIndex = startIndex + ITEMS_PER_PAGE
+  const paginatedExperiences = filteredExperiences.slice(startIndex, endIndex)
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, selectedCategory])
+
+  const getPageNumbers = () => {
+    const pages: (number | 'ellipsis')[] = []
+
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i)
+      }
+    } else {
+      pages.push(1)
+
+      if (currentPage > 3) {
+        pages.push('ellipsis')
+      }
+
+      for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+        pages.push(i)
+      }
+
+      if (currentPage < totalPages - 2) {
+        pages.push('ellipsis')
+      }
+
+      pages.push(totalPages)
+    }
+
+    return pages
+  }
 
   const handleDelete = async (experience: ExperienceRow) => {
     if (!window.confirm(`Delete "${experience.title}"? This action cannot be undone.`)) {
@@ -145,7 +196,7 @@ export default function ExperiencesPage() {
           ))}
 
         {!loading &&
-          filteredExperiences.map((experience) => (
+          paginatedExperiences.map((experience) => (
             <Card key={experience.id} className="overflow-hidden">
               <div className="relative h-48">
                 <Image
@@ -211,6 +262,61 @@ export default function ExperiencesPage() {
                       >
                         Clear Filters
                       </Button>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {!loading && filteredExperiences.length > 0 && totalPages > 1 && (
+        <div className="mt-8">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    if (currentPage > 1) setCurrentPage(currentPage - 1)
+                  }}
+                  className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+
+              {getPageNumbers().map((page, index) => (
+                <PaginationItem key={index}>
+                  {page === 'ellipsis' ? (
+                    <PaginationEllipsis />
+                  ) : (
+                    <PaginationLink
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        setCurrentPage(page as number)
+                      }}
+                      isActive={currentPage === page}
+                      className="cursor-pointer"
+                    >
+                      {page}
+                    </PaginationLink>
+                  )}
+                </PaginationItem>
+              ))}
+
+              <PaginationItem>
+                <PaginationNext
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    if (currentPage < totalPages) setCurrentPage(currentPage + 1)
+                  }}
+                  className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+
+          <div className="text-center mt-4 text-sm text-muted-foreground">
+            Showing {startIndex + 1} to {Math.min(endIndex, filteredExperiences.length)} of {filteredExperiences.length} experiences
+          </div>
         </div>
       )}
     </div>
