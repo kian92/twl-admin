@@ -14,6 +14,7 @@ import { ArrowLeft, Plus, X, Upload } from "lucide-react"
 import Link from "next/link"
 import type { Database } from "@/types/database"
 import { toast } from "sonner"
+import { PackageFormSection, PackageFormData } from "@/components/admin/PackageFormSection"
 
 type ExperienceInsert = Omit<Database["public"]["Tables"]["experiences"]["Insert"], "slug"> & {
   slug?: string
@@ -77,6 +78,25 @@ export default function NewExperiencePage() {
   const [faqs, setFaqs] = useState<FAQItem[]>([{ question: "", answer: "" }])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Package management state
+  const [packages, setPackages] = useState<PackageFormData[]>([
+    {
+      package_name: 'Standard Package',
+      package_code: 'STD',
+      description: 'Our standard package with essential inclusions',
+      min_group_size: 1,
+      max_group_size: 15,
+      available_from: '',
+      available_to: '',
+      inclusions: [],
+      exclusions: [],
+      display_order: 0,
+      is_active: true,
+      adult_price: 0,
+      child_price: 0,
+    }
+  ])
 
   const handleInputChange = (field: keyof ExperienceInsert) => (event: React.ChangeEvent<HTMLInputElement>) => {
     const numericField =
@@ -198,18 +218,20 @@ export default function NewExperiencePage() {
         if (data.url) uploadedUrls.push(data.url);
       }
 
-      const adultPrice = Number.isFinite(form.adult_price) ? form.adult_price : 0
-      const childPrice = Number.isFinite(form.child_price) ? form.child_price : 0
+      // Use first package pricing for experience base fields (backwards compatibility)
+      const firstPackage = packages[0]
+      const adultPrice = Number.isFinite(firstPackage.adult_price) ? firstPackage.adult_price : 0
+      const childPrice = Number.isFinite(firstPackage.child_price) ? firstPackage.child_price : 0
 
       const payload: ExperienceInsert = {
         ...form,
         price: adultPrice,
         adult_price: adultPrice,
         child_price: childPrice,
-        min_group_size: Number.isFinite(form.min_group_size) ? form.min_group_size : 1,
-        max_group_size: Number.isFinite(form.max_group_size) ? form.max_group_size : 15,
-        available_from: form.available_from || null,
-        available_to: form.available_to || null,
+        min_group_size: Number.isFinite(firstPackage.min_group_size) ? firstPackage.min_group_size : 1,
+        max_group_size: Number.isFinite(firstPackage.max_group_size) ? firstPackage.max_group_size : 15,
+        available_from: firstPackage.available_from || null,
+        available_to: firstPackage.available_to || null,
         highlights: highlightsText.split("\n").filter(Boolean),
         inclusions: inclusionsText.split("\n").filter(Boolean),
         exclusions: exclusionsText.split("\n").filter(Boolean),
@@ -236,7 +258,39 @@ export default function NewExperiencePage() {
         throw new Error(result.error ?? "Unable to create experience. Please try again.")
       }
 
-      toast.success("Experience created")
+      const experienceId = result.id;
+
+      // Create packages
+      if (experienceId) {
+        for (const pkg of packages) {
+          const packagePayload = {
+            experience_id: experienceId,
+            package_name: pkg.package_name,
+            package_code: pkg.package_code,
+            description: pkg.description,
+            min_group_size: pkg.min_group_size,
+            max_group_size: pkg.max_group_size,
+            available_from: pkg.available_from || null,
+            available_to: pkg.available_to || null,
+            inclusions: pkg.inclusions,
+            exclusions: pkg.exclusions,
+            display_order: pkg.display_order,
+            is_active: pkg.is_active,
+            adult_price: pkg.adult_price,
+            child_price: pkg.child_price,
+            infant_price: pkg.infant_price,
+            senior_price: pkg.senior_price,
+          };
+
+          await fetch("/api/admin/packages", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(packagePayload),
+          });
+        }
+      }
+
+      toast.success("Experience and packages created")
       router.push("/admin/experiences")
     } catch (err: any) {
       console.error("Failed to create experience - Full error:", err)
@@ -320,7 +374,7 @@ export default function NewExperiencePage() {
               />
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>
                 <Select value={form.category ?? ""} onValueChange={handleSelectChange("category")} required>
@@ -346,80 +400,15 @@ export default function NewExperiencePage() {
                   required
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="adult-price">Adult Price (USD)</Label>
-                <Input
-                  id="adult-price"
-                  type="number"
-                  placeholder="85"
-                  value={Number.isFinite(form.adult_price) ? form.adult_price : ""}
-                  onChange={handleInputChange("adult_price")}
-                  min="0"
-                  step="1"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="child-price">Child Price (USD)</Label>
-                <Input
-                  id="child-price"
-                  type="number"
-                  placeholder="60"
-                  value={Number.isFinite(form.child_price) ? form.child_price : ""}
-                  onChange={handleInputChange("child_price")}
-                  min="0"
-                  step="1"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <div className="space-y-2">
-                <Label htmlFor="available-from">Available From</Label>
-                <Input
-                  id="available-from"
-                  type="date"
-                  value={form.available_from ?? ""}
-                  onChange={handleInputChange("available_from")}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="available-to">Available To</Label>
-                <Input
-                  id="available-to"
-                  type="date"
-                  value={form.available_to ?? ""}
-                  onChange={handleInputChange("available_to")}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="min-group">Min Group Size</Label>
-                <Input
-                  id="min-group"
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={Number.isFinite(form.min_group_size) ? form.min_group_size : ""}
-                  onChange={handleInputChange("min_group_size")}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="max-group">Max Group Size</Label>
-                <Input
-                  id="max-group"
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={Number.isFinite(form.max_group_size) ? form.max_group_size : ""}
-                  onChange={handleInputChange("max_group_size")}
-                  required
-                />
-              </div>
             </div>
           </CardContent>
         </Card>
+
+        {/* Packages & Pricing */}
+        <PackageFormSection
+          packages={packages}
+          onChange={setPackages}
+        />
 
         {/* Images */}
         <Card>
