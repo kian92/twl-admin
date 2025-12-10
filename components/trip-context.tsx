@@ -15,6 +15,10 @@ export interface Experience {
   rating: number
   description: string
   inclusions: string[]
+  available_from?: string | null
+  available_to?: string | null
+  min_group_size?: number
+  max_group_size?: number
   slug: string
 }
 

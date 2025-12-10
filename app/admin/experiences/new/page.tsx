@@ -52,6 +52,10 @@ const initialForm: ExperienceInsert = {
   itinerary: null,
   gallery: [],
   faqs: null,
+  available_from: null,
+  available_to: null,
+  min_group_size: 1,
+  max_group_size: 15,
 }
 
 const categories = ["Adventure", "Culture", "Relaxation", "Wellness", "Nature"]
@@ -75,7 +79,8 @@ export default function NewExperiencePage() {
   const [error, setError] = useState<string | null>(null)
 
   const handleInputChange = (field: keyof ExperienceInsert) => (event: React.ChangeEvent<HTMLInputElement>) => {
-    const numericField = field === "price" || field === "adult_price" || field === "child_price"
+    const numericField =
+      field === "price" || field === "adult_price" || field === "child_price" || field === "min_group_size" || field === "max_group_size"
     const value = numericField ? Number.parseFloat(event.target.value) : event.target.value
     setForm((prev) => {
       const next = { ...prev, [field]: value }
@@ -201,6 +206,10 @@ export default function NewExperiencePage() {
         price: adultPrice,
         adult_price: adultPrice,
         child_price: childPrice,
+        min_group_size: Number.isFinite(form.min_group_size) ? form.min_group_size : 1,
+        max_group_size: Number.isFinite(form.max_group_size) ? form.max_group_size : 15,
+        available_from: form.available_from || null,
+        available_to: form.available_to || null,
         highlights: highlightsText.split("\n").filter(Boolean),
         inclusions: inclusionsText.split("\n").filter(Boolean),
         exclusions: exclusionsText.split("\n").filter(Boolean),
@@ -360,6 +369,51 @@ export default function NewExperiencePage() {
                   onChange={handleInputChange("child_price")}
                   min="0"
                   step="1"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="space-y-2">
+                <Label htmlFor="available-from">Available From</Label>
+                <Input
+                  id="available-from"
+                  type="date"
+                  value={form.available_from ?? ""}
+                  onChange={handleInputChange("available_from")}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="available-to">Available To</Label>
+                <Input
+                  id="available-to"
+                  type="date"
+                  value={form.available_to ?? ""}
+                  onChange={handleInputChange("available_to")}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="min-group">Min Group Size</Label>
+                <Input
+                  id="min-group"
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={Number.isFinite(form.min_group_size) ? form.min_group_size : ""}
+                  onChange={handleInputChange("min_group_size")}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="max-group">Max Group Size</Label>
+                <Input
+                  id="max-group"
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={Number.isFinite(form.max_group_size) ? form.max_group_size : ""}
+                  onChange={handleInputChange("max_group_size")}
                   required
                 />
               </div>

@@ -47,6 +47,10 @@ export interface Database {
           price: number
           adult_price: number
           child_price: number
+          available_from: string | null
+          available_to: string | null
+          min_group_size: number
+          max_group_size: number
           category: string
           // image_url: string | null
           rating: number | null
@@ -75,6 +79,10 @@ export interface Database {
           price: number
           adult_price: number
           child_price: number
+          available_from?: string | null
+          available_to?: string | null
+          min_group_size?: number
+          max_group_size?: number
           category: string
           // image_url?: string | null
           rating?: number | null
@@ -102,6 +110,10 @@ export interface Database {
           price?: number
           adult_price?: number
           child_price?: number
+          available_from?: string | null
+          available_to?: string | null
+          min_group_size?: number
+          max_group_size?: number
           category?: string
           // image_url?: string | null
           rating?: number | null

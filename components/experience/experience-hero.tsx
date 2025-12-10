@@ -18,6 +18,10 @@ interface ExperienceHeroProps {
     adult_price: number
     child_price: number
     price?: number
+    available_from?: string | null
+    available_to?: string | null
+    min_group_size?: number
+    max_group_size?: number
     image: string
     category: string
     rating: number
@@ -35,11 +39,24 @@ export function ExperienceHero({ experience }: ExperienceHeroProps) {
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
   const adultPrice = Number.isFinite(experience.adult_price) ? experience.adult_price : experience.price ?? 0
   const childPrice = Number.isFinite(experience.child_price) ? experience.child_price : adultPrice * 0.7
+  const minGroup = Math.max(1, experience.min_group_size ?? 1)
+  const maxGroup = Math.max(minGroup, experience.max_group_size ?? minGroup)
+  const availableFrom = experience.available_from ? new Date(experience.available_from) : null
+  const availableTo = experience.available_to ? new Date(experience.available_to) : null
+  if (availableFrom) availableFrom.setHours(0, 0, 0, 0)
+  if (availableTo) availableTo.setHours(0, 0, 0, 0)
 
   const handleAddToTrip = () => {
     // Default booking date is today, with 1 adult and 0 children for quick adds from the hero section.
-    const today = new Date().toISOString().split("T")[0]
-    addToTrip(experience as any, today, 1, 0)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const bookingDate =
+      availableFrom && today < availableFrom ? availableFrom : today
+    if (availableTo && bookingDate > availableTo) {
+      alert("This experience is not available on the selected dates.")
+      return
+    }
+    addToTrip(experience as any, bookingDate.toISOString().split("T")[0], Math.max(minGroup, 1), 0)
     setJustAdded(true)
     setTimeout(() => setJustAdded(false), 2000)
   }
@@ -121,6 +138,16 @@ export function ExperienceHero({ experience }: ExperienceHeroProps) {
                     <div className="text-sm text-muted-foreground mb-1">From</div>
                     <div className="text-4xl font-bold">${adultPrice}</div>
                     <div className="text-sm text-muted-foreground">Adult · Child ${childPrice}</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Group size {minGroup}
+                      {maxGroup ? `-${maxGroup}` : ""} people
+                    </div>
+                    {availableFrom && (
+                      <div className="text-xs text-muted-foreground">
+                        From {availableFrom.toLocaleDateString()}
+                        {availableTo ? ` to ${availableTo.toLocaleDateString()}` : ""}
+                      </div>
+                    )}
                   </div>
 
                   <Button

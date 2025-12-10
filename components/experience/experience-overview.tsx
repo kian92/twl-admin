@@ -29,6 +29,10 @@ interface ExperienceOverviewProps {
     reviewCount: number
     description: string
     highlights: string[]
+    available_from?: string | null
+    available_to?: string | null
+    min_group_size?: number
+    max_group_size?: number
   }
 }
 
@@ -39,15 +43,26 @@ export function ExperienceOverview({ experience }: ExperienceOverviewProps) {
   const [justAdded, setJustAdded] = useState(false)
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
   const [selectedDate, setSelectedDate] = useState<Date>()
-  const [adults, setAdults] = useState(2)
+  const minGroup = Math.max(1, experience.min_group_size ?? 1)
+  const maxGroup = Math.max(minGroup, experience.max_group_size ?? minGroup)
+  const [adults, setAdults] = useState(() => Math.max(1, minGroup))
   const [children, setChildren] = useState(0)
   const adultPrice = Number.isFinite(experience.adult_price) ? experience.adult_price : experience.price ?? 0
   const childPrice = Number.isFinite(experience.child_price) ? experience.child_price : adultPrice * 0.7
   const totalPrice = adultPrice * adults + childPrice * children
+  const totalPeople = adults + children
+  const availableFrom = experience.available_from ? new Date(experience.available_from) : null
+  const availableTo = experience.available_to ? new Date(experience.available_to) : null
+  if (availableFrom) availableFrom.setHours(0, 0, 0, 0)
+  if (availableTo) availableTo.setHours(0, 0, 0, 0)
 
   const handleAddToTrip = () => {
     if (!selectedDate) {
       alert("Please select a date for your experience")
+      return
+    }
+    if (totalPeople < minGroup || totalPeople > maxGroup) {
+      alert(`Group size must be between ${minGroup} and ${maxGroup} people`)
       return
     }
     addToTrip(experience as any, format(selectedDate, "yyyy-MM-dd"), adults, children)
@@ -156,11 +171,24 @@ export function ExperienceOverview({ experience }: ExperienceOverviewProps) {
                         mode="single"
                         selected={selectedDate}
                         onSelect={setSelectedDate}
-                        disabled={(date) => date < new Date()}
+                        disabled={(date) => {
+                          const today = new Date()
+                          today.setHours(0, 0, 0, 0)
+                          if (date < today) return true
+                          if (availableFrom && date < availableFrom) return true
+                          if (availableTo && date > availableTo) return true
+                          return false
+                        }}
                         initialFocus
                       />
                     </PopoverContent>
                   </Popover>
+                  {(availableFrom || availableTo) && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {availableFrom ? `Available from ${format(availableFrom, "PPP")}` : "Availability not set"}{" "}
+                      {availableTo ? `to ${format(availableTo, "PPP")}` : ""}
+                    </p>
+                  )}
                 </div>
 
                 {/* Number of People */}
@@ -179,7 +207,7 @@ export function ExperienceOverview({ experience }: ExperienceOverviewProps) {
                         size="icon"
                         className="h-8 w-8 bg-transparent"
                         onClick={() => setAdults(Math.max(1, adults - 1))}
-                        disabled={adults <= 1}
+                        disabled={adults <= 1 || totalPeople <= minGroup}
                       >
                         <Minus className="h-4 w-4" />
                       </Button>
@@ -188,8 +216,12 @@ export function ExperienceOverview({ experience }: ExperienceOverviewProps) {
                         variant="outline"
                         size="icon"
                         className="h-8 w-8 bg-transparent"
-                        onClick={() => setAdults(Math.min(15, adults + 1))}
-                        disabled={adults >= 15}
+                        onClick={() => {
+                          if (totalPeople < maxGroup) {
+                            setAdults((prev) => prev + 1)
+                          }
+                        }}
+                        disabled={totalPeople >= maxGroup}
                       >
                         <Plus className="h-4 w-4" />
                       </Button>
@@ -208,7 +240,7 @@ export function ExperienceOverview({ experience }: ExperienceOverviewProps) {
                         size="icon"
                         className="h-8 w-8 bg-transparent"
                         onClick={() => setChildren(Math.max(0, children - 1))}
-                        disabled={children <= 0}
+                        disabled={children <= 0 || totalPeople <= minGroup}
                       >
                         <Minus className="h-4 w-4" />
                       </Button>
@@ -217,8 +249,12 @@ export function ExperienceOverview({ experience }: ExperienceOverviewProps) {
                         variant="outline"
                         size="icon"
                         className="h-8 w-8 bg-transparent"
-                        onClick={() => setChildren(Math.min(10, children + 1))}
-                        disabled={children >= 10}
+                        onClick={() => {
+                          if (totalPeople < maxGroup) {
+                            setChildren((prev) => prev + 1)
+                          }
+                        }}
+                        disabled={totalPeople >= maxGroup}
                       >
                         <Plus className="h-4 w-4" />
                       </Button>
@@ -238,12 +274,18 @@ export function ExperienceOverview({ experience }: ExperienceOverviewProps) {
                       {children > 1 ? "ren" : ""} × ${childPrice.toFixed(2)}
                     </div>
                   )}
+                  {totalPeople < minGroup && (
+                    <div className="text-xs text-amber-600 mt-1">Minimum group size is {minGroup} people.</div>
+                  )}
                 </div>
 
                 <div className="space-y-2 text-xs text-muted-foreground mb-4">
                   <div className="flex items-center gap-2">
                     <Users className="h-3 w-3 text-muted-foreground" />
-                    <span>Group size: 2-15 people</span>
+                    <span>
+                      Group size: {minGroup}
+                      {maxGroup ? `-${maxGroup}` : ""} people
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Clock className="h-3 w-3 text-muted-foreground" />

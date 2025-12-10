@@ -29,6 +29,18 @@ export const experiencePayloadSchema = z.object({
   duration: z.string().min(1),
   adult_price: z.number().nonnegative(),
   child_price: z.number().nonnegative(),
+  available_from: z
+    .string()
+    .optional()
+    .nullable()
+    .refine((val) => !val || !Number.isNaN(Date.parse(val)), { message: "Invalid start date" }),
+  available_to: z
+    .string()
+    .optional()
+    .nullable()
+    .refine((val) => !val || !Number.isNaN(Date.parse(val)), { message: "Invalid end date" }),
+  min_group_size: z.number().int().positive().optional(),
+  max_group_size: z.number().int().positive().optional(),
   category: z.string().min(1),
   description: z.string().optional().nullable(),
   // image_url: z.string().url().optional().nullable(),
@@ -43,6 +55,20 @@ export const experiencePayloadSchema = z.object({
   gallery: z.array(z.string()).optional().nullable(),
   faqs: z.array(faqItemSchema).optional().nullable(),
 })
+  .refine(
+    (data) => {
+      if (!data.available_from || !data.available_to) return true
+      return new Date(data.available_from) <= new Date(data.available_to)
+    },
+    { message: "Availability end date must be on or after start date", path: ["available_to"] },
+  )
+  .refine(
+    (data) => {
+      if (data.min_group_size === undefined || data.max_group_size === undefined) return true
+      return data.min_group_size <= data.max_group_size
+    },
+    { message: "Max group size must be greater than or equal to min group size", path: ["max_group_size"] },
+  )
 
 type ExperienceInsert = Database["public"]["Tables"]["experiences"]["Insert"]
 
@@ -80,6 +106,10 @@ export function normalizeExperiencePayload(payload: ExperiencePayload): Experien
     price: payload.adult_price,
     adult_price: payload.adult_price,
     child_price: payload.child_price,
+    available_from: payload.available_from ?? null,
+    available_to: payload.available_to ?? null,
+    min_group_size: payload.min_group_size ?? 1,
+    max_group_size: payload.max_group_size ?? 15,
     category: payload.category,
     description: payload.description ?? null,
     // image_url: trimString(payload.image_url),

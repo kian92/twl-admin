@@ -38,6 +38,10 @@ interface FormState {
   duration: string
   adult_price: string
   child_price: string
+  available_from: string
+  available_to: string
+  min_group_size: string
+  max_group_size: string
   category: string
   // image_url: string
   highlights: string
@@ -104,6 +108,10 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
           duration: experienceData.duration,
           adult_price: (experienceData.adult_price ?? experienceData.price ?? 0).toString(),
           child_price: (experienceData.child_price ?? experienceData.price ?? 0).toString(),
+          available_from: experienceData.available_from ?? "",
+          available_to: experienceData.available_to ?? "",
+          min_group_size: (experienceData.min_group_size ?? 1).toString(),
+          max_group_size: (experienceData.max_group_size ?? 15).toString(),
           category: experienceData.category,
           // image_url: experienceData.image_url ?? "",
           highlights: (experienceData.highlights ?? []).join("\n"),
@@ -297,6 +305,8 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
     try {
       const adultPrice = Number.parseFloat(form.adult_price)
       const childPrice = Number.parseFloat(form.child_price)
+      const minGroup = Number.parseInt(form.min_group_size, 10)
+      const maxGroup = Number.parseInt(form.max_group_size, 10)
 
       // Upload new images
       const uploadedUrls: string[] = []
@@ -328,6 +338,10 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
         price: Number.isFinite(adultPrice) ? adultPrice : 0,
         adult_price: Number.isFinite(adultPrice) ? adultPrice : 0,
         child_price: Number.isFinite(childPrice) ? childPrice : 0,
+        available_from: form.available_from || null,
+        available_to: form.available_to || null,
+        min_group_size: Number.isFinite(minGroup) ? minGroup : 1,
+        max_group_size: Number.isFinite(maxGroup) ? maxGroup : 15,
         category: form.category,
         // image_url: form.image_url,
         highlights: highlightsList,
@@ -503,6 +517,46 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                   onChange={handleChange("child_price")}
                   min="0"
                   step="1"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="space-y-2">
+                <Label htmlFor="available-from">Available From</Label>
+                <Input
+                  id="available-from"
+                  type="date"
+                  value={form.available_from}
+                  onChange={handleChange("available_from")}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="available-to">Available To</Label>
+                <Input id="available-to" type="date" value={form.available_to} onChange={handleChange("available_to")} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="min-group">Min Group Size</Label>
+                <Input
+                  id="min-group"
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={form.min_group_size}
+                  onChange={handleChange("min_group_size")}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="max-group">Max Group Size</Label>
+                <Input
+                  id="max-group"
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={form.max_group_size}
+                  onChange={handleChange("max_group_size")}
                   required
                 />
               </div>
