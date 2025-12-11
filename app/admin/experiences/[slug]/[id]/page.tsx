@@ -409,6 +409,8 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
 
 
       // Step 2: Prepare payload with uploaded gallery filenames
+      console.log('is_destination_featured value from form:', form.is_destination_featured)
+
       const payload = {
         title: form.title,
         location: form.location,
@@ -441,12 +443,20 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
           faqs.filter((item) => item.question && item.answer).length > 0 ? faqs.filter((item) => item.question && item.answer) : null,
       }
 
+      console.log('Payload being sent:', JSON.stringify(payload, null, 2))
+
      // Step 3: Update experience
       const response = await fetch(`/api/admin/experiences/${experience.slug}/${experience.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       })
+
+      console.log('Response status:', response.status)
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Error response:', errorText)
+      }
 
       const result = (await response.json().catch(() => ({}))) as { error?: string }
 
@@ -782,8 +792,11 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                   <input
                     type="checkbox"
                     id="is_destination_featured"
-                    checked={form.is_destination_featured || false}
-                    onChange={(e) => setForm({ ...form, is_destination_featured: e.target.checked })}
+                    checked={Boolean(form.is_destination_featured)}
+                    onChange={(e) => {
+                      console.log('Checkbox changed to:', e.target.checked)
+                      setForm({ ...form, is_destination_featured: e.target.checked })
+                    }}
                     className="h-4 w-4 rounded border-gray-300"
                   />
                   <label htmlFor="is_destination_featured" className="text-sm">
