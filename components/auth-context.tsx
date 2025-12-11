@@ -260,28 +260,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [pointsHistory, setPointsHistory] = useState<PointsHistory[]>([])
 
   useEffect(() => {
-    const savedUser = localStorage.getItem("wandering-lens-user")
-    const savedHistory = localStorage.getItem("wandering-lens-points-history")
-    if (savedUser) {
-      setUser(JSON.parse(savedUser))
-    }
-    if (savedHistory) {
-      setPointsHistory(JSON.parse(savedHistory))
-    } else {
+    try {
+      const savedUser = localStorage.getItem("wandering-lens-user")
+      const savedHistory = localStorage.getItem("wandering-lens-points-history")
+      if (savedUser) {
+        setUser(JSON.parse(savedUser))
+      }
+      if (savedHistory) {
+        setPointsHistory(JSON.parse(savedHistory))
+      } else {
+        setPointsHistory(getInitialPointsHistory())
+      }
+    } catch (error) {
+      console.error("Failed to load from localStorage:", error)
       setPointsHistory(getInitialPointsHistory())
     }
   }, [])
 
   useEffect(() => {
-    if (user) {
-      localStorage.setItem("wandering-lens-user", JSON.stringify(user))
-    } else {
-      localStorage.removeItem("wandering-lens-user")
+    try {
+      if (user) {
+        localStorage.setItem("wandering-lens-user", JSON.stringify(user))
+      } else {
+        localStorage.removeItem("wandering-lens-user")
+      }
+    } catch (error) {
+      console.error("Failed to save user to localStorage:", error)
     }
   }, [user])
 
   useEffect(() => {
-    localStorage.setItem("wandering-lens-points-history", JSON.stringify(pointsHistory))
+    try {
+      localStorage.setItem("wandering-lens-points-history", JSON.stringify(pointsHistory))
+    } catch (error) {
+      console.error("Failed to save points history to localStorage:", error)
+    }
   }, [pointsHistory])
 
   const signIn = async (email: string, password: string): Promise<boolean> => {

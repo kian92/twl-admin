@@ -57,15 +57,23 @@ export function TripProvider({ children }: { children: ReactNode }) {
 
   // Load from localStorage on mount
   useEffect(() => {
-    const saved = localStorage.getItem("wandering-lens-trip")
-    if (saved) {
-      setTripItems(JSON.parse(saved))
+    try {
+      const saved = localStorage.getItem("wandering-lens-trip")
+      if (saved) {
+        setTripItems(JSON.parse(saved))
+      }
+    } catch (error) {
+      console.error("Failed to load trip from localStorage:", error)
     }
   }, [])
 
   // Save to localStorage whenever tripItems changes
   useEffect(() => {
-    localStorage.setItem("wandering-lens-trip", JSON.stringify(tripItems))
+    try {
+      localStorage.setItem("wandering-lens-trip", JSON.stringify(tripItems))
+    } catch (error) {
+      console.error("Failed to save trip to localStorage:", error)
+    }
   }, [tripItems])
 
   const addToTrip = (experience: Experience, bookingDate: string, adults: number, children: number, selectedAddons?: AddOnSelection[]) => {

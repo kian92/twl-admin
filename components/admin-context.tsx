@@ -158,7 +158,8 @@ export function AdminProvider({
       isMounted = false
       listener.subscription.unsubscribe()
     }
-  }, [supabase, fetchProfile, hasInitialSession, initialProfile, initialSession?.user?.id])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supabase, fetchProfile])
 
   const refreshProfile = useCallback(async () => {
     if (!user) return

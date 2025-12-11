@@ -36,15 +36,23 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
 
   // Load from localStorage on mount
   useEffect(() => {
-    const saved = localStorage.getItem("wandering-lens-favorites")
-    if (saved) {
-      setFavorites(JSON.parse(saved))
+    try {
+      const saved = localStorage.getItem("wandering-lens-favorites")
+      if (saved) {
+        setFavorites(JSON.parse(saved))
+      }
+    } catch (error) {
+      console.error("Failed to load favorites from localStorage:", error)
     }
   }, [])
 
   // Save to localStorage whenever favorites changes
   useEffect(() => {
-    localStorage.setItem("wandering-lens-favorites", JSON.stringify(favorites))
+    try {
+      localStorage.setItem("wandering-lens-favorites", JSON.stringify(favorites))
+    } catch (error) {
+      console.error("Failed to save favorites to localStorage:", error)
+    }
   }, [favorites])
 
   const addToFavorites = (experience: Experience) => {
