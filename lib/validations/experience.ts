@@ -54,6 +54,7 @@ export const experiencePayloadSchema = z.object({
   itinerary: z.array(itineraryItemSchema).optional().nullable(),
   gallery: z.array(z.string()).optional().nullable(),
   faqs: z.array(faqItemSchema).optional().nullable(),
+  is_destination_featured: z.boolean().optional().nullable(),
 })
   .refine(
     (data) => {
@@ -123,5 +124,6 @@ export function normalizeExperiencePayload(payload: ExperiencePayload): Experien
     itinerary: normalizeItinerary(payload.itinerary),
     gallery: normalizeStringArray(payload.gallery),
     faqs: normalizeFaqs(payload.faqs),
+    is_destination_featured: payload.is_destination_featured ?? false,
   }
 }
