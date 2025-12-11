@@ -95,6 +95,39 @@ export async function PUT(
       }
     }
 
+    // Update add-ons if provided
+    if (body.addons !== undefined) {
+      // Delete existing add-ons
+      await supabase.from('package_addons').delete().eq('package_id', id);
+
+      // Create new add-ons if any
+      if (Array.isArray(body.addons) && body.addons.length > 0) {
+        const addonsToInsert = body.addons.map((addon: any, index: number) => ({
+          package_id: id,
+          addon_name: addon.name,
+          addon_code: addon.addon_code || null,
+          description: addon.description || null,
+          pricing_type: addon.pricing_type || 'per_person',
+          price: addon.price,
+          currency: 'USD',
+          min_quantity: addon.min_quantity || 1,
+          max_quantity: addon.max_quantity || null,
+          is_required: addon.is_required || false,
+          category: addon.category || null,
+          display_order: index,
+          is_active: true,
+        }));
+
+        const { error: addonsError } = await supabase
+          .from('package_addons')
+          .insert(addonsToInsert);
+
+        if (addonsError) {
+          console.error('Failed to update add-ons:', addonsError);
+        }
+      }
+    }
+
     return NextResponse.json({ package: updatedPackage }, { status: 200 });
   } catch (err) {
     console.error('Failed to update package:', err);

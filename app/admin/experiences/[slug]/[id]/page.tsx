@@ -187,7 +187,17 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                 is_active: pkg.is_active ?? true,
                 display_order: pkg.display_order ?? index + 1,
                 available_from: pkg.available_from || '',
-                available_to: pkg.available_to || ''
+                available_to: pkg.available_to || '',
+                addons: pkg.addons?.map((addon: any) => ({
+                  id: addon.id,
+                  name: addon.addon_name,
+                  description: addon.description || '',
+                  price: addon.price,
+                  is_required: addon.is_required || false,
+                  max_quantity: addon.max_quantity || 1,
+                  pricing_type: addon.pricing_type || 'per_person',
+                  category: addon.category || 'Other'
+                })) || []
               }))
               setPackages(formattedPackages)
             }
@@ -487,7 +497,8 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
           adult_price: adultPrice,
           child_price: childPrice,
           ...(infantPrice !== undefined && { infant_price: infantPrice }),
-          ...(seniorPrice !== undefined && { senior_price: seniorPrice })
+          ...(seniorPrice !== undefined && { senior_price: seniorPrice }),
+          addons: pkg.addons || []
         }
 
         console.log('Creating package with payload:', packagePayload);

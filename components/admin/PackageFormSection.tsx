@@ -6,8 +6,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, X, Trash2 } from 'lucide-react';
+import { Plus, X, Trash2, Package } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+
+export interface AddOnItem {
+  id?: string;
+  name: string;
+  description: string;
+  price: number;
+  is_required: boolean;
+  max_quantity: number;
+  pricing_type?: 'per_person' | 'per_group' | 'per_unit';
+  category?: string;
+}
 
 export interface PackageFormData {
   id?: string;
@@ -28,6 +41,9 @@ export interface PackageFormData {
   child_price: number;
   infant_price?: number;
   senior_price?: number;
+
+  // Add-ons
+  addons?: AddOnItem[];
 }
 
 interface PackageFormSectionProps {
@@ -53,6 +69,7 @@ export function PackageFormSection({ packages, onChange }: PackageFormSectionPro
       is_active: true,
       adult_price: 0,
       child_price: 0,
+      addons: [],
     };
     onChange([...packages, newPackage]);
     setExpandedPackage(packages.length);
@@ -82,6 +99,40 @@ export function PackageFormSection({ packages, onChange }: PackageFormSectionPro
   const removeArrayItem = (packageIndex: number, field: 'inclusions' | 'exclusions', itemIndex: number) => {
     const updated = [...packages];
     updated[packageIndex][field] = updated[packageIndex][field].filter((_, i) => i !== itemIndex);
+    onChange(updated);
+  };
+
+  const addAddon = (packageIndex: number) => {
+    const updated = [...packages];
+    if (!updated[packageIndex].addons) {
+      updated[packageIndex].addons = [];
+    }
+    updated[packageIndex].addons!.push({
+      name: '',
+      description: '',
+      price: 0,
+      is_required: false,
+      max_quantity: 1,
+      pricing_type: 'per_person',
+      category: 'Other',
+    });
+    onChange(updated);
+  };
+
+  const updateAddon = (packageIndex: number, addonIndex: number, field: keyof AddOnItem, value: any) => {
+    const updated = [...packages];
+    if (!updated[packageIndex].addons) return;
+    updated[packageIndex].addons![addonIndex] = {
+      ...updated[packageIndex].addons![addonIndex],
+      [field]: value,
+    };
+    onChange(updated);
+  };
+
+  const removeAddon = (packageIndex: number, addonIndex: number) => {
+    const updated = [...packages];
+    if (!updated[packageIndex].addons) return;
+    updated[packageIndex].addons = updated[packageIndex].addons!.filter((_, i) => i !== addonIndex);
     onChange(updated);
   };
 
@@ -346,6 +397,150 @@ export function PackageFormSection({ packages, onChange }: PackageFormSectionPro
                           />
                         </div>
                       </div>
+                    </div>
+
+                    {/* Add-ons / Optional Extras */}
+                    <div className="space-y-3 pt-4 border-t">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label className="text-base">Add-ons & Optional Extras</Label>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Add optional items like single supplements, insurance, equipment rentals, etc.
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => addAddon(index)}
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add Item
+                        </Button>
+                      </div>
+
+                      {pkg.addons && pkg.addons.length > 0 && (
+                        <div className="space-y-3">
+                          {pkg.addons.map((addon, addonIndex) => (
+                            <div key={addonIndex} className="p-4 border rounded-lg space-y-3 bg-muted/30">
+                              <div className="flex items-start justify-between">
+                                <Badge variant="secondary">Add-on {addonIndex + 1}</Badge>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => removeAddon(index, addonIndex)}
+                                >
+                                  <Trash2 className="w-4 h-4 text-red-500" />
+                                </Button>
+                              </div>
+
+                              <div className="grid gap-3 md:grid-cols-2">
+                                <div className="space-y-2">
+                                  <Label>Add-on Name *</Label>
+                                  <Input
+                                    value={addon.name}
+                                    onChange={(e) => updateAddon(index, addonIndex, 'name', e.target.value)}
+                                    placeholder="e.g., Single Supplement"
+                                    required
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Category</Label>
+                                  <Select
+                                    value={addon.category || 'Other'}
+                                    onValueChange={(value) => updateAddon(index, addonIndex, 'category', value)}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select category" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="Transportation">Transportation</SelectItem>
+                                      <SelectItem value="Activities">Activities</SelectItem>
+                                      <SelectItem value="Meals">Meals</SelectItem>
+                                      <SelectItem value="Insurance">Insurance</SelectItem>
+                                      <SelectItem value="Equipment">Equipment</SelectItem>
+                                      <SelectItem value="Accommodation">Accommodation</SelectItem>
+                                      <SelectItem value="Other">Other</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label>Description</Label>
+                                <Textarea
+                                  value={addon.description}
+                                  onChange={(e) => updateAddon(index, addonIndex, 'description', e.target.value)}
+                                  placeholder="Describe this add-on..."
+                                  rows={2}
+                                />
+                              </div>
+
+                              <div className="grid gap-3 md:grid-cols-3">
+                                <div className="space-y-2">
+                                  <Label>Pricing Type</Label>
+                                  <Select
+                                    value={addon.pricing_type || 'per_person'}
+                                    onValueChange={(value) => updateAddon(index, addonIndex, 'pricing_type', value)}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="per_person">Per Person</SelectItem>
+                                      <SelectItem value="per_group">Per Group</SelectItem>
+                                      <SelectItem value="per_unit">Per Unit</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Price (USD) *</Label>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={addon.price}
+                                    onChange={(e) => updateAddon(index, addonIndex, 'price', parseFloat(e.target.value) || 0)}
+                                    placeholder="0.00"
+                                    required
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Max Quantity</Label>
+                                  <Input
+                                    type="number"
+                                    min="1"
+                                    value={addon.max_quantity}
+                                    onChange={(e) => updateAddon(index, addonIndex, 'max_quantity', parseInt(e.target.value) || 1)}
+                                    placeholder="1"
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`required-${index}-${addonIndex}`}
+                                  checked={addon.is_required}
+                                  onCheckedChange={(checked) => updateAddon(index, addonIndex, 'is_required', checked)}
+                                />
+                                <Label
+                                  htmlFor={`required-${index}-${addonIndex}`}
+                                  className="text-sm font-normal cursor-pointer"
+                                >
+                                  Required add-on (automatically included)
+                                </Label>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {(!pkg.addons || pkg.addons.length === 0) && (
+                        <div className="text-center py-6 text-muted-foreground border rounded-lg border-dashed">
+                          <p className="text-sm">No add-ons yet. Click "Add Item" to create optional extras.</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

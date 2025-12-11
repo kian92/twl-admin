@@ -280,6 +280,7 @@ export default function NewExperiencePage() {
             child_price: pkg.child_price,
             infant_price: pkg.infant_price,
             senior_price: pkg.senior_price,
+            addons: pkg.addons || [],
           };
 
           await fetch("/api/admin/packages", {

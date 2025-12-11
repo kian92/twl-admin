@@ -136,6 +136,34 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Create add-ons if provided
+    if (body.addons && Array.isArray(body.addons) && body.addons.length > 0) {
+      const addonsToInsert = body.addons.map((addon: any) => ({
+        package_id: newPackage.id,
+        addon_name: addon.name,
+        addon_code: addon.addon_code || null,
+        description: addon.description || null,
+        pricing_type: addon.pricing_type || 'per_person',
+        price: addon.price,
+        currency: 'USD',
+        min_quantity: addon.min_quantity || 1,
+        max_quantity: addon.max_quantity || null,
+        is_required: addon.is_required || false,
+        category: addon.category || null,
+        display_order: 0,
+        is_active: true,
+      }));
+
+      const { error: addonsError } = await supabase
+        .from('package_addons')
+        .insert(addonsToInsert);
+
+      if (addonsError) {
+        console.error('Failed to create add-ons:', addonsError);
+        // Don't fail the whole request, package was created
+      }
+    }
+
     return NextResponse.json({ package: newPackage }, { status: 201 });
   } catch (err) {
     console.error('Failed to create package:', err);
