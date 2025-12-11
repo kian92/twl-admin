@@ -18,6 +18,7 @@ import { PackageFormSection, PackageFormData } from "@/components/admin/PackageF
 
 type ExperienceInsert = Omit<Database["public"]["Tables"]["experiences"]["Insert"], "slug"> & {
   slug?: string
+  is_destination_featured?: boolean
 }
 
 interface ItineraryItem {
@@ -32,7 +33,7 @@ interface FAQItem {
 }
 
 const initialForm: ExperienceInsert = {
-  slug: "", 
+  slug: "",
   title: "",
   location: "",
   country: "Indonesia",
@@ -57,6 +58,7 @@ const initialForm: ExperienceInsert = {
   available_to: null,
   min_group_size: 1,
   max_group_size: 15,
+  is_destination_featured: false,
 }
 
 const categories = ["Adventure", "Culture", "Relaxation", "Wellness", "Nature"]
@@ -498,6 +500,25 @@ export default function NewExperiencePage() {
                 <p className="text-sm text-muted-foreground text-center py-4">
                   No images uploaded yet
                 </p>
+              )}
+
+              {/* Featured Destination Image */}
+              {galleryPreviewUrls.length > 0 && (
+                <div className="flex items-center space-x-2 pt-4 border-t">
+                  <input
+                    type="checkbox"
+                    id="is_destination_featured"
+                    checked={form.is_destination_featured || false}
+                    onChange={(e) => setForm({ ...form, is_destination_featured: e.target.checked })}
+                    className="h-4 w-4 rounded border-gray-300"
+                  />
+                  <label htmlFor="is_destination_featured" className="text-sm">
+                    <span className="font-medium">Use as destination image</span>
+                    <span className="text-muted-foreground ml-2">
+                      (First image will represent {form.country} on destination pages)
+                    </span>
+                  </label>
+                </div>
               )}
             </div>
           </CardContent>

@@ -53,6 +53,7 @@ interface FormState {
   what_to_bring: string
   gallery: string
   cancellation_policy: string
+  is_destination_featured?: boolean
 }
 
 const categories = ["Adventure", "Culture", "Relaxation", "Wellness", "Nature"]
@@ -142,6 +143,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
           what_to_bring: (experienceData.what_to_bring ?? []).join("\n"),
           gallery: (experienceData.gallery ?? []).join("\n"),
           cancellation_policy: experienceData.cancellation_policy ?? "",
+          is_destination_featured: (experienceData as any).is_destination_featured ?? false,
         })
 
         // Load gallery (FULL URLs)
@@ -430,6 +432,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
         what_to_bring: whatToBringList,
         gallery: updatedGallery,
         cancellation_policy: form.cancellation_policy,
+        is_destination_featured: form.is_destination_featured ?? false,
         itinerary:
           itinerary.filter((item) => item.day && item.time && item.activity).length > 0
             ? itinerary.filter((item) => item.day && item.time && item.activity)
@@ -771,6 +774,25 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
               {/* No images message */}
               {galleryPreviewUrls.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-4">No images uploaded yet</p>
+              )}
+
+              {/* Featured Destination Image */}
+              {galleryPreviewUrls.length > 0 && form && (
+                <div className="flex items-center space-x-2 pt-4 border-t">
+                  <input
+                    type="checkbox"
+                    id="is_destination_featured"
+                    checked={form.is_destination_featured || false}
+                    onChange={(e) => setForm({ ...form, is_destination_featured: e.target.checked })}
+                    className="h-4 w-4 rounded border-gray-300"
+                  />
+                  <label htmlFor="is_destination_featured" className="text-sm">
+                    <span className="font-medium">Use as destination image</span>
+                    <span className="text-muted-foreground ml-2">
+                      (First image will represent {form.country} on destination pages)
+                    </span>
+                  </label>
+                </div>
               )}
             </div>
           </CardContent>
