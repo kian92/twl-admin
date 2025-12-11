@@ -5,8 +5,9 @@ import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Star, MapPin, Clock, Users, Check, Heart, Plus, CalendarIcon, Minus } from "lucide-react"
-import { useTrip } from "@/components/trip-context"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Star, MapPin, Clock, Users, Check, Heart, Plus, CalendarIcon, Minus, Package } from "lucide-react"
+import { useTrip, type AddOnSelection } from "@/components/trip-context"
 import { useFavorites } from "@/components/favorites-context"
 import { useAuth } from "@/components/auth-context"
 import { ShareButtons } from "@/components/share-buttons"
@@ -14,6 +15,17 @@ import { LoginPromptDialog } from "@/components/login-prompt-dialog"
 import { useState } from "react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
+
+interface PackageAddon {
+  id: string
+  addon_name: string
+  description: string
+  price: number
+  pricing_type: 'per_person' | 'per_group' | 'per_unit'
+  max_quantity: number
+  is_required: boolean
+  category?: string
+}
 
 interface ExperienceOverviewProps {
   experience: {
@@ -34,9 +46,10 @@ interface ExperienceOverviewProps {
     min_group_size?: number
     max_group_size?: number
   }
+  addons?: PackageAddon[]
 }
 
-export function ExperienceOverview({ experience }: ExperienceOverviewProps) {
+export function ExperienceOverview({ experience, addons = [] }: ExperienceOverviewProps) {
   const { tripItems, addToTrip } = useTrip()
   const { isFavorite, toggleFavorite } = useFavorites()
   const { isAuthenticated } = useAuth()
@@ -47,10 +60,29 @@ export function ExperienceOverview({ experience }: ExperienceOverviewProps) {
   const maxGroup = Math.max(minGroup, experience.max_group_size ?? minGroup)
   const [adults, setAdults] = useState(() => Math.max(1, minGroup))
   const [children, setChildren] = useState(0)
+  const [selectedAddons, setSelectedAddons] = useState<Record<string, number>>({})
+
   const adultPrice = Number.isFinite(experience.adult_price) ? experience.adult_price : experience.price ?? 0
   const childPrice = Number.isFinite(experience.child_price) ? experience.child_price : adultPrice * 0.7
-  const totalPrice = adultPrice * adults + childPrice * children
   const totalPeople = adults + children
+
+  // Calculate add-ons price
+  const addonsPrice = addons.reduce((sum, addon) => {
+    const quantity = selectedAddons[addon.id] || 0
+    if (quantity === 0) return sum
+
+    if (addon.pricing_type === 'per_person') {
+      return sum + (addon.price * quantity * totalPeople)
+    } else if (addon.pricing_type === 'per_group') {
+      return sum + (addon.price * quantity)
+    } else { // per_unit
+      return sum + (addon.price * quantity)
+    }
+  }, 0)
+
+  const basePrice = adultPrice * adults + childPrice * children
+  const totalPrice = basePrice + addonsPrice
+
   const availableFrom = experience.available_from ? new Date(experience.available_from) : null
   const availableTo = experience.available_to ? new Date(experience.available_to) : null
   if (availableFrom) availableFrom.setHours(0, 0, 0, 0)
@@ -65,9 +97,44 @@ export function ExperienceOverview({ experience }: ExperienceOverviewProps) {
       alert(`Group size must be between ${minGroup} and ${maxGroup} people`)
       return
     }
-    addToTrip(experience as any, format(selectedDate, "yyyy-MM-dd"), adults, children)
+
+    // Convert selected add-ons to AddOnSelection format
+    const addonsToAdd: AddOnSelection[] = addons
+      .filter(addon => (selectedAddons[addon.id] || 0) > 0)
+      .map(addon => ({
+        id: addon.id,
+        name: addon.addon_name,
+        description: addon.description || '',
+        price: addon.price,
+        pricing_type: addon.pricing_type,
+        quantity: selectedAddons[addon.id] || 1,
+        category: addon.category
+      }))
+
+    addToTrip(experience as any, format(selectedDate, "yyyy-MM-dd"), adults, children, addonsToAdd)
     setJustAdded(true)
     setTimeout(() => setJustAdded(false), 2000)
+  }
+
+  const handleAddonToggle = (addonId: string, checked: boolean) => {
+    setSelectedAddons(prev => ({
+      ...prev,
+      [addonId]: checked ? 1 : 0
+    }))
+  }
+
+  const handleAddonQuantityChange = (addonId: string, delta: number) => {
+    const addon = addons.find(a => a.id === addonId)
+    if (!addon) return
+
+    setSelectedAddons(prev => {
+      const current = prev[addonId] || 0
+      const newQuantity = Math.max(0, Math.min(addon.max_quantity || 99, current + delta))
+      return {
+        ...prev,
+        [addonId]: newQuantity
+      }
+    })
   }
 
   const handleToggleFavorite = () => {
@@ -262,18 +329,93 @@ export function ExperienceOverview({ experience }: ExperienceOverviewProps) {
                   </div>
                 </div>
 
+                {/* Add-ons */}
+                {addons.length > 0 && (
+                  <div className="mb-4 space-y-3">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <Package className="h-4 w-4" />
+                      Optional Add-ons
+                    </Label>
+                    <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                      {addons.map((addon) => {
+                        const isSelected = (selectedAddons[addon.id] || 0) > 0
+                        const quantity = selectedAddons[addon.id] || 0
+
+                        return (
+                          <div key={addon.id} className="border rounded-lg p-3 space-y-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-start gap-2 flex-1 min-w-0">
+                                <Checkbox
+                                  id={`addon-${addon.id}`}
+                                  checked={isSelected}
+                                  onCheckedChange={(checked) => handleAddonToggle(addon.id, checked as boolean)}
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <label
+                                    htmlFor={`addon-${addon.id}`}
+                                    className="text-sm font-medium cursor-pointer"
+                                  >
+                                    {addon.addon_name}
+                                  </label>
+                                  {addon.description && (
+                                    <p className="text-xs text-muted-foreground mt-0.5">{addon.description}</p>
+                                  )}
+                                  <div className="text-xs text-muted-foreground mt-1">
+                                    ${addon.price.toFixed(2)}
+                                    {addon.pricing_type === 'per_person' && ' per person'}
+                                    {addon.pricing_type === 'per_group' && ' per group'}
+                                    {addon.pricing_type === 'per_unit' && ' per unit'}
+                                  </div>
+                                </div>
+                              </div>
+                              {isSelected && addon.max_quantity > 1 && (
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={() => handleAddonQuantityChange(addon.id, -1)}
+                                    disabled={quantity <= 1}
+                                  >
+                                    <Minus className="h-3 w-3" />
+                                  </Button>
+                                  <span className="text-sm font-medium w-4 text-center">{quantity}</span>
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={() => handleAddonQuantityChange(addon.id, 1)}
+                                    disabled={quantity >= addon.max_quantity}
+                                  >
+                                    <Plus className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {/* Total Price */}
                 <div className="mb-4 p-3 bg-muted rounded-lg">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Total Price</span>
                     <span className="text-xl font-bold">${totalPrice.toFixed(2)}</span>
                   </div>
-                  {children > 0 && (
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {adults} adult{adults > 1 ? "s" : ""} × ${adultPrice.toFixed(2)} + {children} child
-                      {children > 1 ? "ren" : ""} × ${childPrice.toFixed(2)}
+                  <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                    <div>
+                      {adults} adult{adults > 1 ? "s" : ""} × ${adultPrice.toFixed(2)}
+                      {children > 0 && ` + ${children} child${children > 1 ? "ren" : ""} × ${childPrice.toFixed(2)}`}
                     </div>
-                  )}
+                    {addonsPrice > 0 && (
+                      <div className="text-primary">
+                        + Add-ons: ${addonsPrice.toFixed(2)}
+                      </div>
+                    )}
+                  </div>
                   {totalPeople < minGroup && (
                     <div className="text-xs text-amber-600 mt-1">Minimum group size is {minGroup} people.</div>
                   )}

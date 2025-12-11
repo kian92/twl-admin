@@ -2,6 +2,16 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 
+export interface AddOnSelection {
+  id: string
+  name: string
+  description: string
+  price: number
+  pricing_type: 'per_person' | 'per_group' | 'per_unit'
+  quantity: number
+  category?: string
+}
+
 export interface Experience {
   id: string
   title: string
@@ -27,11 +37,12 @@ export interface TripItem extends Experience {
   adults: number
   children: number
   totalPrice: number
+  selectedAddons?: AddOnSelection[]
 }
 
 interface TripContextType {
   tripItems: TripItem[]
-  addToTrip: (experience: Experience, bookingDate: string, adults: number, children: number) => void
+  addToTrip: (experience: Experience, bookingDate: string, adults: number, children: number, selectedAddons?: AddOnSelection[]) => void
   removeFromTrip: (id: string) => void
   reorderTrip: (items: TripItem[]) => void
   clearTrip: () => void
@@ -57,7 +68,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("wandering-lens-trip", JSON.stringify(tripItems))
   }, [tripItems])
 
-  const addToTrip = (experience: Experience, bookingDate: string, adults: number, children: number) => {
+  const addToTrip = (experience: Experience, bookingDate: string, adults: number, children: number, selectedAddons?: AddOnSelection[]) => {
     setTripItems((prev) => {
       if (prev.find((item) => item.id === experience.id)) {
         return prev
@@ -68,7 +79,24 @@ export function TripProvider({ children }: { children: ReactNode }) {
         : Number.isFinite(experience.price)
           ? experience.price * 0.7
           : 0
-      const totalPrice = adultPrice * adults + childPrice * children
+
+      // Calculate base price
+      let totalPrice = adultPrice * adults + childPrice * children
+
+      // Calculate add-ons price
+      if (selectedAddons && selectedAddons.length > 0) {
+        const addonsPrice = selectedAddons.reduce((sum, addon) => {
+          if (addon.pricing_type === 'per_person') {
+            return sum + (addon.price * addon.quantity * (adults + children))
+          } else if (addon.pricing_type === 'per_group') {
+            return sum + (addon.price * addon.quantity)
+          } else { // per_unit
+            return sum + (addon.price * addon.quantity)
+          }
+        }, 0)
+        totalPrice += addonsPrice
+      }
+
       return [
         ...prev,
         {
@@ -77,6 +105,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
           adults,
           children,
           totalPrice,
+          selectedAddons: selectedAddons || [],
         },
       ]
     })

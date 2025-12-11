@@ -72,6 +72,15 @@ export function CheckoutSummary() {
                       {item.adults} adult{item.adults > 1 ? "s" : ""}
                       {item.children > 0 && `, ${item.children} child${item.children > 1 ? "ren" : ""}`}
                     </p>
+                    {item.selectedAddons && item.selectedAddons.length > 0 && (
+                      <div className="mt-1 space-y-0.5">
+                        {item.selectedAddons.map((addon, idx) => (
+                          <p key={idx} className="text-xs text-primary">
+                            + {addon.name} {addon.quantity > 1 && `(×${addon.quantity})`}
+                          </p>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div className="text-sm font-semibold">${item.totalPrice.toFixed(2)}</div>
                 </div>
