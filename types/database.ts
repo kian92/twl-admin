@@ -66,6 +66,8 @@ export interface Database {
           itinerary: Json | null
           gallery: string[] | null
           faqs: Json | null
+          is_destination_featured: boolean
+          status: "draft" | "active"
           created_at: string | null
           updated_at: string | null
         }
@@ -98,11 +100,13 @@ export interface Database {
           itinerary?: Json | null
           gallery?: string[] | null
           faqs?: Json | null
+          is_destination_featured?: boolean
+          status?: "draft" | "active"
           created_at?: string | null
           updated_at?: string | null
         }
         Update: {
-          slug: string
+          slug?: string
           title?: string
           location?: string
           country?: string
@@ -127,6 +131,8 @@ export interface Database {
           what_to_bring?: string[] | null
           cancellation_policy?: string | null
           itinerary?: Json | null
+          is_destination_featured?: boolean
+          status?: "draft" | "active"
           gallery?: string[] | null
           faqs?: Json | null
           updated_at?: string | null

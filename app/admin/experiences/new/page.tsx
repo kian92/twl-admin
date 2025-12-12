@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CountryCombobox } from "@/components/ui/country-combobox"
-import { ArrowLeft, Plus, X, Upload, Loader2 } from "lucide-react"
+import { ArrowLeft, Plus, X, Upload, Loader2, FileText, Check } from "lucide-react"
 import Link from "next/link"
 import type { Database } from "@/types/database"
 import { toast } from "sonner"
@@ -59,6 +59,7 @@ const initialForm: ExperienceInsert = {
   min_group_size: 1,
   max_group_size: 15,
   is_destination_featured: false,
+  status: "active",
 }
 
 const categories = ["Adventure", "Culture", "Relaxation", "Wellness", "Nature"]
@@ -203,9 +204,9 @@ export default function NewExperiencePage() {
   };
   
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, status: "draft" | "active" = "active") => {
     e.preventDefault()
-    console.log("Form submitted - handleSubmit called")
+    console.log("Form submitted - handleSubmit called with status:", status)
     setLoading(true)
     setError(null)
 
@@ -247,6 +248,7 @@ export default function NewExperiencePage() {
         faqs: faqs.filter(item => item.question && item.answer).length > 0
           ? (faqs.filter(item => item.question && item.answer) as any)
           : null,
+        status,
       }
 
       const response = await fetch("/api/admin/experiences", {
@@ -293,7 +295,8 @@ export default function NewExperiencePage() {
         }
       }
 
-      toast.success("Experience and packages created")
+      const statusMessage = status === "draft" ? "saved as draft" : "published"
+      toast.success(`Experience and packages ${statusMessage}`)
       router.push("/admin/experiences")
     } catch (err: any) {
       console.error("Failed to create experience - Full error:", err)
@@ -741,15 +744,31 @@ export default function NewExperiencePage() {
         </Card>
 
         <div className="flex gap-4">
-          <Button type="submit" disabled={loading}>
+          <Button
+            type="button"
+            onClick={(e) => handleSubmit(e as any, "active")}
+            disabled={loading}
+          >
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Creating...
               </>
             ) : (
-              "Create Experience"
+              <>
+                <Check className="mr-2 h-4 w-4" />
+                Publish
+              </>
             )}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={(e) => handleSubmit(e as any, "draft")}
+            disabled={loading}
+          >
+            <FileText className="mr-2 h-4 w-4" />
+            Save as Draft
           </Button>
           <Button type="button" variant="outline" asChild>
             <Link href="/admin/experiences">Cancel</Link>

@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CountryCombobox } from "@/components/ui/country-combobox"
-import { ArrowLeft, Upload, Plus, X, Loader2 } from "lucide-react"
+import { ArrowLeft, Upload, Plus, X, Loader2, FileText, Check } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -54,6 +54,7 @@ interface FormState {
   gallery: string
   cancellation_policy: string
   is_destination_featured?: boolean
+  status: "draft" | "active"
 }
 
 const categories = ["Adventure", "Culture", "Relaxation", "Wellness", "Nature"]
@@ -144,6 +145,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
           gallery: (experienceData.gallery ?? []).join("\n"),
           cancellation_policy: experienceData.cancellation_policy ?? "",
           is_destination_featured: (experienceData as any).is_destination_featured ?? false,
+          status: experienceData.status ?? "active",
         })
 
         // Load gallery (FULL URLs)
@@ -363,13 +365,14 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
   const whatToBringList = useMemo(() => form?.what_to_bring.split("\n").filter(Boolean) ?? [], [form])
   const galleryList = useMemo(() => form?.gallery.split("\n").filter(Boolean) ?? [], [form])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, status?: "draft" | "active") => {
     e.preventDefault()
     if (!form || !experience) return
 
     console.log('=== SAVE HANDLER START ===');
     console.log('Packages state at save time:', packages);
     console.log('Number of packages:', packages.length);
+    console.log('Status:', status || form.status);
     packages.forEach((pkg, idx) => {
       console.log(`Package ${idx}:`, {
         name: pkg.package_name,
@@ -435,6 +438,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
         gallery: updatedGallery,
         cancellation_policy: form.cancellation_policy,
         is_destination_featured: form.is_destination_featured ?? false,
+        status: status || form.status,
         itinerary:
           itinerary.filter((item) => item.day && item.time && item.activity).length > 0
             ? itinerary.filter((item) => item.day && item.time && item.activity)
@@ -539,7 +543,8 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
         toast.warning(`Experience updated, but ${failCount} package(s) failed to save. Check console for details.`);
       }
 
-      toast.success("Experience updated successfully")
+      const statusMessage = (status || form.status) === "draft" ? "saved as draft" : "published"
+      toast.success(`Experience ${statusMessage} successfully`)
       router.push("/admin/experiences")
     } catch (err) {
       console.error("Failed to update experience", err)
@@ -1024,15 +1029,31 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
         </Card>
 
         <div className="flex gap-4">
-          <Button type="submit" disabled={saving}>
+          <Button
+            type="button"
+            onClick={(e) => handleSubmit(e as any, "active")}
+            disabled={saving}
+          >
             {saving ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Saving...
               </>
             ) : (
-              "Save Changes"
+              <>
+                <Check className="mr-2 h-4 w-4" />
+                {form?.status === "draft" ? "Publish" : "Save & Publish"}
+              </>
             )}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={(e) => handleSubmit(e as any, "draft")}
+            disabled={saving}
+          >
+            <FileText className="mr-2 h-4 w-4" />
+            Save as Draft
           </Button>
           <Button type="button" variant="outline" asChild>
             <Link href="/admin/experiences">Cancel</Link>

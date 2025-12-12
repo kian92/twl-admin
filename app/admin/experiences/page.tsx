@@ -31,6 +31,7 @@ export default function ExperiencesPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [selectedCountry, setSelectedCountry] = useState<string>("all")
+  const [selectedStatus, setSelectedStatus] = useState<string>("all")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
@@ -86,9 +87,10 @@ export default function ExperiencesPage() {
         exp.country.toLowerCase().includes(searchQuery.toLowerCase())
       const matchesCategory = selectedCategory === "all" || exp.category === selectedCategory
       const matchesCountry = selectedCountry === "all" || exp.country === selectedCountry
-      return matchesSearch && matchesCategory && matchesCountry
+      const matchesStatus = selectedStatus === "all" || exp.status === selectedStatus
+      return matchesSearch && matchesCategory && matchesCountry && matchesStatus
     })
-  }, [experiences, searchQuery, selectedCategory, selectedCountry])
+  }, [experiences, searchQuery, selectedCategory, selectedCountry, selectedStatus])
 
   // Pagination calculations
   const totalPages = Math.ceil(filteredExperiences.length / ITEMS_PER_PAGE)
@@ -99,7 +101,7 @@ export default function ExperiencesPage() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1)
-  }, [searchQuery, selectedCategory, selectedCountry])
+  }, [searchQuery, selectedCategory, selectedCountry, selectedStatus])
 
   const getPageNumbers = () => {
     const pages: (number | 'ellipsis')[] = []
@@ -200,6 +202,16 @@ export default function ExperiencesPage() {
               ))}
             </SelectContent>
           </Select>
+          <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="draft">Draft</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Category Filter */}
@@ -245,6 +257,18 @@ export default function ExperiencesPage() {
                     {experience.country}
                   </Badge>
                   <Badge className="bg-primary">{experience.category}</Badge>
+                </div>
+                <div className="absolute top-2 left-2">
+                  <Badge
+                    variant={experience.status === "active" ? "default" : "secondary"}
+                    className={
+                      experience.status === "active"
+                        ? "bg-green-600 hover:bg-green-700"
+                        : "bg-yellow-100 text-yellow-800 border-yellow-300"
+                    }
+                  >
+                    {experience.status === "active" ? "Active" : "Draft"}
+                  </Badge>
                 </div>
               </div>
               <CardContent className="p-4">
