@@ -16,6 +16,7 @@ import type { Database } from "@/types/database"
 import { toast } from "sonner"
 import { PackageFormSection, PackageFormData } from "@/components/admin/PackageFormSection"
 import { RichTextEditor } from "@/components/admin/RichTextEditor"
+import { useAdmin } from "@/components/admin-context"
 
 type ExperienceInsert = Omit<Database["public"]["Tables"]["experiences"]["Insert"], "slug"> & {
   slug?: string
@@ -67,6 +68,7 @@ const categories = ["Adventure", "Culture", "Relaxation", "Wellness", "Nature"]
 
 export default function NewExperiencePage() {
   const router = useRouter()
+  const { profile } = useAdmin()
   const [form, setForm] = useState(initialForm)
   const [highlightsText, setHighlightsText] = useState("")
   const [inclusionsText, setInclusionsText] = useState("")
@@ -206,13 +208,15 @@ export default function NewExperiencePage() {
   };
   
 
-  const handleSubmit = async (e: React.FormEvent, status: "draft" | "active" = "active") => {
+  const handleSubmit = async (e: React.FormEvent, status: "draft" | "review" | "active" = "active") => {
     e.preventDefault()
     console.log("Form submitted - handleSubmit called with status:", status)
     setLoading(true)
     setError(null)
 
     try {
+      // For suppliers, override status to 'review' regardless of what was passed
+      const finalStatus = profile?.role === 'supplier' ? 'review' : status;
       //  Upload images here
       const uploadedUrls: string[] = [];
       for (const file of galleryFiles) {
@@ -250,7 +254,7 @@ export default function NewExperiencePage() {
         faqs: faqs.filter(item => item.question && item.answer).length > 0
           ? (faqs.filter(item => item.question && item.answer) as any)
           : null,
-        status,
+        status: finalStatus,
       }
 
       const response = await fetch("/api/admin/experiences", {
@@ -311,7 +315,7 @@ export default function NewExperiencePage() {
         }
       }
 
-      const statusMessage = status === "draft" ? "saved as draft" : "published"
+      const statusMessage = finalStatus === "draft" ? "saved as draft" : finalStatus === "review" ? "submitted for review" : "published"
       toast.success(`Experience and packages ${statusMessage}`)
       router.push("/admin/experiences")
     } catch (err: any) {
@@ -430,6 +434,7 @@ export default function NewExperiencePage() {
         <PackageFormSection
           packages={packages}
           onChange={setPackages}
+          userRole={profile?.role}
         />
 
         {/* Images */}
@@ -769,12 +774,12 @@ export default function NewExperiencePage() {
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating...
+                {profile?.role === 'supplier' ? 'Submitting...' : 'Creating...'}
               </>
             ) : (
               <>
                 <Check className="mr-2 h-4 w-4" />
-                Publish
+                {profile?.role === 'supplier' ? 'Submit for Review' : 'Publish'}
               </>
             )}
           </Button>

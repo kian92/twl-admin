@@ -13,7 +13,7 @@ import type { Session, SupabaseClient, User } from "@supabase/supabase-js"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 import type { Database } from "@/types/database"
 
-export type AdminRole = "admin" | "manager" | "support"
+export type AdminRole = "admin" | "manager" | "support" | "sales" | "supplier"
 
 export interface AdminProfile {
   id: string
@@ -48,7 +48,7 @@ interface AdminProviderProps {
 }
 
 const normalizeRole = (role?: string | null): AdminRole => {
-  if (role === "admin" || role === "manager" || role === "support") {
+  if (role === "admin" || role === "manager" || role === "support" || role === "sales" || role === "supplier") {
     return role
   }
   return "support"

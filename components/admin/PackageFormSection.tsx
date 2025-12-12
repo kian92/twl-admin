@@ -60,10 +60,12 @@ export interface PackageFormData {
 interface PackageFormSectionProps {
   packages: PackageFormData[];
   onChange: (packages: PackageFormData[]) => void;
+  userRole?: 'admin' | 'manager' | 'support' | 'sales' | 'supplier';
 }
 
-export function PackageFormSection({ packages, onChange }: PackageFormSectionProps) {
+export function PackageFormSection({ packages, onChange, userRole }: PackageFormSectionProps) {
   const [expandedPackage, setExpandedPackage] = useState<number>(0);
+  const isSupplier = userRole === 'supplier';
 
   const addPackage = () => {
     const newPackage: PackageFormData = {
@@ -308,123 +310,129 @@ export function PackageFormSection({ packages, onChange }: PackageFormSectionPro
                       </Select>
                     </div>
 
-                    {/* Markup Configuration */}
-                    <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-medium">Markup Configuration</h4>
-                        <Badge variant="outline">Optional</Badge>
-                      </div>
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <div className="space-y-2">
-                          <Label>Markup Type</Label>
-                          <Select
-                            value={pkg.markup_type || 'none'}
-                            onValueChange={(value) => updatePricingWithMarkup(index, 'markup_type', value)}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select markup type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">No Markup</SelectItem>
-                              <SelectItem value="percentage">Percentage (%)</SelectItem>
-                              <SelectItem value="fixed">Fixed Amount ($)</SelectItem>
-                            </SelectContent>
-                          </Select>
+                    {/* Markup Configuration - Hidden for suppliers */}
+                    {!isSupplier && (
+                      <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium">Markup Configuration</h4>
+                          <Badge variant="outline">Optional</Badge>
                         </div>
-                        {pkg.markup_type && pkg.markup_type !== 'none' && (
+                        <div className="grid gap-4 md:grid-cols-2">
                           <div className="space-y-2">
-                            <Label>
-                              Markup Value {pkg.markup_type === 'percentage' ? '(%)' : '($)'}
-                            </Label>
+                            <Label>Markup Type</Label>
+                            <Select
+                              value={pkg.markup_type || 'none'}
+                              onValueChange={(value) => updatePricingWithMarkup(index, 'markup_type', value)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select markup type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">No Markup</SelectItem>
+                                <SelectItem value="percentage">Percentage (%)</SelectItem>
+                                <SelectItem value="fixed">Fixed Amount ($)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          {pkg.markup_type && pkg.markup_type !== 'none' && (
+                            <div className="space-y-2">
+                              <Label>
+                                Markup Value {pkg.markup_type === 'percentage' ? '(%)' : '($)'}
+                              </Label>
+                              <Input
+                                type="number"
+                                min="0"
+                                step={pkg.markup_type === 'percentage' ? '1' : '0.01'}
+                                value={pkg.markup_value ?? ''}
+                                onChange={(e) => {
+                                  const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                                  updatePricingWithMarkup(index, 'markup_value', isNaN(value) ? 0 : value);
+                                }}
+                                placeholder={pkg.markup_type === 'percentage' ? 'e.g., 20' : 'e.g., 50.00'}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Base Prices - Hidden for suppliers */}
+                    {!isSupplier && (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium">Base Prices (Cost)</h4>
+                          <span className="text-xs text-muted-foreground">Prices from supplier/operator</span>
+                        </div>
+                        <div className="grid gap-4 md:grid-cols-4">
+                          <div className="space-y-2">
+                            <Label>Adult Base Price</Label>
                             <Input
                               type="number"
                               min="0"
-                              step={pkg.markup_type === 'percentage' ? '1' : '0.01'}
-                              value={pkg.markup_value ?? ''}
+                              step="0.01"
+                              value={pkg.base_adult_price ?? ''}
                               onChange={(e) => {
                                 const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                                updatePricingWithMarkup(index, 'markup_value', isNaN(value) ? 0 : value);
+                                updatePricingWithMarkup(index, 'base_adult_price', isNaN(value) ? 0 : value);
                               }}
-                              placeholder={pkg.markup_type === 'percentage' ? 'e.g., 20' : 'e.g., 50.00'}
+                              placeholder="0.00"
                             />
                           </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Base Prices */}
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-medium">Base Prices (Cost)</h4>
-                        <span className="text-xs text-muted-foreground">Prices from supplier/operator</span>
-                      </div>
-                      <div className="grid gap-4 md:grid-cols-4">
-                        <div className="space-y-2">
-                          <Label>Adult Base Price</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={pkg.base_adult_price ?? ''}
-                            onChange={(e) => {
-                              const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                              updatePricingWithMarkup(index, 'base_adult_price', isNaN(value) ? 0 : value);
-                            }}
-                            placeholder="0.00"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Child Base Price</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={pkg.base_child_price ?? ''}
-                            onChange={(e) => {
-                              const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                              updatePricingWithMarkup(index, 'base_child_price', isNaN(value) ? 0 : value);
-                            }}
-                            placeholder="0.00"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Infant Base Price</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={pkg.base_infant_price ?? ''}
-                            onChange={(e) => {
-                              const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                              updatePricingWithMarkup(index, 'base_infant_price', isNaN(value) ? 0 : value);
-                            }}
-                            placeholder="Optional"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Senior Base Price</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={pkg.base_senior_price ?? ''}
-                            onChange={(e) => {
-                              const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                              updatePricingWithMarkup(index, 'base_senior_price', isNaN(value) ? 0 : value);
-                            }}
-                            placeholder="Optional"
-                          />
+                          <div className="space-y-2">
+                            <Label>Child Base Price</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={pkg.base_child_price ?? ''}
+                              onChange={(e) => {
+                                const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                                updatePricingWithMarkup(index, 'base_child_price', isNaN(value) ? 0 : value);
+                              }}
+                              placeholder="0.00"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Infant Base Price</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={pkg.base_infant_price ?? ''}
+                              onChange={(e) => {
+                                const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                                updatePricingWithMarkup(index, 'base_infant_price', isNaN(value) ? 0 : value);
+                              }}
+                              placeholder="Optional"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Senior Base Price</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={pkg.base_senior_price ?? ''}
+                              onChange={(e) => {
+                                const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                                updatePricingWithMarkup(index, 'base_senior_price', isNaN(value) ? 0 : value);
+                              }}
+                              placeholder="Optional"
+                            />
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
 
                     {/* Selling Prices */}
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <h4 className="font-medium">Selling Prices (Customer Pays)</h4>
-                        <span className="text-xs text-muted-foreground">
-                          {pkg.markup_type && pkg.markup_type !== 'none' ? 'Auto-calculated' : 'Manual entry'}
-                        </span>
+                        <h4 className="font-medium">{isSupplier ? 'Pricing' : 'Selling Prices (Customer Pays)'}</h4>
+                        {!isSupplier && (
+                          <span className="text-xs text-muted-foreground">
+                            {pkg.markup_type && pkg.markup_type !== 'none' ? 'Auto-calculated' : 'Manual entry'}
+                          </span>
+                        )}
                       </div>
                       <div className="grid gap-4 md:grid-cols-4">
                         <div className="space-y-2">
@@ -440,9 +448,9 @@ export function PackageFormSection({ packages, onChange }: PackageFormSectionPro
                             }}
                             placeholder="0.00"
                             className="font-semibold"
-                            disabled={pkg.markup_type !== 'none'}
+                            disabled={!isSupplier && pkg.markup_type !== 'none'}
                           />
-                          {pkg.markup_type && pkg.markup_type !== 'none' && pkg.base_adult_price && pkg.markup_value && (
+                          {!isSupplier && pkg.markup_type && pkg.markup_type !== 'none' && pkg.base_adult_price && pkg.markup_value && (
                             <span className="text-xs text-muted-foreground">
                               ${pkg.base_adult_price} + {pkg.markup_type === 'percentage' ? `${pkg.markup_value}%` : `$${pkg.markup_value}`}
                             </span>
@@ -461,9 +469,9 @@ export function PackageFormSection({ packages, onChange }: PackageFormSectionPro
                             }}
                             placeholder="0.00"
                             className="font-semibold"
-                            disabled={pkg.markup_type !== 'none'}
+                            disabled={!isSupplier && pkg.markup_type !== 'none'}
                           />
-                          {pkg.markup_type && pkg.markup_type !== 'none' && pkg.base_child_price && pkg.markup_value && (
+                          {!isSupplier && pkg.markup_type && pkg.markup_type !== 'none' && pkg.base_child_price && pkg.markup_value && (
                             <span className="text-xs text-muted-foreground">
                               ${pkg.base_child_price} + {pkg.markup_type === 'percentage' ? `${pkg.markup_value}%` : `$${pkg.markup_value}`}
                             </span>
@@ -482,7 +490,7 @@ export function PackageFormSection({ packages, onChange }: PackageFormSectionPro
                             }}
                             placeholder="Optional"
                             className="font-semibold"
-                            disabled={pkg.markup_type !== 'none'}
+                            disabled={!isSupplier && pkg.markup_type !== 'none'}
                           />
                         </div>
                         <div className="space-y-2">
@@ -498,7 +506,7 @@ export function PackageFormSection({ packages, onChange }: PackageFormSectionPro
                             }}
                             placeholder="Optional"
                             className="font-semibold"
-                            disabled={pkg.markup_type !== 'none'}
+                            disabled={!isSupplier && pkg.markup_type !== 'none'}
                           />
                         </div>
                       </div>

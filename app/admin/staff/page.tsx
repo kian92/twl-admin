@@ -21,13 +21,15 @@ const roleDescriptions: Record<string, string> = {
   manager: "Manage experiences, bookings, and customer operations.",
   support: "View data needed for support workflows.",
   sales: "Access to payment links, submissions, and settings only.",
+  supplier: "Create and manage experiences. Cannot see markup pricing. Submissions require staff approval.",
 }
 
-const ROLE_OPTIONS: Array<{ label: string; value: "admin" | "manager" | "support" | "sales" }> = [
+const ROLE_OPTIONS: Array<{ label: string; value: "admin" | "manager" | "support" | "sales" | "supplier" }> = [
   { label: "Administrator", value: "admin" },
   { label: "Manager", value: "manager" },
   // { label: "Support", value: "support" }, // Hidden from UI
   { label: "Sales", value: "sales" },
+  { label: "Supplier", value: "supplier" },
 ]
 
 const formatDate = (value?: string | null) => {
@@ -47,6 +49,8 @@ const roleBadgeStyles = (role: string) => {
       return "bg-blue-100 text-blue-700"
     case "sales":
       return "bg-purple-100 text-purple-700"
+    case "supplier":
+      return "bg-orange-100 text-orange-700"
     case "support":
     default:
       return "bg-emerald-100 text-emerald-700"
@@ -62,7 +66,8 @@ export default function StaffPage() {
   const [inviteEmail, setInviteEmail] = useState("")
   const [inviteName, setInviteName] = useState("")
   const [invitePassword, setInvitePassword] = useState("")
-  const [inviteRole, setInviteRole] = useState<"admin" | "manager" | "support" | "sales">("sales")
+  const [inviteRole, setInviteRole] = useState<"admin" | "manager" | "support" | "sales" | "supplier">("sales")
+  const [inviteCompanyName, setInviteCompanyName] = useState("")
   const [inviteStatus, setInviteStatus] = useState<{ type: "success" | "error"; message: string } | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -105,6 +110,7 @@ export default function StaffPage() {
           full_name: inviteName,
           password: invitePassword,
           role: inviteRole,
+          company_name: inviteRole === 'supplier' ? inviteCompanyName : null,
         }),
       })
 
@@ -119,6 +125,7 @@ export default function StaffPage() {
       setInviteName("")
       setInvitePassword("")
       setInviteRole("support")
+      setInviteCompanyName("")
       await loadStaff()
     } catch (err) {
       console.error("Account creation error", err)
@@ -246,6 +253,20 @@ export default function StaffPage() {
                   <p className="text-xs text-muted-foreground">{roleDescriptions[inviteRole]}</p>
                 </div>
 
+                {inviteRole === 'supplier' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="companyName">Company Name *</Label>
+                    <Input
+                      id="companyName"
+                      placeholder="e.g., Bali Adventure Tours"
+                      value={inviteCompanyName}
+                      onChange={(event) => setInviteCompanyName(event.target.value)}
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground">The supplier's company or business name</p>
+                  </div>
+                )}
+
                 {inviteStatus && (
                   <p
                     className={`text-sm ${
@@ -329,6 +350,9 @@ export default function StaffPage() {
                   </Avatar>
                   <div>
                     <p className="font-medium">{member.full_name ?? "Pending invite"}</p>
+                    {member.role === 'supplier' && member.company_name && (
+                      <p className="text-sm text-muted-foreground">{member.company_name}</p>
+                    )}
                     <p className="text-sm text-muted-foreground">
                       Added {formatDate(member.created_at)}
                     </p>

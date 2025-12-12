@@ -10,25 +10,44 @@ import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { AdminHeader } from "@/components/admin/admin-header"
 
 function AdminLayoutContent({ children }: { children: ReactNode }) {
-  const { isAuthenticated, isLoading } = useAdmin()
+  const { isAuthenticated, isLoading, profile } = useAdmin()
   const router = useRouter()
   const pathname = usePathname()
 
   const publicRoutes = [
     "/admin/login",
-    "/auth/callback",          
-    "/reset-password",         
+    "/auth/callback",
+    "/reset-password",
     "/forgot-password",
   ]
 
   const isPublic = publicRoutes.includes(pathname)
 
+  // Define allowed routes for suppliers
+  const supplierAllowedRoutes = [
+    "/admin/experiences",
+    "/admin/settings",
+  ]
+
   useEffect(() => {
     if (isLoading) return
     if (!isAuthenticated && !isPublic) {
       router.push("/admin/login")
+      return
     }
-  }, [isAuthenticated, isPublic, pathname, router, isLoading])
+
+    // Check if supplier is trying to access unauthorized page
+    if (isAuthenticated && profile?.role === 'supplier' && !isPublic) {
+      const isAllowed = supplierAllowedRoutes.some(route => pathname.startsWith(route))
+      if (!isAllowed && pathname !== '/admin') {
+        // Redirect suppliers to experiences page if they try to access unauthorized routes
+        router.push("/admin/experiences")
+      } else if (pathname === '/admin') {
+        // Redirect suppliers from dashboard to experiences
+        router.push("/admin/experiences")
+      }
+    }
+  }, [isAuthenticated, isPublic, pathname, router, isLoading, profile])
 
   if (isPublic) {
     return <>{children}</>

@@ -6,7 +6,7 @@ import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 import { LayoutDashboard, MapPin, Calendar, Users, Award, FileText, Settings, Compass, UserPlus, Link2, Receipt, MessageSquare } from "lucide-react"
 
-type UserRole = "admin" | "manager" | "support" | "sales";
+type UserRole = "admin" | "manager" | "support" | "sales" | "supplier";
 
 interface MenuItem {
   name: string;
@@ -17,14 +17,14 @@ interface MenuItem {
 
 const allMenuItems: MenuItem[] = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard, roles: ["admin", "manager", "support"] },
-  { name: "Experiences", href: "/admin/experiences", icon: MapPin, roles: ["admin", "manager", "support"] },
+  { name: "Experiences", href: "/admin/experiences", icon: MapPin, roles: ["admin", "manager", "support", "supplier"] },
   { name: "Bookings", href: "/admin/bookings", icon: Calendar, roles: ["admin", "manager", "support"] },
   { name: "Testimonials", href: "/admin/testimonials", icon: MessageSquare, roles: ["admin", "manager", "support"] },
   { name: "Payment Links", href: "/admin/payment-links", icon: Link2, roles: ["admin", "manager", "support", "sales"] },
   { name: "Submissions", href: "/admin/payment-submissions", icon: Receipt, roles: ["admin", "manager", "support", "sales"] },
   { name: "Users", href: "/admin/users", icon: Users, roles: ["admin", "manager", "support"] },
   { name: "Team", href: "/admin/staff", icon: UserPlus, roles: ["admin"] },
-  { name: "Settings", href: "/admin/settings", icon: Settings, roles: ["admin", "sales"] },
+  { name: "Settings", href: "/admin/settings", icon: Settings, roles: ["admin", "sales", "supplier"] },
 ];
 
 export function AdminSidebar() {

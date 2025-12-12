@@ -9,7 +9,7 @@ import type { Database } from "@/types/database"
 export const dynamic = "force-dynamic"
 
 const normalizeRole = (role?: string | null): AdminRole => {
-  if (role === "admin" || role === "manager" || role === "support") {
+  if (role === "admin" || role === "manager" || role === "support" || role === "sales" || role === "supplier") {
     return role
   }
   return "support"

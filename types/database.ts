@@ -13,26 +13,29 @@ export interface Database {
         Row: {
           id: string
           full_name: string | null
-          role: "admin" | "manager" | "support" | "sales" | null
+          role: "admin" | "manager" | "support" | "sales" | "supplier" | null
           avatar_url: string | null
           is_active: boolean
+          company_name: string | null
           created_at: string | null
           updated_at: string | null
         }
         Insert: {
           id: string
           full_name?: string | null
-          role?: "admin" | "manager" | "support" | "sales" | null
+          role?: "admin" | "manager" | "support" | "sales" | "supplier" | null
           avatar_url?: string | null
           is_active?: boolean
+          company_name?: string | null
           created_at?: string | null
           updated_at?: string | null
         }
         Update: {
           full_name?: string | null
-          role?: "admin" | "manager" | "support" | "sales" | null
+          role?: "admin" | "manager" | "support" | "sales" | "supplier" | null
           avatar_url?: string | null
           is_active?: boolean
+          company_name?: string | null
           updated_at?: string | null
         }
       }
@@ -67,7 +70,7 @@ export interface Database {
           gallery: string[] | null
           faqs: Json | null
           is_destination_featured: boolean
-          status: "draft" | "active"
+          status: "draft" | "review" | "active"
           created_at: string | null
           updated_at: string | null
         }
@@ -101,7 +104,7 @@ export interface Database {
           gallery?: string[] | null
           faqs?: Json | null
           is_destination_featured?: boolean
-          status?: "draft" | "active"
+          status?: "draft" | "review" | "active"
           created_at?: string | null
           updated_at?: string | null
         }
@@ -132,7 +135,7 @@ export interface Database {
           cancellation_policy?: string | null
           itinerary?: Json | null
           is_destination_featured?: boolean
-          status?: "draft" | "active"
+          status?: "draft" | "review" | "active"
           gallery?: string[] | null
           faqs?: Json | null
           updated_at?: string | null

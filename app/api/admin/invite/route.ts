@@ -8,7 +8,8 @@ const inviteSchema = z.object({
   email: z.string().email(),
   full_name: z.string().min(2).max(120),
   password: z.string().min(6),
-  role: z.enum(["admin", "manager", "support", "sales"]),
+  role: z.enum(["admin", "manager", "support", "sales", "supplier"]),
+  company_name: z.string().min(2).max(200).nullable().optional(),
 })
 
 export async function POST(request: Request) {
@@ -98,6 +99,7 @@ export async function POST(request: Request) {
             full_name: parsed.data.full_name,
             role: parsed.data.role,
             avatar_url: data.user.user_metadata?.avatar_url ?? null,
+            company_name: parsed.data.company_name ?? null,
           },
           { onConflict: "id" }
         )

@@ -18,6 +18,7 @@ import type { Database } from "@/types/database"
 import { toast } from "sonner"
 import { PackageFormSection, PackageFormData } from "@/components/admin/PackageFormSection"
 import { RichTextEditor } from "@/components/admin/RichTextEditor"
+import { useAdmin } from "@/components/admin-context"
 
 type ExperienceRow = Database["public"]["Tables"]["experiences"]["Row"]
 
@@ -49,7 +50,7 @@ interface FormState {
   gallery: string
   cancellation_policy: string
   is_destination_featured?: boolean
-  status: "draft" | "active"
+  status: "draft" | "review" | "active"
 }
 
 const categories = ["Adventure", "Culture", "Relaxation", "Wellness", "Nature"]
@@ -57,6 +58,7 @@ const categories = ["Adventure", "Culture", "Relaxation", "Wellness", "Nature"]
 export default function EditExperiencePage({ params }: { params: Promise<{ slug: string; id: string }> }) {
 
   const router = useRouter()
+  const { profile } = useAdmin()
   const [experience, setExperience] = useState<ExperienceRow | null>(null)
   const [form, setForm] = useState<FormState | null>(null)
   const [itinerary, setItinerary] = useState<ItineraryItem[]>([])
@@ -380,14 +382,17 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
   const whatToBringList = useMemo(() => form?.what_to_bring.split("\n").filter(Boolean) ?? [], [form])
   const galleryList = useMemo(() => form?.gallery.split("\n").filter(Boolean) ?? [], [form])
 
-  const handleSubmit = async (e: React.FormEvent, status?: "draft" | "active") => {
+  const handleSubmit = async (e: React.FormEvent, status?: "draft" | "review" | "active") => {
     e.preventDefault()
     if (!form || !experience) return
+
+    // For suppliers, override status to 'review' when trying to publish
+    const finalStatus = profile?.role === 'supplier' && status === 'active' ? 'review' : (status || form.status);
 
     console.log('=== SAVE HANDLER START ===');
     console.log('Packages state at save time:', packages);
     console.log('Number of packages:', packages.length);
-    console.log('Status:', status || form.status);
+    console.log('Status:', finalStatus);
     packages.forEach((pkg, idx) => {
       console.log(`Package ${idx}:`, {
         name: pkg.package_name,
@@ -453,7 +458,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
         gallery: updatedGallery,
         cancellation_policy: form.cancellation_policy,
         is_destination_featured: form.is_destination_featured ?? false,
-        status: status || form.status,
+        status: finalStatus,
         itinerary:
           itinerary.filter((item) => item.day && item.activity).length > 0
             ? itinerary.filter((item) => item.day && item.activity)
@@ -577,7 +582,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
         toast.warning(`Experience updated, but ${failCount} package(s) failed to save. Check console for details.`);
       }
 
-      const statusMessage = (status || form.status) === "draft" ? "saved as draft" : "published"
+      const statusMessage = finalStatus === "draft" ? "saved as draft" : finalStatus === "review" ? "submitted for review" : "published"
       toast.success(`Experience ${statusMessage} successfully`)
       router.push("/admin/experiences")
     } catch (err) {
@@ -709,6 +714,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
         <PackageFormSection
           packages={packages}
           onChange={setPackages}
+          userRole={profile?.role}
         />
 
         {/* Gallery Section */}
@@ -1013,7 +1019,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
             ) : (
               <>
                 <Check className="mr-2 h-4 w-4" />
-                {form?.status === "draft" ? "Publish" : "Save & Publish"}
+                {profile?.role === 'supplier' ? 'Submit for Review' : (form?.status === "draft" ? "Publish" : "Save & Publish")}
               </>
             )}
           </Button>
