@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
         package_name: body.package_name,
         package_code: body.package_code,
         description: body.description,
+        tour_type: body.tour_type || 'group',
         min_group_size: body.min_group_size || 1,
         max_group_size: body.max_group_size || 15,
         available_from: body.available_from || null,

@@ -27,6 +27,7 @@ type ExperienceRow = Database["public"]["Tables"]["experiences"]["Row"]
 interface ExperienceWithPackagePrices extends ExperienceRow {
   package_adult_price?: number
   package_child_price?: number
+  tour_types?: ('group' | 'private')[]
 }
 
 const ITEMS_PER_PAGE = 12
@@ -65,10 +66,14 @@ export default function ExperiencesPage() {
                 const adultTier = firstPackage.pricing_tiers?.find((t: any) => t.tier_type === 'adult')
                 const childTier = firstPackage.pricing_tiers?.find((t: any) => t.tier_type === 'child')
 
+                // Collect unique tour types from all packages
+                const tourTypes = [...new Set(packages.map((pkg: any) => pkg.tour_type || 'group'))] as ('group' | 'private')[]
+
                 return {
                   ...exp,
                   package_adult_price: adultTier?.selling_price || adultTier?.base_price || exp.adult_price,
                   package_child_price: childTier?.selling_price || childTier?.base_price || exp.child_price,
+                  tour_types: tourTypes,
                 }
               }
             }
@@ -80,6 +85,7 @@ export default function ExperiencesPage() {
             ...exp,
             package_adult_price: exp.adult_price,
             package_child_price: exp.child_price,
+            tour_types: ['group'], // Default to group if no packages found
           }
         })
       )
@@ -296,7 +302,7 @@ export default function ExperiencesPage() {
                   </Badge>
                   <Badge className="bg-primary">{experience.category}</Badge>
                 </div>
-                <div className="absolute top-2 left-2">
+                <div className="absolute top-2 left-2 flex gap-2">
                   <Badge
                     variant={experience.status === "active" ? "default" : "secondary"}
                     className={
@@ -307,6 +313,15 @@ export default function ExperiencesPage() {
                   >
                     {experience.status === "active" ? "Active" : "Draft"}
                   </Badge>
+                  {experience.tour_types && experience.tour_types.map((type) => (
+                    <Badge
+                      key={type}
+                      variant="secondary"
+                      className={type === 'private' ? 'bg-purple-600 text-white' : 'bg-blue-600 text-white'}
+                    >
+                      {type === 'private' ? 'Private' : 'Group'}
+                    </Badge>
+                  ))}
                 </div>
               </div>
               <CardContent className="p-4">

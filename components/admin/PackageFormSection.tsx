@@ -27,6 +27,7 @@ export interface PackageFormData {
   package_name: string;
   package_code: string;
   description: string;
+  tour_type?: 'group' | 'private';
   min_group_size: number;
   max_group_size: number;
   available_from: string;
@@ -69,6 +70,7 @@ export function PackageFormSection({ packages, onChange }: PackageFormSectionPro
       package_name: `Package ${packages.length + 1}`,
       package_code: '',
       description: '',
+      tour_type: 'group',
       min_group_size: 1,
       max_group_size: 15,
       available_from: '',
@@ -218,6 +220,9 @@ export function PackageFormSection({ packages, onChange }: PackageFormSectionPro
                     {pkg.package_code && (
                       <Badge variant="outline">{pkg.package_code}</Badge>
                     )}
+                    <Badge variant={pkg.tour_type === 'private' ? 'default' : 'secondary'} className={pkg.tour_type === 'private' ? 'bg-purple-600' : 'bg-blue-600'}>
+                      {pkg.tour_type === 'private' ? 'Private' : 'Group'}
+                    </Badge>
                     <Badge variant={pkg.is_active ? 'default' : 'secondary'}>
                       {pkg.is_active ? 'Active' : 'Inactive'}
                     </Badge>
@@ -274,6 +279,33 @@ export function PackageFormSection({ packages, onChange }: PackageFormSectionPro
                         placeholder="Describe what makes this package special..."
                         rows={3}
                       />
+                    </div>
+
+                    {/* Tour Type */}
+                    <div className="space-y-2">
+                      <Label>Tour Type *</Label>
+                      <Select
+                        value={pkg.tour_type || 'group'}
+                        onValueChange={(value) => updatePackage(index, 'tour_type', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select tour type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="group">
+                            <div className="flex flex-col">
+                              <span className="font-medium">Group Tour</span>
+                              <span className="text-xs text-muted-foreground">Join scheduled departures with other travelers</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="private">
+                            <div className="flex flex-col">
+                              <span className="font-medium">Private Tour</span>
+                              <span className="text-xs text-muted-foreground">Exclusive booking for your group only</span>
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     {/* Markup Configuration */}

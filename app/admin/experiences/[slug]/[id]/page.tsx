@@ -71,6 +71,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
     package_name: 'Standard Package',
     package_code: 'STD',
     description: '',
+    tour_type: 'group',
     min_group_size: 1,
     max_group_size: 15,
     adult_price: 0,
@@ -178,6 +179,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                   package_name: pkg.package_name,
                   package_code: pkg.package_code || '',
                   description: pkg.description || '',
+                  tour_type: pkg.tour_type || 'group',
                   min_group_size: pkg.min_group_size,
                   max_group_size: pkg.max_group_size,
 
@@ -520,6 +522,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
           package_name: pkg.package_name,
           package_code: pkg.package_code,
           description: pkg.description,
+          tour_type: pkg.tour_type || 'group',
           min_group_size: pkg.min_group_size,
           max_group_size: pkg.max_group_size,
           inclusions: pkg.inclusions,
