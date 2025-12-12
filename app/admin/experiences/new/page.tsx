@@ -215,8 +215,8 @@ export default function NewExperiencePage() {
     setError(null)
 
     try {
-      // For suppliers, override status to 'review' regardless of what was passed
-      const finalStatus = profile?.role === 'supplier' ? 'review' : status;
+      // For suppliers, allow draft but override 'active' to 'review'
+      const finalStatus = profile?.role === 'supplier' && status === 'active' ? 'review' : status;
       //  Upload images here
       const uploadedUrls: string[] = [];
       for (const file of galleryFiles) {

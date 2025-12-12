@@ -23,10 +23,10 @@ const faqItemSchema = z.object({
 })
 
 export const experiencePayloadSchema = z.object({
-  title: z.string().min(1),
-  location: z.string().min(1),
-  country: z.string().min(1),
-  duration: z.string().min(1),
+  title: z.string().min(1).or(z.literal("")),
+  location: z.string().min(1).or(z.literal("")),
+  country: z.string().min(1).or(z.literal("")),
+  duration: z.string().min(1).or(z.literal("")),
   adult_price: z.number().nonnegative(),
   child_price: z.number().nonnegative(),
   available_from: z
@@ -41,7 +41,7 @@ export const experiencePayloadSchema = z.object({
     .refine((val) => !val || !Number.isNaN(Date.parse(val)), { message: "Invalid end date" }),
   min_group_size: z.number().int().positive().optional(),
   max_group_size: z.number().int().positive().optional(),
-  category: z.string().min(1),
+  category: z.string().min(1).or(z.literal("")),
   description: z.string().optional().nullable(),
   // image_url: z.string().url().optional().nullable(),
   highlights: z.array(z.string()).optional().nullable(),
@@ -55,7 +55,7 @@ export const experiencePayloadSchema = z.object({
   gallery: z.array(z.string()).optional().nullable(),
   faqs: z.array(faqItemSchema).optional().nullable(),
   is_destination_featured: z.boolean().optional().nullable(),
-  status: z.enum(["draft", "active"]).optional().default("active"),
+  status: z.enum(["draft", "review", "active"]).optional().default("active"),
 })
   .refine(
     (data) => {
@@ -99,12 +99,12 @@ const normalizeFaqs = (values?: ExperiencePayload["faqs"]) => {
   return cleaned.length > 0 ? cleaned : null
 }
 
-export function normalizeExperiencePayload(payload: ExperiencePayload): ExperienceInsert {
+export function normalizeExperiencePayload(payload: ExperiencePayload): Omit<ExperienceInsert, 'slug'> {
   return {
-    title: payload.title,
-    location: payload.location,
-    country: payload.country,
-    duration: payload.duration,
+    title: payload.title || "Untitled Experience",
+    location: payload.location || "",
+    country: payload.country || "",
+    duration: payload.duration || "",
     price: payload.adult_price,
     adult_price: payload.adult_price,
     child_price: payload.child_price,
@@ -112,7 +112,7 @@ export function normalizeExperiencePayload(payload: ExperiencePayload): Experien
     available_to: payload.available_to ?? null,
     min_group_size: payload.min_group_size ?? 1,
     max_group_size: payload.max_group_size ?? 15,
-    category: payload.category,
+    category: payload.category || "",
     description: payload.description ?? null,
     // image_url: trimString(payload.image_url),
     highlights: normalizeStringArray(payload.highlights),
