@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, MapPin, Calendar, Users, Award, FileText, Settings, Compass, UserPlus, Link2, Receipt } from "lucide-react"
+import { LayoutDashboard, MapPin, Calendar, Users, Award, FileText, Settings, Compass, UserPlus, Link2, Receipt, MessageSquare } from "lucide-react"
 
 type UserRole = "admin" | "manager" | "support" | "sales";
 
@@ -19,6 +19,7 @@ const allMenuItems: MenuItem[] = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard, roles: ["admin", "manager", "support"] },
   { name: "Experiences", href: "/admin/experiences", icon: MapPin, roles: ["admin", "manager", "support"] },
   { name: "Bookings", href: "/admin/bookings", icon: Calendar, roles: ["admin", "manager", "support"] },
+  { name: "Testimonials", href: "/admin/testimonials", icon: MessageSquare, roles: ["admin", "manager", "support"] },
   { name: "Payment Links", href: "/admin/payment-links", icon: Link2, roles: ["admin", "manager", "support", "sales"] },
   { name: "Submissions", href: "/admin/payment-submissions", icon: Receipt, roles: ["admin", "manager", "support", "sales"] },
   { name: "Users", href: "/admin/users", icon: Users, roles: ["admin", "manager", "support"] },
