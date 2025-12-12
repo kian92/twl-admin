@@ -48,6 +48,8 @@
     "totalExperiences": "共 {count} 个体验",
     "showing": "显示 {filtered} / {total} 个体验",
     "noExperiences": "未找到体验",
+    "noMatchingExperiences": "未找到符合条件的体验",
+    "clearFilters": "清除筛选",
     "searchPlaceholder": "搜索体验...",
     "allCountries": "所有国家",
     "allStatus": "所有状态",
@@ -253,6 +255,43 @@
       "imageAlreadyAdded": "\"{name}\" 已添加。",
       "invalidImageType": "\"{name}\" 不是有效的图片。仅允许 PNG 和 JPG 格式。",
       "imageTooLarge": "\"{name}\" 文件过大。最大允许大小为 10MB。"
+    }
+  },
+  "settings": {
+    "title": "设置",
+    "subtitle": "管理您的账户设置和偏好",
+    "loadingProfile": "正在加载您的个人资料...",
+    "profileInformation": {
+      "title": "个人信息",
+      "description": "更新您的账户详情",
+      "emailAddress": "电子邮箱",
+      "emailCannotChange": "电子邮箱无法更改",
+      "fullName": "全名",
+      "fullNamePlaceholder": "输入您的全名",
+      "role": "角色",
+      "roleAssignedByAdmin": "您的角色由管理员分配",
+      "saveChanges": "保存更改",
+      "saving": "保存中..."
+    },
+    "changePassword": {
+      "title": "更改密码",
+      "description": "更新您的密码以保护账户安全",
+      "newPassword": "新密码",
+      "newPasswordPlaceholder": "输入新密码",
+      "minimumCharacters": "最少6个字符",
+      "confirmNewPassword": "确认新密码",
+      "confirmPasswordPlaceholder": "确认新密码",
+      "changePassword": "更改密码",
+      "changingPassword": "正在更改密码..."
+    },
+    "messages": {
+      "profileUpdated": "个人资料更新成功",
+      "failedToUpdateProfile": "更新个人资料失败",
+      "passwordsDoNotMatch": "密码不匹配",
+      "passwordTooShort": "密码必须至少6个字符",
+      "passwordChanged": "密码更改成功！",
+      "passwordChangeSuccess": "密码更改成功。",
+      "failedToChangePassword": "更改密码失败"
     }
   }
 }

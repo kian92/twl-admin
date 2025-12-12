@@ -48,6 +48,8 @@
     "totalExperiences": "{count} total experiences",
     "showing": "Showing {filtered} of {total} experiences",
     "noExperiences": "No experiences found",
+    "noMatchingExperiences": "No experiences found matching your criteria",
+    "clearFilters": "Clear Filters",
     "searchPlaceholder": "Search experiences...",
     "allCountries": "All Countries",
     "allStatus": "All Status",
@@ -253,6 +255,43 @@
       "imageAlreadyAdded": "\"{name}\" is already added.",
       "invalidImageType": "\"{name}\" is not a valid image. Only PNG & JPG allowed.",
       "imageTooLarge": "\"{name}\" is too large. Max allowed size is 10MB."
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Manage your account settings and preferences",
+    "loadingProfile": "Loading your profile...",
+    "profileInformation": {
+      "title": "Profile Information",
+      "description": "Update your account details",
+      "emailAddress": "Email Address",
+      "emailCannotChange": "Email address cannot be changed",
+      "fullName": "Full Name",
+      "fullNamePlaceholder": "Enter your full name",
+      "role": "Role",
+      "roleAssignedByAdmin": "Your role is assigned by administrators",
+      "saveChanges": "Save Changes",
+      "saving": "Saving..."
+    },
+    "changePassword": {
+      "title": "Change Password",
+      "description": "Update your password to keep your account secure",
+      "newPassword": "New Password",
+      "newPasswordPlaceholder": "Enter new password",
+      "minimumCharacters": "Minimum 6 characters",
+      "confirmNewPassword": "Confirm New Password",
+      "confirmPasswordPlaceholder": "Confirm new password",
+      "changePassword": "Change Password",
+      "changingPassword": "Changing Password..."
+    },
+    "messages": {
+      "profileUpdated": "Profile updated successfully",
+      "failedToUpdateProfile": "Failed to update profile",
+      "passwordsDoNotMatch": "Passwords do not match",
+      "passwordTooShort": "Password must be at least 6 characters",
+      "passwordChanged": "Password changed successfully!",
+      "passwordChangeSuccess": "Password changed successfully.",
+      "failedToChangePassword": "Failed to change password"
     }
   }
 }

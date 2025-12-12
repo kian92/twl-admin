@@ -422,7 +422,7 @@ export default function ExperiencesPage() {
 
       {!loading && filteredExperiences.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-muted-foreground">No experiences found matching your criteria</p>
+          <p className="text-muted-foreground">{t('experiences.noMatchingExperiences')}</p>
                       <Button
                         variant="outline"
                         className="mt-4"
@@ -437,7 +437,7 @@ export default function ExperiencesPage() {
                           void loadExperiences()
                         }}
                       >
-                        Clear Filters
+                        {t('experiences.clearFilters')}
                       </Button>
         </div>
       )}

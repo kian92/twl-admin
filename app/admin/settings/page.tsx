@@ -8,8 +8,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "sonner"
+import { useTranslations } from "next-intl"
 
 export default function SettingsPage() {
+  const t = useTranslations('settings')
   const { profile, user, supabase } = useAdmin()
   const [fullName, setFullName] = useState(profile?.full_name || "")
   const [newPassword, setNewPassword] = useState("")
@@ -35,10 +37,10 @@ export default function SettingsPage() {
 
       if (error) throw error
 
-      toast.success("Profile updated successfully")
+      toast.success(t('messages.profileUpdated'))
     } catch (err: any) {
       console.error("Failed to update profile:", err)
-      toast.error(err?.message || "Failed to update profile")
+      toast.error(err?.message || t('messages.failedToUpdateProfile'))
     } finally {
       setSavingProfile(false)
     }
@@ -48,12 +50,12 @@ export default function SettingsPage() {
     e.preventDefault()
 
     if (newPassword !== confirmPassword) {
-      toast.error("Passwords do not match")
+      toast.error(t('messages.passwordsDoNotMatch'))
       return
     }
 
     if (newPassword.length < 6) {
-      toast.error("Password must be at least 6 characters")
+      toast.error(t('messages.passwordTooShort'))
       return
     }
 
@@ -70,15 +72,15 @@ export default function SettingsPage() {
       const payload = await response.json().catch(() => ({}))
 
       if (!response.ok) {
-        throw new Error(payload.error ?? "Failed to change password")
+        throw new Error(payload.error ?? t('messages.failedToChangePassword'))
       }
 
-      setPasswordStatus({ type: "success", message: "Password changed successfully." })
-      toast.success("Password changed successfully!")
+      setPasswordStatus({ type: "success", message: t('messages.passwordChangeSuccess') })
+      toast.success(t('messages.passwordChanged'))
       setNewPassword("")
       setConfirmPassword("")
     } catch (err: any) {
-      const message = err?.message || "Failed to change password"
+      const message = err?.message || t('messages.failedToChangePassword')
       setPasswordStatus({ type: "error", message })
       toast.error(message)
     } finally {
@@ -90,8 +92,8 @@ export default function SettingsPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">Settings</h1>
-          <p className="text-muted-foreground">Loading your profile...</p>
+          <h1 className="text-3xl font-bold">{t('title')}</h1>
+          <p className="text-muted-foreground">{t('loadingProfile')}</p>
         </div>
       </div>
     )
@@ -100,20 +102,20 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <h1 className="text-3xl font-bold">Settings</h1>
-        <p className="text-muted-foreground">Manage your account settings and preferences</p>
+        <h1 className="text-3xl font-bold">{t('title')}</h1>
+        <p className="text-muted-foreground">{t('subtitle')}</p>
       </div>
 
       {/* Profile Information */}
       <Card>
         <CardHeader>
-          <CardTitle>Profile Information</CardTitle>
-          <CardDescription>Update your account details</CardDescription>
+          <CardTitle>{t('profileInformation.title')}</CardTitle>
+          <CardDescription>{t('profileInformation.description')}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleUpdateProfile} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
+              <Label htmlFor="email">{t('profileInformation.emailAddress')}</Label>
               <Input
                 id="email"
                 type="email"
@@ -121,33 +123,33 @@ export default function SettingsPage() {
                 disabled
                 className="bg-muted"
               />
-              <p className="text-xs text-muted-foreground">Email address cannot be changed</p>
+              <p className="text-xs text-muted-foreground">{t('profileInformation.emailCannotChange')}</p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
+              <Label htmlFor="fullName">{t('profileInformation.fullName')}</Label>
               <Input
                 id="fullName"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                placeholder="Enter your full name"
+                placeholder={t('profileInformation.fullNamePlaceholder')}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
+              <Label htmlFor="role">{t('profileInformation.role')}</Label>
               <Input
                 id="role"
                 value={profile.role || ""}
                 disabled
                 className="bg-muted capitalize"
               />
-              <p className="text-xs text-muted-foreground">Your role is assigned by administrators</p>
+              <p className="text-xs text-muted-foreground">{t('profileInformation.roleAssignedByAdmin')}</p>
             </div>
 
             <Button type="submit" disabled={savingProfile}>
-              {savingProfile ? "Saving..." : "Save Changes"}
+              {savingProfile ? t('profileInformation.saving') : t('profileInformation.saveChanges')}
             </Button>
           </form>
         </CardContent>
@@ -156,40 +158,40 @@ export default function SettingsPage() {
       {/* Change Password */}
       <Card>
         <CardHeader>
-          <CardTitle>Change Password</CardTitle>
-          <CardDescription>Update your password to keep your account secure</CardDescription>
+          <CardTitle>{t('changePassword.title')}</CardTitle>
+          <CardDescription>{t('changePassword.description')}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleChangePassword} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="newPassword">New Password</Label>
+              <Label htmlFor="newPassword">{t('changePassword.newPassword')}</Label>
               <Input
                 id="newPassword"
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Enter new password"
+                placeholder={t('changePassword.newPasswordPlaceholder')}
                 minLength={6}
                 required
               />
-              <p className="text-xs text-muted-foreground">Minimum 6 characters</p>
+              <p className="text-xs text-muted-foreground">{t('changePassword.minimumCharacters')}</p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm New Password</Label>
+              <Label htmlFor="confirmPassword">{t('changePassword.confirmNewPassword')}</Label>
               <Input
                 id="confirmPassword"
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm new password"
+                placeholder={t('changePassword.confirmPasswordPlaceholder')}
                 minLength={6}
                 required
               />
             </div>
 
             <Button type="submit" disabled={changingPassword}>
-              {changingPassword ? "Changing Password..." : "Change Password"}
+              {changingPassword ? t('changePassword.changingPassword') : t('changePassword.changePassword')}
             </Button>
             {passwordStatus && (
               <p
