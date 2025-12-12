@@ -28,6 +28,7 @@ export const EXPERIENCE_SELECT_FIELDS = `
   faqs,
   is_destination_featured,
   status,
+  created_by,
   created_at,
   updated_at,
   slug`
