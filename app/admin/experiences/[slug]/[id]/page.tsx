@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import type { Database } from "@/types/database"
 import { toast } from "sonner"
 import { PackageFormSection, PackageFormData } from "@/components/admin/PackageFormSection"
+import { RichTextEditor } from "@/components/admin/RichTextEditor"
 
 type ExperienceRow = Database["public"]["Tables"]["experiences"]["Row"]
 
@@ -848,38 +849,39 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
               :
               itinerary.map((item, index) => (
                 <div key={index} className="flex gap-4 items-start">
-                  <div className="flex-1 grid gap-4 md:grid-cols-3">
-                    {/* Day Field */}
-                    <div className="space-y-2">
-                      <Label htmlFor={`day-${index}`}>Day</Label>
-                      <Input
-                        id={`day-${index}`}
-                        type="number"
-                        min={1}
-                        value={item.day}
-                        onChange={(e) =>
-                          updateItineraryItem(index, "day", Number(e.target.value))
-                        }
-                      />
-                    </div>
-                    {/* Time Field */}
-                    <div className="space-y-2">
-                      <Label htmlFor={`time-${index}`}>Time <span className="text-muted-foreground text-xs">(optional)</span></Label>
-                      <Input
-                        id={`time-${index}`}
-                        placeholder="e.g., 02:00 AM or leave empty"
-                        value={item.time || ""}
-                        onChange={(e) => updateItineraryItem(index, "time", e.target.value)}
-                      />
+                  <div className="flex-1 space-y-4">
+                    <div className="grid gap-4 md:grid-cols-3">
+                      {/* Day Field */}
+                      <div className="space-y-2">
+                        <Label htmlFor={`day-${index}`}>Day</Label>
+                        <Input
+                          id={`day-${index}`}
+                          type="number"
+                          min={1}
+                          value={item.day}
+                          onChange={(e) =>
+                            updateItineraryItem(index, "day", Number(e.target.value))
+                          }
+                        />
+                      </div>
+                      {/* Time Field */}
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor={`time-${index}`}>Time <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                        <Input
+                          id={`time-${index}`}
+                          placeholder="e.g., 02:00 AM or leave empty"
+                          value={item.time || ""}
+                          onChange={(e) => updateItineraryItem(index, "time", e.target.value)}
+                        />
+                      </div>
                     </div>
                     {/* Activity Field */}
                     <div className="space-y-2">
                       <Label htmlFor={`activity-${index}`}>Activity</Label>
-                      <Input
-                        id={`activity-${index}`}
-                        placeholder="e.g., Hotel pickup"
-                        value={item.activity}
-                        onChange={(e) => updateItineraryItem(index, "activity", e.target.value)}
+                      <RichTextEditor
+                        content={item.activity}
+                        onChange={(html) => updateItineraryItem(index, "activity", html)}
+                        placeholder="e.g., Hotel pickup, breakfast at the lodge, guided tour..."
                       />
                     </div>
                   </div>
