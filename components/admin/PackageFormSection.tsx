@@ -69,9 +69,42 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
   const [expandedPackage, setExpandedPackage] = useState<number>(0);
   const isSupplier = userRole === 'supplier';
 
+  // Generate package code from package name with random unique number
+  const generatePackageCode = (name: string): string => {
+    if (!name.trim()) return '';
+
+    // Remove special characters but keep letters, numbers, and spaces
+    const cleaned = name.trim().replace(/[^\w\s]/g, '');
+    const words = cleaned.split(/\s+/);
+
+    let prefix = '';
+    if (words.length === 1) {
+      // Single word: take first 3-4 characters (including numbers)
+      prefix = words[0].substring(0, 4).toUpperCase();
+    } else {
+      // Multiple words: take first character of each word (letters or numbers)
+      // Max 5 characters to accommodate common patterns like "Day 1", "Package 2"
+      prefix = words
+        .slice(0, 5)
+        .map(word => {
+          // Prioritize first alphanumeric character
+          const match = word.match(/[a-zA-Z0-9]/);
+          return match ? match[0] : '';
+        })
+        .filter(char => char !== '')
+        .join('')
+        .toUpperCase();
+    }
+
+    // Generate random 4-digit number
+    const randomNum = Math.floor(1000 + Math.random() * 9000);
+
+    return `${prefix}-${randomNum}`;
+  };
+
   const addPackage = () => {
     const newPackage: PackageFormData = {
-      package_name: `Package ${packages.length + 1}`,
+      package_name: '',
       package_code: '',
       description: '',
       tour_type: 'group',
@@ -110,6 +143,12 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
   const updatePackage = (index: number, field: keyof PackageFormData, value: any) => {
     const updated = [...packages];
     updated[index] = { ...updated[index], [field]: value };
+
+    // Auto-generate package code when package name changes
+    if (field === 'package_name' && typeof value === 'string') {
+      updated[index].package_code = generatePackageCode(value);
+    }
+
     onChange(updated);
   };
 
@@ -220,7 +259,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                   onClick={() => setExpandedPackage(expandedPackage === index ? -1 : index)}
                 >
                   <div className="flex items-center gap-3">
-                    <span className="font-medium">{pkg.package_name || `Package ${index + 1}`}</span>
+                    <span className="font-medium">{pkg.package_name || t('packageName')}</span>
                     {pkg.package_code && (
                       <Badge variant="outline">{pkg.package_code}</Badge>
                     )}

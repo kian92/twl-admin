@@ -88,24 +88,7 @@ export default function NewExperiencePage() {
   const [error, setError] = useState<string | null>(null)
 
   // Package management state
-  const [packages, setPackages] = useState<PackageFormData[]>([
-    {
-      package_name: 'Standard Package',
-      package_code: 'STD',
-      description: 'Our standard package with essential inclusions',
-      tour_type: 'group',
-      min_group_size: 1,
-      max_group_size: null,
-      available_from: '',
-      available_to: '',
-      inclusions: [],
-      exclusions: [],
-      display_order: 0,
-      is_active: true,
-      adult_price: 0,
-      child_price: 0,
-    }
-  ])
+  const [packages, setPackages] = useState<PackageFormData[]>([])
 
   const handleInputChange = (field: keyof ExperienceInsert) => (event: React.ChangeEvent<HTMLInputElement>) => {
     const numericField =
