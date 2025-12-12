@@ -28,6 +28,7 @@ interface ExperienceWithPackagePrices extends ExperienceRow {
   package_adult_price?: number
   package_child_price?: number
   tour_types?: ('group' | 'private')[]
+  creator_name?: string
 }
 
 const ITEMS_PER_PAGE = 12
@@ -38,9 +39,11 @@ export default function ExperiencesPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [selectedCountry, setSelectedCountry] = useState<string>("all")
   const [selectedStatus, setSelectedStatus] = useState<string>("all")
+  const [selectedCreator, setSelectedCreator] = useState<string>("all")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
+  const [adminProfiles, setAdminProfiles] = useState<Record<string, string>>({})
 
   const loadExperiences = useCallback(async () => {
     setLoading(true)
@@ -54,9 +57,22 @@ export default function ExperiencesPage() {
       }
       const experiencesList = Array.isArray(payload) ? payload : []
 
+      // Fetch admin profiles for creator names
+      let profilesMap: Record<string, string> = {}
+      const profilesResponse = await fetch("/api/admin/staff")
+      if (profilesResponse.ok) {
+        const profiles = await profilesResponse.json()
+        profiles.forEach((profile: any) => {
+          profilesMap[profile.id] = profile.full_name || 'Unknown'
+        })
+        setAdminProfiles(profilesMap)
+      }
+
       // Fetch package prices for each experience
       const experiencesWithPrices: ExperienceWithPackagePrices[] = await Promise.all(
         experiencesList.map(async (exp) => {
+          const creatorName = exp.created_by ? (profilesMap[exp.created_by] || 'Unknown') : undefined
+
           try {
             const packagesResponse = await fetch(`/api/admin/packages?experience_id=${exp.id}`)
             if (packagesResponse.ok) {
@@ -74,6 +90,7 @@ export default function ExperiencesPage() {
                   package_adult_price: adultTier?.selling_price || adultTier?.base_price || exp.adult_price,
                   package_child_price: childTier?.selling_price || childTier?.base_price || exp.child_price,
                   tour_types: tourTypes,
+                  creator_name: creatorName,
                 }
               }
             }
@@ -86,6 +103,7 @@ export default function ExperiencesPage() {
             package_adult_price: exp.adult_price,
             package_child_price: exp.child_price,
             tour_types: ['group'], // Default to group if no packages found
+            creator_name: creatorName,
           }
         })
       )
@@ -123,6 +141,16 @@ export default function ExperiencesPage() {
     return ["all", ...Array.from(unique).sort()]
   }, [experiences])
 
+  const creators = useMemo(() => {
+    const unique = new Set<string>()
+    experiences.forEach((exp) => {
+      if (exp.creator_name) {
+        unique.add(exp.creator_name)
+      }
+    })
+    return ["all", ...Array.from(unique).sort()]
+  }, [experiences])
+
   const filteredExperiences = useMemo(() => {
     return experiences.filter((exp) => {
       const matchesSearch =
@@ -132,9 +160,10 @@ export default function ExperiencesPage() {
       const matchesCategory = selectedCategory === "all" || exp.category === selectedCategory
       const matchesCountry = selectedCountry === "all" || exp.country === selectedCountry
       const matchesStatus = selectedStatus === "all" || exp.status === selectedStatus
-      return matchesSearch && matchesCategory && matchesCountry && matchesStatus
+      const matchesCreator = selectedCreator === "all" || exp.creator_name === selectedCreator
+      return matchesSearch && matchesCategory && matchesCountry && matchesStatus && matchesCreator
     })
-  }, [experiences, searchQuery, selectedCategory, selectedCountry, selectedStatus])
+  }, [experiences, searchQuery, selectedCategory, selectedCountry, selectedStatus, selectedCreator])
 
   // Pagination calculations
   const totalPages = Math.ceil(filteredExperiences.length / ITEMS_PER_PAGE)
@@ -145,7 +174,7 @@ export default function ExperiencesPage() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1)
-  }, [searchQuery, selectedCategory, selectedCountry, selectedStatus])
+  }, [searchQuery, selectedCategory, selectedCountry, selectedStatus, selectedCreator])
 
   const getPageNumbers = () => {
     const pages: (number | 'ellipsis')[] = []
@@ -254,6 +283,19 @@ export default function ExperiencesPage() {
               <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="active">Active</SelectItem>
               <SelectItem value="draft">Draft</SelectItem>
+              <SelectItem value="review">Review</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={selectedCreator} onValueChange={setSelectedCreator}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="All Creators" />
+            </SelectTrigger>
+            <SelectContent>
+              {creators.map((creator) => (
+                <SelectItem key={creator} value={creator}>
+                  {creator === "all" ? "All Creators" : creator}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -302,16 +344,18 @@ export default function ExperiencesPage() {
                   </Badge>
                   <Badge className="bg-primary">{experience.category}</Badge>
                 </div>
-                <div className="absolute top-2 left-2 flex gap-2">
+                <div className="absolute top-2 left-2 flex gap-2 flex-wrap">
                   <Badge
                     variant={experience.status === "active" ? "default" : "secondary"}
                     className={
                       experience.status === "active"
                         ? "bg-green-600 hover:bg-green-700"
+                        : experience.status === "review"
+                        ? "bg-orange-100 text-orange-800 border-orange-300"
                         : "bg-yellow-100 text-yellow-800 border-yellow-300"
                     }
                   >
-                    {experience.status === "active" ? "Active" : "Draft"}
+                    {experience.status === "active" ? "Active" : experience.status === "review" ? "Review" : "Draft"}
                   </Badge>
                   {experience.tour_types && experience.tour_types.map((type) => (
                     <Badge
@@ -327,6 +371,11 @@ export default function ExperiencesPage() {
               <CardContent className="p-4">
                 <div className="space-y-2">
                   <h3 className="font-semibold line-clamp-1">{experience.title}</h3>
+                  {experience.creator_name && (
+                    <p className="text-xs text-muted-foreground">
+                      Created by: <span className="font-medium">{experience.creator_name}</span>
+                    </p>
+                  )}
                   <p className="text-sm text-muted-foreground">
                     {experience.location} • {experience.duration}
                   </p>
@@ -374,6 +423,8 @@ export default function ExperiencesPage() {
                         onClick={() => {
                           setSelectedCategory("all")
                           setSelectedCountry("all")
+                          setSelectedStatus("all")
+                          setSelectedCreator("all")
                           setSearchQuery("")
                           void loadExperiences()
                         }}
