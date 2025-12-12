@@ -11,6 +11,7 @@ import Link from "next/link"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { Database } from "@/types/database"
 import { toast } from "sonner"
+import { useAdmin } from "@/components/admin-context"
 import {
   Pagination,
   PaginationContent,
@@ -34,6 +35,7 @@ interface ExperienceWithPackagePrices extends ExperienceRow {
 const ITEMS_PER_PAGE = 12
 
 export default function ExperiencesPage() {
+  const { profile } = useAdmin()
   const [experiences, setExperiences] = useState<ExperienceWithPackagePrices[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
@@ -286,18 +288,20 @@ export default function ExperiencesPage() {
               <SelectItem value="review">Review</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={selectedCreator} onValueChange={setSelectedCreator}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="All Creators" />
-            </SelectTrigger>
-            <SelectContent>
-              {creators.map((creator) => (
-                <SelectItem key={creator} value={creator}>
-                  {creator === "all" ? "All Creators" : creator}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {profile?.role === 'admin' && (
+            <Select value={selectedCreator} onValueChange={setSelectedCreator}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="All Creators" />
+              </SelectTrigger>
+              <SelectContent>
+                {creators.map((creator) => (
+                  <SelectItem key={creator} value={creator}>
+                    {creator === "all" ? "All Creators" : creator}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
         {/* Category Filter */}
@@ -371,7 +375,7 @@ export default function ExperiencesPage() {
               <CardContent className="p-4">
                 <div className="space-y-2">
                   <h3 className="font-semibold line-clamp-1">{experience.title}</h3>
-                  {experience.creator_name && (
+                  {profile?.role === 'admin' && experience.creator_name && (
                     <p className="text-xs text-muted-foreground">
                       Created by: <span className="font-medium">{experience.creator_name}</span>
                     </p>
@@ -424,7 +428,9 @@ export default function ExperiencesPage() {
                           setSelectedCategory("all")
                           setSelectedCountry("all")
                           setSelectedStatus("all")
-                          setSelectedCreator("all")
+                          if (profile?.role === 'admin') {
+                            setSelectedCreator("all")
+                          }
                           setSearchQuery("")
                           void loadExperiences()
                         }}
