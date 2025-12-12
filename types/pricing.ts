@@ -430,7 +430,7 @@ export interface PackageFormData {
   package_code?: string;
   description?: string;
   min_group_size: number;
-  max_group_size: number;
+  max_group_size: number | null;
   available_from?: string;
   available_to?: string;
   inclusions: string[];

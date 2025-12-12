@@ -40,7 +40,7 @@ export const experiencePayloadSchema = z.object({
     .nullable()
     .refine((val) => !val || !Number.isNaN(Date.parse(val)), { message: "Invalid end date" }),
   min_group_size: z.number().int().positive().optional(),
-  max_group_size: z.number().int().positive().optional(),
+  max_group_size: z.number().int().positive().optional().nullable(),
   category: z.string().min(1).or(z.literal("")),
   description: z.string().optional().nullable(),
   // image_url: z.string().url().optional().nullable(),
@@ -66,7 +66,7 @@ export const experiencePayloadSchema = z.object({
   )
   .refine(
     (data) => {
-      if (data.min_group_size === undefined || data.max_group_size === undefined) return true
+      if (data.min_group_size === undefined || data.max_group_size === undefined || data.max_group_size === null) return true
       return data.min_group_size <= data.max_group_size
     },
     { message: "Max group size must be greater than or equal to min group size", path: ["max_group_size"] },
@@ -111,7 +111,7 @@ export function normalizeExperiencePayload(payload: ExperiencePayload): Omit<Exp
     available_from: payload.available_from ?? null,
     available_to: payload.available_to ?? null,
     min_group_size: payload.min_group_size ?? 1,
-    max_group_size: payload.max_group_size ?? 15,
+    max_group_size: payload.max_group_size ?? null,
     category: payload.category || "",
     description: payload.description ?? null,
     // image_url: trimString(payload.image_url),

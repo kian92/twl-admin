@@ -59,7 +59,7 @@ const initialForm: ExperienceInsert = {
   available_from: null,
   available_to: null,
   min_group_size: 1,
-  max_group_size: 15,
+  max_group_size: null,
   is_destination_featured: false,
   status: "active",
 }
@@ -93,7 +93,7 @@ export default function NewExperiencePage() {
       description: 'Our standard package with essential inclusions',
       tour_type: 'group',
       min_group_size: 1,
-      max_group_size: 15,
+      max_group_size: null,
       available_from: '',
       available_to: '',
       inclusions: [],
@@ -108,7 +108,19 @@ export default function NewExperiencePage() {
   const handleInputChange = (field: keyof ExperienceInsert) => (event: React.ChangeEvent<HTMLInputElement>) => {
     const numericField =
       field === "price" || field === "adult_price" || field === "child_price" || field === "min_group_size" || field === "max_group_size"
-    const value = numericField ? Number.parseFloat(event.target.value) : event.target.value
+
+    let value: string | number | null
+    if (numericField) {
+      // For max_group_size, allow null (empty = unlimited)
+      if (field === "max_group_size" && event.target.value === "") {
+        value = null
+      } else {
+        value = Number.parseFloat(event.target.value)
+      }
+    } else {
+      value = event.target.value
+    }
+
     setForm((prev) => {
       const next = { ...prev, [field]: value }
       if (field === "adult_price") {
@@ -238,7 +250,7 @@ export default function NewExperiencePage() {
         adult_price: adultPrice,
         child_price: childPrice,
         min_group_size: Number.isFinite(firstPackage.min_group_size) ? firstPackage.min_group_size : 1,
-        max_group_size: Number.isFinite(firstPackage.max_group_size) ? firstPackage.max_group_size : 15,
+        max_group_size: Number.isFinite(firstPackage.max_group_size) ? firstPackage.max_group_size : null,
         available_from: firstPackage.available_from || null,
         available_to: firstPackage.available_to || null,
         highlights: highlightsText.split("\n").filter(Boolean),

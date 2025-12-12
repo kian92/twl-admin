@@ -53,7 +53,7 @@ export interface Database {
           available_from: string | null
           available_to: string | null
           min_group_size: number
-          max_group_size: number
+          max_group_size: number | null
           category: string
           // image_url: string | null
           rating: number | null
@@ -88,7 +88,7 @@ export interface Database {
           available_from?: string | null
           available_to?: string | null
           min_group_size?: number
-          max_group_size?: number
+          max_group_size?: number | null
           category: string
           // image_url?: string | null
           rating?: number | null
@@ -122,7 +122,7 @@ export interface Database {
           available_from?: string | null
           available_to?: string | null
           min_group_size?: number
-          max_group_size?: number
+          max_group_size?: number | null
           category?: string
           // image_url?: string | null
           rating?: number | null

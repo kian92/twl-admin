@@ -29,7 +29,7 @@ export interface PackageFormData {
   description: string;
   tour_type?: 'group' | 'private';
   min_group_size: number;
-  max_group_size: number;
+  max_group_size: number | null;
   available_from: string;
   available_to: string;
   inclusions: string[];
@@ -74,7 +74,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
       description: '',
       tour_type: 'group',
       min_group_size: 1,
-      max_group_size: 15,
+      max_group_size: null,
       available_from: '',
       available_to: '',
       inclusions: [],
@@ -525,13 +525,12 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label>Max Group Size *</Label>
+                        <Label>Max Group Size (leave empty for unlimited)</Label>
                         <Input
                           type="number"
                           min="1"
-                          value={pkg.max_group_size}
-                          onChange={(e) => updatePackage(index, 'max_group_size', Number(e.target.value))}
-                          required
+                          value={pkg.max_group_size ?? ''}
+                          onChange={(e) => updatePackage(index, 'max_group_size', e.target.value ? Number(e.target.value) : null)}
                         />
                       </div>
                     </div>
