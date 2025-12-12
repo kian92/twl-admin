@@ -242,8 +242,8 @@ export default function NewExperiencePage() {
         what_to_bring: whatToBringText.split("\n").filter(Boolean),
         gallery: uploadedUrls,
 
-        itinerary: itinerary.filter(item => item.day && item.time && item.activity).length > 0
-          ? (itinerary.filter(item => item.day && item.time && item.activity) as any)
+        itinerary: itinerary.filter(item => item.day && item.activity).length > 0
+          ? (itinerary.filter(item => item.day && item.activity) as any)
           : null,
         faqs: faqs.filter(item => item.question && item.answer).length > 0
           ? (faqs.filter(item => item.question && item.answer) as any)
@@ -608,11 +608,11 @@ export default function NewExperiencePage() {
                       </div>
                       {/* Time Field */}
                       <div className="space-y-2">
-                        <Label htmlFor={`time-${index}`}>Time</Label>
+                        <Label htmlFor={`time-${index}`}>Time <span className="text-muted-foreground text-xs">(optional)</span></Label>
                         <Input
                           id={`time-${index}`}
-                          placeholder="e.g., 02:00 AM"
-                          value={item.time}
+                          placeholder="e.g., 02:00 AM or leave empty"
+                          value={item.time || ""}
                           onChange={(e) => updateItineraryItem(index, "time", e.target.value)}
                         />
                       </div>

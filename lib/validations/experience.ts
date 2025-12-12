@@ -13,7 +13,7 @@ const normalizeStringArray = (values?: string[] | null) => {
 
 const itineraryItemSchema = z.object({
   day: z.number().min(1),
-  time: z.string().min(1),
+  time: z.string().optional(),
   activity: z.string().min(1),
 })
 
@@ -80,11 +80,11 @@ const normalizeItinerary = (values?: ExperiencePayload["itinerary"]) => {
   if (!values) return null
   const cleaned = values
     .map((item) => ({
-      day: item.day, 
-      time: item.time.trim(),
+      day: item.day,
+      time: item.time?.trim() || undefined,
       activity: item.activity.trim(),
     }))
-    .filter((item) => item.time && item.activity)
+    .filter((item) => item.activity)
   return cleaned.length > 0 ? cleaned : null
 }
 

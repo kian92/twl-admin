@@ -440,8 +440,8 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
         is_destination_featured: form.is_destination_featured ?? false,
         status: status || form.status,
         itinerary:
-          itinerary.filter((item) => item.day && item.time && item.activity).length > 0
-            ? itinerary.filter((item) => item.day && item.time && item.activity)
+          itinerary.filter((item) => item.day && item.activity).length > 0
+            ? itinerary.filter((item) => item.day && item.activity)
             : null,
         faqs:
           faqs.filter((item) => item.question && item.answer).length > 0 ? faqs.filter((item) => item.question && item.answer) : null,
@@ -895,11 +895,11 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                     </div>
                     {/* Time Field */}
                     <div className="space-y-2">
-                      <Label htmlFor={`time-${index}`}>Time</Label>
+                      <Label htmlFor={`time-${index}`}>Time <span className="text-muted-foreground text-xs">(optional)</span></Label>
                       <Input
                         id={`time-${index}`}
-                        placeholder="e.g., 02:00 AM"
-                        value={item.time}
+                        placeholder="e.g., 02:00 AM or leave empty"
+                        value={item.time || ""}
                         onChange={(e) => updateItineraryItem(index, "time", e.target.value)}
                       />
                     </div>
