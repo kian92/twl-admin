@@ -37,12 +37,6 @@ interface FormState {
   country: string
   description: string
   duration: string
-  adult_price: string
-  child_price: string
-  available_from: string
-  available_to: string
-  min_group_size: string
-  max_group_size: string
   category: string
   // image_url: string
   highlights: string
@@ -128,12 +122,6 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
           country: experienceData.country,
           description: experienceData.description ?? "",
           duration: experienceData.duration,
-          adult_price: (experienceData.adult_price ?? experienceData.price ?? 0).toString(),
-          child_price: (experienceData.child_price ?? experienceData.price ?? 0).toString(),
-          available_from: experienceData.available_from ?? "",
-          available_to: experienceData.available_to ?? "",
-          min_group_size: (experienceData.min_group_size ?? 1).toString(),
-          max_group_size: (experienceData.max_group_size ?? 15).toString(),
           category: experienceData.category,
           // image_url: experienceData.image_url ?? "",
           highlights: (experienceData.highlights ?? []).join("\n"),
@@ -175,34 +163,58 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
             const packagesData = responseData.packages || responseData // Handle both wrapped and unwrapped responses
 
             if (packagesData && Array.isArray(packagesData) && packagesData.length > 0) {
-              const formattedPackages: PackageFormData[] = packagesData.map((pkg: any, index: number) => ({
-                id: pkg.id,
-                package_name: pkg.package_name,
-                package_code: pkg.package_code || '',
-                description: pkg.description || '',
-                min_group_size: pkg.min_group_size,
-                max_group_size: pkg.max_group_size,
-                adult_price: pkg.pricing_tiers?.find((t: any) => t.tier_type === 'adult')?.base_price || 0,
-                child_price: pkg.pricing_tiers?.find((t: any) => t.tier_type === 'child')?.base_price || 0,
-                infant_price: pkg.pricing_tiers?.find((t: any) => t.tier_type === 'infant')?.base_price || 0,
-                senior_price: pkg.pricing_tiers?.find((t: any) => t.tier_type === 'senior')?.base_price || 0,
-                inclusions: Array.isArray(pkg.inclusions) ? pkg.inclusions : [],
-                exclusions: Array.isArray(pkg.exclusions) ? pkg.exclusions : [],
-                is_active: pkg.is_active ?? true,
-                display_order: pkg.display_order ?? index + 1,
-                available_from: pkg.available_from || '',
-                available_to: pkg.available_to || '',
-                addons: pkg.addons?.map((addon: any) => ({
-                  id: addon.id,
-                  name: addon.addon_name,
-                  description: addon.description || '',
-                  price: addon.price,
-                  is_required: addon.is_required || false,
-                  max_quantity: addon.max_quantity || 1,
-                  pricing_type: addon.pricing_type || 'per_person',
-                  category: addon.category || 'Other'
-                })) || []
-              }))
+              const formattedPackages: PackageFormData[] = packagesData.map((pkg: any, index: number) => {
+                const adultTier = pkg.pricing_tiers?.find((t: any) => t.tier_type === 'adult');
+                const childTier = pkg.pricing_tiers?.find((t: any) => t.tier_type === 'child');
+                const infantTier = pkg.pricing_tiers?.find((t: any) => t.tier_type === 'infant');
+                const seniorTier = pkg.pricing_tiers?.find((t: any) => t.tier_type === 'senior');
+
+                // Get markup info from adult tier (assuming all tiers have same markup settings)
+                const markupType = adultTier?.markup_type || 'none';
+                const markupValue = adultTier?.markup_value || 0;
+
+                return {
+                  id: pkg.id,
+                  package_name: pkg.package_name,
+                  package_code: pkg.package_code || '',
+                  description: pkg.description || '',
+                  min_group_size: pkg.min_group_size,
+                  max_group_size: pkg.max_group_size,
+
+                  // Markup settings
+                  markup_type: markupType,
+                  markup_value: markupValue,
+
+                  // Base prices (cost from supplier)
+                  base_adult_price: adultTier?.base_price || 0,
+                  base_child_price: childTier?.base_price || 0,
+                  base_infant_price: infantTier?.base_price || 0,
+                  base_senior_price: seniorTier?.base_price || 0,
+
+                  // Selling prices (what customer pays)
+                  adult_price: adultTier?.selling_price || adultTier?.base_price || 0,
+                  child_price: childTier?.selling_price || childTier?.base_price || 0,
+                  infant_price: infantTier?.selling_price || infantTier?.base_price || 0,
+                  senior_price: seniorTier?.selling_price || seniorTier?.base_price || 0,
+
+                  inclusions: Array.isArray(pkg.inclusions) ? pkg.inclusions : [],
+                  exclusions: Array.isArray(pkg.exclusions) ? pkg.exclusions : [],
+                  is_active: pkg.is_active ?? true,
+                  display_order: pkg.display_order ?? index + 1,
+                  available_from: pkg.available_from || '',
+                  available_to: pkg.available_to || '',
+                  addons: pkg.addons?.map((addon: any) => ({
+                    id: addon.id,
+                    name: addon.addon_name,
+                    description: addon.description || '',
+                    price: addon.price,
+                    is_required: addon.is_required || false,
+                    max_quantity: addon.max_quantity || 1,
+                    pricing_type: addon.pricing_type || 'per_person',
+                    category: addon.category || 'Other'
+                  })) || []
+                };
+              })
               setPackages(formattedPackages)
             }
           }
@@ -386,10 +398,10 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
     setSaving(true)
     setError(null)
     try {
-      const adultPrice = Number.parseFloat(form.adult_price)
-      const childPrice = Number.parseFloat(form.child_price)
-      const minGroup = Number.parseInt(form.min_group_size, 10)
-      const maxGroup = Number.parseInt(form.max_group_size, 10)
+      // Use first package pricing for experience base fields (backwards compatibility)
+      const firstPackage = packages[0]
+      const adultPrice = Number.isFinite(firstPackage.adult_price) ? firstPackage.adult_price : 0
+      const childPrice = Number.isFinite(firstPackage.child_price) ? firstPackage.child_price : 0
 
       // Upload new images
       const uploadedUrls: string[] = []
@@ -420,13 +432,13 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
         country: form.country,
         description: form.description,
         duration: form.duration,
-        price: Number.isFinite(adultPrice) ? adultPrice : 0,
-        adult_price: Number.isFinite(adultPrice) ? adultPrice : 0,
-        child_price: Number.isFinite(childPrice) ? childPrice : 0,
-        available_from: form.available_from || null,
-        available_to: form.available_to || null,
-        min_group_size: Number.isFinite(minGroup) ? minGroup : 1,
-        max_group_size: Number.isFinite(maxGroup) ? maxGroup : 15,
+        price: adultPrice,
+        adult_price: adultPrice,
+        child_price: childPrice,
+        available_from: firstPackage.available_from || null,
+        available_to: firstPackage.available_to || null,
+        min_group_size: Number.isFinite(firstPackage.min_group_size) ? firstPackage.min_group_size : 1,
+        max_group_size: Number.isFinite(firstPackage.max_group_size) ? firstPackage.max_group_size : 15,
         category: form.category,
         // image_url: form.image_url,
         highlights: highlightsList,
@@ -497,6 +509,12 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
         const infantPrice = pkg.infant_price ? Number(pkg.infant_price) : undefined;
         const seniorPrice = pkg.senior_price ? Number(pkg.senior_price) : undefined;
 
+        // Base prices
+        const baseAdultPrice = Number(pkg.base_adult_price) || 0;
+        const baseChildPrice = Number(pkg.base_child_price) || 0;
+        const baseInfantPrice = pkg.base_infant_price ? Number(pkg.base_infant_price) : undefined;
+        const baseSeniorPrice = pkg.base_senior_price ? Number(pkg.base_senior_price) : undefined;
+
         const packagePayload = {
           experience_id: experience.id,
           package_name: pkg.package_name,
@@ -510,11 +528,23 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
           display_order: pkg.display_order,
           available_from: pkg.available_from || null,
           available_to: pkg.available_to || null,
-          // Send prices in the format the API expects
+
+          // Markup configuration
+          markup_type: pkg.markup_type || 'none',
+          markup_value: pkg.markup_value || 0,
+
+          // Base prices (cost from supplier)
+          base_adult_price: baseAdultPrice,
+          base_child_price: baseChildPrice,
+          ...(baseInfantPrice !== undefined && { base_infant_price: baseInfantPrice }),
+          ...(baseSeniorPrice !== undefined && { base_senior_price: baseSeniorPrice }),
+
+          // Selling prices (what customer pays)
           adult_price: adultPrice,
           child_price: childPrice,
           ...(infantPrice !== undefined && { infant_price: infantPrice }),
           ...(seniorPrice !== undefined && { senior_price: seniorPrice }),
+
           addons: pkg.addons || []
         }
 
@@ -647,7 +677,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
               />
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>
                 <Select value={form.category} onValueChange={handleSelectChange("category")} required>
@@ -666,70 +696,6 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
               <div className="space-y-2">
                 <Label htmlFor="duration">Duration</Label>
                 <Input id="duration" value={form.duration} onChange={handleChange("duration")} required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="adult-price">Adult Price (USD)</Label>
-                <Input
-                  id="adult-price"
-                  type="number"
-                  value={form.adult_price}
-                  onChange={handleChange("adult_price")}
-                  min="0"
-                  step="1"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="child-price">Child Price (USD)</Label>
-                <Input
-                  id="child-price"
-                  type="number"
-                  value={form.child_price}
-                  onChange={handleChange("child_price")}
-                  min="0"
-                  step="1"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <div className="space-y-2">
-                <Label htmlFor="available-from">Available From</Label>
-                <Input
-                  id="available-from"
-                  type="date"
-                  value={form.available_from}
-                  onChange={handleChange("available_from")}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="available-to">Available To</Label>
-                <Input id="available-to" type="date" value={form.available_to} onChange={handleChange("available_to")} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="min-group">Min Group Size</Label>
-                <Input
-                  id="min-group"
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={form.min_group_size}
-                  onChange={handleChange("min_group_size")}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="max-group">Max Group Size</Label>
-                <Input
-                  id="max-group"
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={form.max_group_size}
-                  onChange={handleChange("max_group_size")}
-                  required
-                />
               </div>
             </div>
           </CardContent>

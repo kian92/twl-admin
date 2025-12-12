@@ -24,10 +24,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 type ExperienceRow = Database["public"]["Tables"]["experiences"]["Row"]
 
+interface ExperienceWithPackagePrices extends ExperienceRow {
+  package_adult_price?: number
+  package_child_price?: number
+}
+
 const ITEMS_PER_PAGE = 12
 
 export default function ExperiencesPage() {
-  const [experiences, setExperiences] = useState<ExperienceRow[]>([])
+  const [experiences, setExperiences] = useState<ExperienceWithPackagePrices[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [selectedCountry, setSelectedCountry] = useState<string>("all")
@@ -46,7 +51,40 @@ export default function ExperiencesPage() {
         const message = (payload as { error?: string } | null)?.error ?? "Unable to load experiences."
         throw new Error(message)
       }
-      setExperiences(Array.isArray(payload) ? payload : [])
+      const experiencesList = Array.isArray(payload) ? payload : []
+
+      // Fetch package prices for each experience
+      const experiencesWithPrices: ExperienceWithPackagePrices[] = await Promise.all(
+        experiencesList.map(async (exp) => {
+          try {
+            const packagesResponse = await fetch(`/api/admin/packages?experience_id=${exp.id}`)
+            if (packagesResponse.ok) {
+              const packages = await packagesResponse.json()
+              if (packages && packages.length > 0) {
+                const firstPackage = packages[0]
+                const adultTier = firstPackage.pricing_tiers?.find((t: any) => t.tier_type === 'adult')
+                const childTier = firstPackage.pricing_tiers?.find((t: any) => t.tier_type === 'child')
+
+                return {
+                  ...exp,
+                  package_adult_price: adultTier?.selling_price || adultTier?.base_price || exp.adult_price,
+                  package_child_price: childTier?.selling_price || childTier?.base_price || exp.child_price,
+                }
+              }
+            }
+          } catch (err) {
+            console.error(`Failed to load packages for experience ${exp.id}`, err)
+          }
+          // Fallback to experience-level prices
+          return {
+            ...exp,
+            package_adult_price: exp.adult_price,
+            package_child_price: exp.child_price,
+          }
+        })
+      )
+
+      setExperiences(experiencesWithPrices)
     } catch (err) {
       console.error("Failed to load experiences", err)
       setError(err instanceof Error ? err.message : "Unable to load experiences. Please try again.")
@@ -286,8 +324,8 @@ export default function ExperiencesPage() {
                   </div>
                   <div className="flex items-center justify-between pt-2">
                     <div className="text-sm text-muted-foreground leading-tight">
-                      <div className="font-semibold text-foreground">${experience.adult_price} adult</div>
-                      <div>${experience.child_price} child</div>
+                      <div className="font-semibold text-foreground">${experience.package_adult_price ?? experience.adult_price} adult</div>
+                      <div>${experience.package_child_price ?? experience.child_price} child</div>
                     </div>
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" asChild>

@@ -73,6 +73,10 @@ export async function POST(request: NextRequest) {
     // Create pricing tiers
     const pricingTiers = [];
 
+    // Get markup settings from request body
+    const markupType = body.markup_type || 'none';
+    const markupValue = body.markup_value || 0;
+
     if (body.adult_price !== undefined && body.adult_price !== null) {
       pricingTiers.push({
         package_id: newPackage.id,
@@ -80,7 +84,10 @@ export async function POST(request: NextRequest) {
         tier_label: body.adult_tier_label || 'Adult (18+ years)',
         min_age: 18,
         max_age: null,
-        base_price: body.adult_price,
+        base_price: body.base_adult_price || 0,
+        markup_type: markupType,
+        markup_value: markupValue,
+        selling_price: body.adult_price,
         currency: 'USD',
         is_active: true,
       });
@@ -93,7 +100,10 @@ export async function POST(request: NextRequest) {
         tier_label: body.child_tier_label || 'Child (3-17 years)',
         min_age: 3,
         max_age: 17,
-        base_price: body.child_price,
+        base_price: body.base_child_price || 0,
+        markup_type: markupType,
+        markup_value: markupValue,
+        selling_price: body.child_price,
         currency: 'USD',
         is_active: true,
       });
@@ -106,7 +116,10 @@ export async function POST(request: NextRequest) {
         tier_label: body.infant_tier_label || 'Infant (0-2 years)',
         min_age: 0,
         max_age: 2,
-        base_price: body.infant_price,
+        base_price: body.base_infant_price || 0,
+        markup_type: markupType,
+        markup_value: markupValue,
+        selling_price: body.infant_price,
         currency: 'USD',
         is_active: true,
       });
@@ -119,7 +132,10 @@ export async function POST(request: NextRequest) {
         tier_label: body.senior_tier_label || 'Senior (65+ years)',
         min_age: 65,
         max_age: null,
-        base_price: body.senior_price,
+        base_price: body.base_senior_price || 0,
+        markup_type: markupType,
+        markup_value: markupValue,
+        selling_price: body.senior_price,
         currency: 'USD',
         is_active: true,
       });

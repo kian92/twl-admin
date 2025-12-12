@@ -280,10 +280,23 @@ export default function NewExperiencePage() {
             exclusions: pkg.exclusions,
             display_order: pkg.display_order,
             is_active: pkg.is_active,
+
+            // Markup configuration
+            markup_type: pkg.markup_type || 'none',
+            markup_value: pkg.markup_value || 0,
+
+            // Base prices (cost from supplier)
+            base_adult_price: pkg.base_adult_price || 0,
+            base_child_price: pkg.base_child_price || 0,
+            base_infant_price: pkg.base_infant_price,
+            base_senior_price: pkg.base_senior_price,
+
+            // Selling prices (what customer pays)
             adult_price: pkg.adult_price,
             child_price: pkg.child_price,
             infant_price: pkg.infant_price,
             senior_price: pkg.senior_price,
+
             addons: pkg.addons || [],
           };
 
