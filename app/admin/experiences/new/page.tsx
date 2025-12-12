@@ -17,6 +17,7 @@ import { toast } from "sonner"
 import { PackageFormSection, PackageFormData } from "@/components/admin/PackageFormSection"
 import { RichTextEditor } from "@/components/admin/RichTextEditor"
 import { useAdmin } from "@/components/admin-context"
+import { useTranslations } from 'next-intl'
 
 type ExperienceInsert = Omit<Database["public"]["Tables"]["experiences"]["Insert"], "slug"> & {
   slug?: string
@@ -67,6 +68,7 @@ const initialForm: ExperienceInsert = {
 const categories = ["Adventure", "Culture", "Relaxation", "Wellness", "Nature"]
 
 export default function NewExperiencePage() {
+  const t = useTranslations()
   const router = useRouter()
   const { profile } = useAdmin()
   const [form, setForm] = useState(initialForm)
@@ -183,19 +185,19 @@ export default function NewExperiencePage() {
         );
   
       if (alreadyExists) {
-        toast.error(`"${file.name}" is already added.`);
+        toast.error(t('experiences.messages.imageAlreadyAdded', { name: file.name }));
         continue;
       }
-  
+
       // Type validation
       if (!acceptedTypes.includes(file.type)) {
-        toast.error(`"${file.name}" is not a valid image. Only PNG & JPG allowed.`);
+        toast.error(t('experiences.messages.invalidImageType', { name: file.name }));
         continue;
       }
-  
+
       //  Size validation
       if (file.size > maxSize) {
-        toast.error(`"${file.name}" is too large. Max allowed size is 10MB.`);
+        toast.error(t('experiences.messages.imageTooLarge', { name: file.name }));
         continue;
       }
   
@@ -327,12 +329,16 @@ export default function NewExperiencePage() {
         }
       }
 
-      const statusMessage = finalStatus === "draft" ? "saved as draft" : finalStatus === "review" ? "submitted for review" : "published"
-      toast.success(`Experience and packages ${statusMessage}`)
+      const statusMessage = finalStatus === "draft"
+        ? t('experiences.form.experienceSavedDraft')
+        : finalStatus === "review"
+        ? t('experiences.form.experienceSubmittedReview')
+        : t('experiences.form.experiencePublished')
+      toast.success(statusMessage)
       router.push("/admin/experiences")
     } catch (err: any) {
       console.error("Failed to create experience - Full error:", err)
-      const errorMessage = err?.message || err?.toString() || "Unable to create experience. Please try again."
+      const errorMessage = err?.message || err?.toString() || t('experiences.form.failedToCreate')
       setError(errorMessage)
       toast.error(errorMessage)
     } finally {
@@ -349,8 +355,8 @@ export default function NewExperiencePage() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-3xl font-bold">Add New Experience</h1>
-          <p className="text-muted-foreground">Create a new travel experience or package</p>
+          <h1 className="text-3xl font-bold">{t('experiences.form.addNewExperience')}</h1>
+          <p className="text-muted-foreground">{t('experiences.form.createNewExperience')}</p>
         </div>
       </div>
 
@@ -364,14 +370,14 @@ export default function NewExperiencePage() {
         {/* Basic Information */}
         <Card>
           <CardHeader>
-            <CardTitle>Basic Information</CardTitle>
+            <CardTitle>{t('experiences.form.basicInformation')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="title">Experience Title</Label>
+              <Label htmlFor="title">{t('experiences.form.title')}</Label>
               <Input
                 id="title"
-                placeholder="e.g., Sunrise at Mount Batur"
+                placeholder={t('experiences.form.titlePlaceholder')}
                 value={form.title}
                 onChange={handleInputChange("title")}
                 required
@@ -380,31 +386,31 @@ export default function NewExperiencePage() {
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="location">Location</Label>
+                <Label htmlFor="location">{t('experiences.form.location')}</Label>
                 <Input
                   id="location"
-                  placeholder="e.g., Bali, Indonesia"
+                  placeholder={t('experiences.form.locationPlaceholder')}
                   value={form.location}
                   onChange={handleInputChange("location")}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="country">Country</Label>
+                <Label htmlFor="country">{t('experiences.form.country')}</Label>
                 <CountryCombobox
                   value={form.country ?? ""}
                   onValueChange={handleSelectChange("country")}
-                  placeholder="Select country"
+                  placeholder={t('experiences.form.countryPlaceholder')}
                   required
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t('experiences.form.description')}</Label>
               <Textarea
                 id="description"
-                placeholder="Describe the experience..."
+                placeholder={t('experiences.form.descriptionPlaceholder')}
                 rows={4}
                 value={form.description ?? ""}
                 onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
@@ -414,10 +420,10 @@ export default function NewExperiencePage() {
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
+                <Label htmlFor="category">{t('experiences.form.category')}</Label>
                 <Select value={form.category ?? ""} onValueChange={handleSelectChange("category")} required>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
+                    <SelectValue placeholder={t('experiences.form.categoryPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((category) => (
@@ -429,10 +435,10 @@ export default function NewExperiencePage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="duration">Duration</Label>
+                <Label htmlFor="duration">{t('experiences.form.duration')}</Label>
                 <Input
                   id="duration"
-                  placeholder="e.g., 8h"
+                  placeholder={t('experiences.form.durationPlaceholder')}
                   value={form.duration}
                   onChange={handleInputChange("duration")}
                   required
@@ -452,16 +458,16 @@ export default function NewExperiencePage() {
         {/* Images */}
         <Card>
           <CardHeader>
-            <CardTitle>Images</CardTitle>
+            <CardTitle>{t('experiences.form.images')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-4">
 
               {/* Section Header */}
               <div>
-                <Label>Upload Images</Label>
+                <Label>{t('experiences.form.uploadImages')}</Label>
                 <p className="text-sm text-muted-foreground">
-                  Add multiple images for the gallery
+                  {t('experiences.form.gallery')}
                 </p>
               </div>
 
@@ -515,10 +521,10 @@ export default function NewExperiencePage() {
               >
                 <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground mb-2">
-                  Click to upload or drag and drop
+                  {t('experiences.form.clickToUpload')}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  PNG, JPG up to 10MB (multiple files allowed)
+                  {t('experiences.form.imageFormat')}
                 </p>
 
                 <input
@@ -534,7 +540,7 @@ export default function NewExperiencePage() {
               {/* No images message */}
               {galleryPreviewUrls.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-4">
-                  No images uploaded yet
+                  {t('experiences.form.noImagesUploaded')}
                 </p>
               )}
 
@@ -549,9 +555,9 @@ export default function NewExperiencePage() {
                     className="h-4 w-4 rounded border-gray-300"
                   />
                   <label htmlFor="is_destination_featured" className="text-sm">
-                    <span className="font-medium">Use as destination image</span>
+                    <span className="font-medium">{t('experiences.form.useAsDestination')}</span>
                     <span className="text-muted-foreground ml-2">
-                      (First image will represent {form.country} on destination pages)
+                      {t('experiences.form.destinationImageDesc', { country: form.country })}
                     </span>
                   </label>
                 </div>
@@ -563,14 +569,14 @@ export default function NewExperiencePage() {
         {/* Highlights & Inclusions */}
         <Card>
           <CardHeader>
-            <CardTitle>Highlights & Inclusions</CardTitle>
+            <CardTitle>{t('experiences.form.highlightsAndInclusions')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="highlights">Highlights (one per line)</Label>
+              <Label htmlFor="highlights">{t('experiences.form.highlights')}</Label>
               <Textarea
                 id="highlights"
-                placeholder="Trek to the summit of an active volcano&#10;Witness spectacular sunrise views&#10;Enjoy breakfast cooked by volcanic steam"
+                placeholder={t('experiences.form.highlightsPlaceholder')}
                 rows={4}
                 value={highlightsText}
                 onChange={(event) => setHighlightsText(event.target.value)}
@@ -578,10 +584,10 @@ export default function NewExperiencePage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="inclusions">Inclusions (one per line)</Label>
+              <Label htmlFor="inclusions">{t('experiences.form.inclusions')}</Label>
               <Textarea
                 id="inclusions"
-                placeholder="Hotel pickup&#10;Professional guide&#10;Breakfast&#10;Trekking equipment"
+                placeholder={t('experiences.form.inclusionsPlaceholder')}
                 rows={4}
                 value={inclusionsText}
                 onChange={(event) => setInclusionsText(event.target.value)}
@@ -589,10 +595,10 @@ export default function NewExperiencePage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="exclusions">Exclusions (one per line)</Label>
+              <Label htmlFor="exclusions">{t('experiences.form.exclusions')}</Label>
               <Textarea
                 id="exclusions"
-                placeholder="Personal expenses&#10;Travel insurance&#10;Gratuities"
+                placeholder={t('experiences.form.exclusionsPlaceholder')}
                 rows={3}
                 value={exclusionsText}
                 onChange={(event) => setExclusionsText(event.target.value)}
@@ -605,20 +611,20 @@ export default function NewExperiencePage() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Itinerary</CardTitle>
+              <CardTitle>{t('experiences.form.itinerary')}</CardTitle>
               <Button type="button" size="sm" onClick={addItineraryItem}>
                 <Plus className="w-4 h-4 mr-2" />
-                Add Item
+                {t('experiences.form.addItineraryItem')}
               </Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            { 
-              itinerary.length === 0 ? 
+            {
+              itinerary.length === 0 ?
                 (
                   <div className="flex items-center justify-center py-10">
                     <p className="text-sm text-muted-foreground text-center">
-                      No itinerary items yet. Click "Add Item" to create one.
+                      {t('experiences.form.noItineraryItems')}
                     </p>
                   </div>
                 )
@@ -629,7 +635,7 @@ export default function NewExperiencePage() {
                       <div className="grid gap-4 md:grid-cols-3">
                         {/* Day Field */}
                         <div className="space-y-2">
-                          <Label htmlFor={`day-${index}`}>Day</Label>
+                          <Label htmlFor={`day-${index}`}>{t('experiences.form.day')}</Label>
                           <Input
                             id={`day-${index}`}
                             type="number"
@@ -642,7 +648,7 @@ export default function NewExperiencePage() {
                         </div>
                         {/* Time Field */}
                         <div className="space-y-2 md:col-span-2">
-                          <Label htmlFor={`time-${index}`}>Time <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                          <Label htmlFor={`time-${index}`}>{t('experiences.form.time')} <span className="text-muted-foreground text-xs">(optional)</span></Label>
                           <Input
                             id={`time-${index}`}
                             placeholder="e.g., 02:00 AM or leave empty"
@@ -653,7 +659,7 @@ export default function NewExperiencePage() {
                       </div>
                       {/* Activity Field */}
                       <div className="space-y-2">
-                        <Label htmlFor={`activity-${index}`}>Activity</Label>
+                        <Label htmlFor={`activity-${index}`}>{t('experiences.form.activity')}</Label>
                         <RichTextEditor
                           content={item.activity}
                           onChange={(html) => updateItineraryItem(index, "activity", html)}
@@ -679,14 +685,14 @@ export default function NewExperiencePage() {
         {/* Additional Details */}
         <Card>
           <CardHeader>
-            <CardTitle>Additional Details</CardTitle>
+            <CardTitle>{t('experiences.form.additionalDetails')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="what_to_bring">What to Bring (one per line)</Label>
+              <Label htmlFor="what_to_bring">{t('experiences.form.whatToBring')}</Label>
               <Textarea
                 id="what_to_bring"
-                placeholder="Hiking shoes&#10;Warm jacket&#10;Camera&#10;Water bottle"
+                placeholder={t('experiences.form.whatToBringPlaceholder')}
                 rows={4}
                 value={whatToBringText}
                 onChange={(event) => setWhatToBringText(event.target.value)}
@@ -694,10 +700,10 @@ export default function NewExperiencePage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="not_suitable_for">Not Suitable For (one per line)</Label>
+              <Label htmlFor="not_suitable_for">{t('experiences.form.notSuitableFor')}</Label>
               <Textarea
                 id="not_suitable_for"
-                placeholder="Pregnant women&#10;People with mobility issues&#10;Children under 5"
+                placeholder={t('experiences.form.notSuitableForPlaceholder')}
                 rows={3}
                 value={notSuitableForText}
                 onChange={(event) => setNotSuitableForText(event.target.value)}
@@ -705,20 +711,20 @@ export default function NewExperiencePage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="meeting_point">Meeting Point</Label>
+              <Label htmlFor="meeting_point">{t('experiences.form.meetingPoint')}</Label>
               <Input
                 id="meeting_point"
-                placeholder="e.g., Hotel lobby or specific address"
+                placeholder={t('experiences.form.meetingPointPlaceholder')}
                 value={form.meeting_point ?? ""}
                 onChange={handleInputChange("meeting_point")}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="cancellation">Cancellation Policy</Label>
+              <Label htmlFor="cancellation">{t('experiences.form.cancellationPolicy')}</Label>
               <Input
                 id="cancellation"
-                placeholder="e.g., Free cancellation up to 24 hours before"
+                placeholder={t('experiences.form.cancellationPolicyPlaceholder')}
                 value={form.cancellation_policy ?? ""}
                 onChange={handleInputChange("cancellation_policy")}
               />
@@ -730,10 +736,10 @@ export default function NewExperiencePage() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>FAQs</CardTitle>
+              <CardTitle>{t('experiences.form.faqs')}</CardTitle>
               <Button type="button" size="sm" onClick={addFAQItem}>
                 <Plus className="w-4 h-4 mr-2" />
-                Add FAQ
+                {t('experiences.form.addFaq')}
               </Button>
             </div>
           </CardHeader>
@@ -741,7 +747,7 @@ export default function NewExperiencePage() {
             {faqs.map((item, index) => (
               <div key={index} className="space-y-4 pb-4 border-b last:border-0">
                 <div className="flex justify-between items-start">
-                  <Label htmlFor={`faq-question-${index}`}>FAQ #{index + 1}</Label>
+                  <Label htmlFor={`faq-question-${index}`}>{t('experiences.form.faqNumber', { number: index + 1 })}</Label>
                   {faqs.length > 1 && (
                     <Button
                       type="button"
@@ -754,19 +760,19 @@ export default function NewExperiencePage() {
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor={`faq-question-${index}`}>Question</Label>
+                  <Label htmlFor={`faq-question-${index}`}>{t('experiences.form.question')}</Label>
                   <Input
                     id={`faq-question-${index}`}
-                    placeholder="e.g., What is the difficulty level of this trek?"
+                    placeholder={t('experiences.form.faqQuestionPlaceholder')}
                     value={item.question}
                     onChange={(e) => updateFAQItem(index, "question", e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor={`faq-answer-${index}`}>Answer</Label>
+                  <Label htmlFor={`faq-answer-${index}`}>{t('experiences.form.answer')}</Label>
                   <Textarea
                     id={`faq-answer-${index}`}
-                    placeholder="Provide a detailed answer..."
+                    placeholder={t('experiences.form.faqAnswerPlaceholder')}
                     rows={3}
                     value={item.answer}
                     onChange={(e) => updateFAQItem(index, "answer", e.target.value)}
@@ -791,7 +797,7 @@ export default function NewExperiencePage() {
             ) : (
               <>
                 <Check className="mr-2 h-4 w-4" />
-                {profile?.role === 'supplier' ? 'Submit for Review' : 'Publish'}
+                {profile?.role === 'supplier' ? t('experiences.form.submitForReview') : t('experiences.form.publish')}
               </>
             )}
           </Button>
@@ -802,10 +808,10 @@ export default function NewExperiencePage() {
             disabled={loading}
           >
             <FileText className="mr-2 h-4 w-4" />
-            Save as Draft
+            {t('experiences.form.saveAsDraft')}
           </Button>
           <Button type="button" variant="outline" asChild>
-            <Link href="/admin/experiences">Cancel</Link>
+            <Link href="/admin/experiences">{t('common.cancel')}</Link>
           </Button>
         </div>
       </form>

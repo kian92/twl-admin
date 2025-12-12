@@ -10,6 +10,7 @@ import { Plus, X, Trash2, Package } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useTranslations } from 'next-intl';
 
 export interface AddOnItem {
   id?: string;
@@ -64,6 +65,7 @@ interface PackageFormSectionProps {
 }
 
 export function PackageFormSection({ packages, onChange, userRole }: PackageFormSectionProps) {
+  const t = useTranslations('experiences.form');
   const [expandedPackage, setExpandedPackage] = useState<number>(0);
   const isSupplier = userRole === 'supplier';
 
@@ -192,21 +194,21 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Packages & Pricing</CardTitle>
+            <CardTitle>{t('packagesAndPricing')}</CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              Create different package tiers (Standard, Premium, Luxury) with separate pricing
+              {t('packagesSubtitle')}
             </p>
           </div>
           <Button type="button" size="sm" onClick={addPackage}>
             <Plus className="w-4 h-4 mr-2" />
-            Add Package
+            {t('addPackage')}
           </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {packages.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            <p>No packages yet. Click "Add Package" to create your first package.</p>
+            <p>{t('noPackages')}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -223,10 +225,10 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                       <Badge variant="outline">{pkg.package_code}</Badge>
                     )}
                     <Badge variant={pkg.tour_type === 'private' ? 'default' : 'secondary'} className={pkg.tour_type === 'private' ? 'bg-purple-600' : 'bg-blue-600'}>
-                      {pkg.tour_type === 'private' ? 'Private' : 'Group'}
+                      {pkg.tour_type === 'private' ? t('packagePrivate') : t('packageGroup')}
                     </Badge>
                     <Badge variant={pkg.is_active ? 'default' : 'secondary'}>
-                      {pkg.is_active ? 'Active' : 'Inactive'}
+                      {pkg.is_active ? t('packageActive') : t('packageInactive')}
                     </Badge>
                   </div>
                   <div className="flex items-center gap-2">
@@ -255,55 +257,55 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                     {/* Basic Info */}
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2">
-                        <Label>Package Name *</Label>
+                        <Label>{t('packageName')} *</Label>
                         <Input
                           value={pkg.package_name}
                           onChange={(e) => updatePackage(index, 'package_name', e.target.value)}
-                          placeholder="e.g., Standard Package, Premium Package"
+                          placeholder={t('packageNamePlaceholder')}
                           required
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label>Package Code</Label>
+                        <Label>{t('packageCode')}</Label>
                         <Input
                           value={pkg.package_code}
                           onChange={(e) => updatePackage(index, 'package_code', e.target.value)}
-                          placeholder="e.g., STD, PREM, LUX"
+                          placeholder={t('packageCodePlaceholder')}
                         />
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Description</Label>
+                      <Label>{t('description')}</Label>
                       <Textarea
                         value={pkg.description}
                         onChange={(e) => updatePackage(index, 'description', e.target.value)}
-                        placeholder="Describe what makes this package special..."
+                        placeholder={t('packageDescriptionPlaceholder')}
                         rows={3}
                       />
                     </div>
 
                     {/* Tour Type */}
                     <div className="space-y-2">
-                      <Label>Tour Type *</Label>
+                      <Label>{t('tourType')} *</Label>
                       <Select
                         value={pkg.tour_type || 'group'}
                         onValueChange={(value) => updatePackage(index, 'tour_type', value)}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select tour type" />
+                          <SelectValue placeholder={t('selectTourType')} />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="group">
                             <div className="flex flex-col">
-                              <span className="font-medium">Group Tour</span>
-                              <span className="text-xs text-muted-foreground">Join scheduled departures with other travelers</span>
+                              <span className="font-medium">{t('groupTour')}</span>
+                              <span className="text-xs text-muted-foreground">{t('groupTourDesc')}</span>
                             </div>
                           </SelectItem>
                           <SelectItem value="private">
                             <div className="flex flex-col">
-                              <span className="font-medium">Private Tour</span>
-                              <span className="text-xs text-muted-foreground">Exclusive booking for your group only</span>
+                              <span className="font-medium">{t('privateTour')}</span>
+                              <span className="text-xs text-muted-foreground">{t('privateTourDesc')}</span>
                             </div>
                           </SelectItem>
                         </SelectContent>
@@ -314,30 +316,30 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                     {!isSupplier && (
                       <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
                         <div className="flex items-center justify-between">
-                          <h4 className="font-medium">Markup Configuration</h4>
-                          <Badge variant="outline">Optional</Badge>
+                          <h4 className="font-medium">{t('markupConfiguration')}</h4>
+                          <Badge variant="outline">{t('markupOptional')}</Badge>
                         </div>
                         <div className="grid gap-4 md:grid-cols-2">
                           <div className="space-y-2">
-                            <Label>Markup Type</Label>
+                            <Label>{t('markupType')}</Label>
                             <Select
                               value={pkg.markup_type || 'none'}
                               onValueChange={(value) => updatePricingWithMarkup(index, 'markup_type', value)}
                             >
                               <SelectTrigger>
-                                <SelectValue placeholder="Select markup type" />
+                                <SelectValue placeholder={t('selectMarkupType')} />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="none">No Markup</SelectItem>
-                                <SelectItem value="percentage">Percentage (%)</SelectItem>
-                                <SelectItem value="fixed">Fixed Amount ($)</SelectItem>
+                                <SelectItem value="none">{t('noMarkup')}</SelectItem>
+                                <SelectItem value="percentage">{t('markupPercentage')}</SelectItem>
+                                <SelectItem value="fixed">{t('markupFixedAmount')}</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
                           {pkg.markup_type && pkg.markup_type !== 'none' && (
                             <div className="space-y-2">
                               <Label>
-                                Markup Value {pkg.markup_type === 'percentage' ? '(%)' : '($)'}
+                                {t('markupValue')} {pkg.markup_type === 'percentage' ? '(%)' : '($)'}
                               </Label>
                               <Input
                                 type="number"
@@ -360,12 +362,12 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                     {!isSupplier && (
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                          <h4 className="font-medium">Base Prices (Cost)</h4>
-                          <span className="text-xs text-muted-foreground">Prices from supplier/operator</span>
+                          <h4 className="font-medium">{t('basePrices')}</h4>
+                          <span className="text-xs text-muted-foreground">{t('pricesFromSupplier')}</span>
                         </div>
                         <div className="grid gap-4 md:grid-cols-4">
                           <div className="space-y-2">
-                            <Label>Adult Base Price</Label>
+                            <Label>{t('adultBasePrice')}</Label>
                             <Input
                               type="number"
                               min="0"
@@ -379,7 +381,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label>Child Base Price</Label>
+                            <Label>{t('childBasePrice')}</Label>
                             <Input
                               type="number"
                               min="0"
@@ -393,7 +395,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label>Infant Base Price</Label>
+                            <Label>{t('infantBasePrice')}</Label>
                             <Input
                               type="number"
                               min="0"
@@ -407,7 +409,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label>Senior Base Price</Label>
+                            <Label>{t('seniorBasePrice')}</Label>
                             <Input
                               type="number"
                               min="0"
@@ -427,16 +429,16 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                     {/* Selling Prices */}
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <h4 className="font-medium">{isSupplier ? 'Pricing' : 'Selling Prices (Customer Pays)'}</h4>
+                        <h4 className="font-medium">{isSupplier ? t('packagePricing') : t('sellingPrices')}</h4>
                         {!isSupplier && (
                           <span className="text-xs text-muted-foreground">
-                            {pkg.markup_type && pkg.markup_type !== 'none' ? 'Auto-calculated' : 'Manual entry'}
+                            {pkg.markup_type && pkg.markup_type !== 'none' ? t('autoCalculated') : t('manualEntry')}
                           </span>
                         )}
                       </div>
                       <div className="grid gap-4 md:grid-cols-4">
                         <div className="space-y-2">
-                          <Label>Adult Price</Label>
+                          <Label>{t('packageAdultPrice')}</Label>
                           <Input
                             type="number"
                             min="0"
@@ -457,7 +459,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                           )}
                         </div>
                         <div className="space-y-2">
-                          <Label>Child Price</Label>
+                          <Label>{t('packageChildPrice')}</Label>
                           <Input
                             type="number"
                             min="0"
@@ -478,7 +480,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                           )}
                         </div>
                         <div className="space-y-2">
-                          <Label>Infant Price</Label>
+                          <Label>{t('packageInfantPrice')}</Label>
                           <Input
                             type="number"
                             min="0"
@@ -494,7 +496,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label>Senior Price</Label>
+                          <Label>{t('packageSeniorPrice')}</Label>
                           <Input
                             type="number"
                             min="0"
@@ -515,7 +517,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                     {/* Group Size */}
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2">
-                        <Label>Min Group Size *</Label>
+                        <Label>{t('packageMinGroupSize')} *</Label>
                         <Input
                           type="number"
                           min="1"
@@ -525,7 +527,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label>Max Group Size (leave empty for unlimited)</Label>
+                        <Label>{t('packageMaxGroupSize')}</Label>
                         <Input
                           type="number"
                           min="1"
@@ -538,7 +540,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                     {/* Availability Dates */}
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2">
-                        <Label>Available From</Label>
+                        <Label>{t('availableFrom')}</Label>
                         <Input
                           type="date"
                           value={pkg.available_from}
@@ -546,7 +548,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label>Available To</Label>
+                        <Label>{t('availableTo')}</Label>
                         <Input
                           type="date"
                           value={pkg.available_to}
@@ -557,7 +559,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
 
                     {/* Inclusions */}
                     <div className="space-y-2">
-                      <Label>Inclusions</Label>
+                      <Label>{t('inclusions')}</Label>
                       <div className="space-y-2">
                         {pkg.inclusions.map((item, itemIndex) => (
                           <div key={itemIndex} className="flex gap-2">
@@ -574,7 +576,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                         ))}
                         <div className="flex gap-2">
                           <Input
-                            placeholder="Add inclusion (press Enter)"
+                            placeholder={t('addInclusion')}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') {
                                 e.preventDefault();
@@ -590,7 +592,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
 
                     {/* Exclusions */}
                     <div className="space-y-2">
-                      <Label>Exclusions</Label>
+                      <Label>{t('exclusions')}</Label>
                       <div className="space-y-2">
                         {pkg.exclusions.map((item, itemIndex) => (
                           <div key={itemIndex} className="flex gap-2">
@@ -607,7 +609,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                         ))}
                         <div className="flex gap-2">
                           <Input
-                            placeholder="Add exclusion (press Enter)"
+                            placeholder={t('addExclusion')}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') {
                                 e.preventDefault();
@@ -625,9 +627,9 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                     <div className="space-y-3 pt-4 border-t">
                       <div className="flex items-center justify-between">
                         <div>
-                          <Label className="text-base">Add-ons & Optional Extras</Label>
+                          <Label className="text-base">{t('addonsOptionalExtras')}</Label>
                           <p className="text-sm text-muted-foreground mt-1">
-                            Add optional items like single supplements, insurance, equipment rentals, etc.
+                            {t('addonsDescription')}
                           </p>
                         </div>
                         <Button
@@ -637,7 +639,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                           onClick={() => addAddon(index)}
                         >
                           <Plus className="w-4 h-4 mr-2" />
-                          Add Item
+                          {t('addItem')}
                         </Button>
                       </div>
 
@@ -646,7 +648,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                           {pkg.addons.map((addon, addonIndex) => (
                             <div key={addonIndex} className="p-4 border rounded-lg space-y-3 bg-muted/30">
                               <div className="flex items-start justify-between">
-                                <Badge variant="secondary">Add-on {addonIndex + 1}</Badge>
+                                <Badge variant="secondary">{t('addonNumber', { number: addonIndex + 1 })}</Badge>
                                 <Button
                                   type="button"
                                   variant="ghost"
@@ -659,65 +661,65 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
 
                               <div className="grid gap-3 md:grid-cols-2">
                                 <div className="space-y-2">
-                                  <Label>Add-on Name *</Label>
+                                  <Label>{t('addonName')} *</Label>
                                   <Input
                                     value={addon.name}
                                     onChange={(e) => updateAddon(index, addonIndex, 'name', e.target.value)}
-                                    placeholder="e.g., Single Supplement"
+                                    placeholder={t('addonNamePlaceholder')}
                                     required
                                   />
                                 </div>
                                 <div className="space-y-2">
-                                  <Label>Category</Label>
+                                  <Label>{t('addonCategory')}</Label>
                                   <Select
                                     value={addon.category || 'Other'}
                                     onValueChange={(value) => updateAddon(index, addonIndex, 'category', value)}
                                   >
                                     <SelectTrigger>
-                                      <SelectValue placeholder="Select category" />
+                                      <SelectValue placeholder={t('selectCategory')} />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      <SelectItem value="Transportation">Transportation</SelectItem>
-                                      <SelectItem value="Activities">Activities</SelectItem>
-                                      <SelectItem value="Meals">Meals</SelectItem>
-                                      <SelectItem value="Insurance">Insurance</SelectItem>
-                                      <SelectItem value="Equipment">Equipment</SelectItem>
-                                      <SelectItem value="Accommodation">Accommodation</SelectItem>
-                                      <SelectItem value="Other">Other</SelectItem>
+                                      <SelectItem value="Transportation">{t('transportation')}</SelectItem>
+                                      <SelectItem value="Activities">{t('activities')}</SelectItem>
+                                      <SelectItem value="Meals">{t('meals')}</SelectItem>
+                                      <SelectItem value="Insurance">{t('insurance')}</SelectItem>
+                                      <SelectItem value="Equipment">{t('equipment')}</SelectItem>
+                                      <SelectItem value="Accommodation">{t('accommodation')}</SelectItem>
+                                      <SelectItem value="Other">{t('other')}</SelectItem>
                                     </SelectContent>
                                   </Select>
                                 </div>
                               </div>
 
                               <div className="space-y-2">
-                                <Label>Description</Label>
+                                <Label>{t('description')}</Label>
                                 <Textarea
                                   value={addon.description}
                                   onChange={(e) => updateAddon(index, addonIndex, 'description', e.target.value)}
-                                  placeholder="Describe this add-on..."
+                                  placeholder={t('addonDescriptionPlaceholder')}
                                   rows={2}
                                 />
                               </div>
 
                               <div className="grid gap-3 md:grid-cols-3">
                                 <div className="space-y-2">
-                                  <Label>Pricing Type</Label>
+                                  <Label>{t('pricingType')}</Label>
                                   <Select
                                     value={addon.pricing_type || 'per_person'}
                                     onValueChange={(value) => updateAddon(index, addonIndex, 'pricing_type', value)}
                                   >
                                     <SelectTrigger>
-                                      <SelectValue placeholder="Select type" />
+                                      <SelectValue placeholder={t('selectType')} />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      <SelectItem value="per_person">Per Person</SelectItem>
-                                      <SelectItem value="per_group">Per Group</SelectItem>
-                                      <SelectItem value="per_unit">Per Unit</SelectItem>
+                                      <SelectItem value="per_person">{t('perPerson')}</SelectItem>
+                                      <SelectItem value="per_group">{t('perGroup')}</SelectItem>
+                                      <SelectItem value="per_unit">{t('perUnit')}</SelectItem>
                                     </SelectContent>
                                   </Select>
                                 </div>
                                 <div className="space-y-2">
-                                  <Label>Price (USD) *</Label>
+                                  <Label>{t('priceUsd')} *</Label>
                                   <Input
                                     type="number"
                                     min="0"
@@ -729,7 +731,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                                   />
                                 </div>
                                 <div className="space-y-2">
-                                  <Label>Max Quantity</Label>
+                                  <Label>{t('maxQuantity')}</Label>
                                   <Input
                                     type="number"
                                     min="1"
@@ -750,7 +752,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                                   htmlFor={`required-${index}-${addonIndex}`}
                                   className="text-sm font-normal cursor-pointer"
                                 >
-                                  Required add-on (automatically included)
+                                  {t('requiredAddon')}
                                 </Label>
                               </div>
                             </div>
@@ -760,7 +762,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
 
                       {(!pkg.addons || pkg.addons.length === 0) && (
                         <div className="text-center py-6 text-muted-foreground border rounded-lg border-dashed">
-                          <p className="text-sm">No add-ons yet. Click "Add Item" to create optional extras.</p>
+                          <p className="text-sm">{t('noAddons')}</p>
                         </div>
                       )}
                     </div>

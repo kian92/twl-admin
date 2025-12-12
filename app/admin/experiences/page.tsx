@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import type { Database } from "@/types/database"
 import { toast } from "sonner"
 import { useAdmin } from "@/components/admin-context"
+import { useTranslations } from 'next-intl'
 import {
   Pagination,
   PaginationContent,
@@ -35,6 +36,7 @@ interface ExperienceWithPackagePrices extends ExperienceRow {
 const ITEMS_PER_PAGE = 12
 
 export default function ExperiencesPage() {
+  const t = useTranslations()
   const { profile } = useAdmin()
   const [experiences, setExperiences] = useState<ExperienceWithPackagePrices[]>([])
   const [searchQuery, setSearchQuery] = useState("")
@@ -207,7 +209,7 @@ export default function ExperiencesPage() {
   }
 
   const handleDelete = async (experience: ExperienceRow) => {
-    if (!window.confirm(`Delete "${experience.title}"? This action cannot be undone.`)) {
+    if (!window.confirm(t('experiences.deleteConfirmTitle', { title: experience.title }))) {
       return
     }
     try {
@@ -218,11 +220,11 @@ export default function ExperiencesPage() {
         const payload = (await response.json().catch(() => ({}))) as { error?: string }
         throw new Error(payload.error ?? "Unable to delete experience.")
       }
-      toast.success("Experience removed")
+      toast.success(t('experiences.experienceRemoved'))
       void loadExperiences()
     } catch (err) {
       console.error("Failed to delete experience", err)
-      toast.error(err instanceof Error ? err.message : "Unable to delete experience. Please try again.")
+      toast.error(err instanceof Error ? err.message : t('experiences.failedToDelete'))
     }
   }
 
@@ -230,19 +232,19 @@ export default function ExperiencesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Experience Management</h1>
+          <h1 className="text-3xl font-bold">{t('experiences.title')}</h1>
           <p className="text-muted-foreground">
             {filteredExperiences.length === experiences.length ? (
-              <>{experiences.length.toLocaleString()} total experiences</>
+              <>{t('experiences.totalExperiences', { count: experiences.length.toLocaleString() })}</>
             ) : (
-              <>Showing {filteredExperiences.length.toLocaleString()} of {experiences.length.toLocaleString()} experiences</>
+              <>{t('experiences.showing', { filtered: filteredExperiences.length.toLocaleString(), total: experiences.length.toLocaleString() })}</>
             )}
           </p>
         </div>
         <Button asChild>
           <Link href="/admin/experiences/new">
             <Plus className="w-4 h-4 mr-2" />
-            Add Experience
+            {t('experiences.addExperience')}
           </Link>
         </Button>
       </div>
@@ -259,7 +261,7 @@ export default function ExperiencesPage() {
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search experiences..."
+              placeholder={t('experiences.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -267,36 +269,36 @@ export default function ExperiencesPage() {
           </div>
           <Select value={selectedCountry} onValueChange={setSelectedCountry}>
             <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="All Countries" />
+              <SelectValue placeholder={t('experiences.allCountries')} />
             </SelectTrigger>
             <SelectContent>
               {countries.map((country) => (
                 <SelectItem key={country} value={country}>
-                  {country === "all" ? "All Countries" : country}
+                  {country === "all" ? t('experiences.allCountries') : country}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <Select value={selectedStatus} onValueChange={setSelectedStatus}>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="All Status" />
+              <SelectValue placeholder={t('experiences.allStatus')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="draft">Draft</SelectItem>
-              <SelectItem value="review">Review</SelectItem>
+              <SelectItem value="all">{t('experiences.allStatus')}</SelectItem>
+              <SelectItem value="active">{t('experiences.active')}</SelectItem>
+              <SelectItem value="draft">{t('experiences.status.draft')}</SelectItem>
+              <SelectItem value="review">{t('experiences.status.review')}</SelectItem>
             </SelectContent>
           </Select>
           {profile?.role === 'admin' && (
             <Select value={selectedCreator} onValueChange={setSelectedCreator}>
               <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="All Creators" />
+                <SelectValue placeholder={t('experiences.allCreators')} />
               </SelectTrigger>
               <SelectContent>
                 {creators.map((creator) => (
                   <SelectItem key={creator} value={creator}>
-                    {creator === "all" ? "All Creators" : creator}
+                    {creator === "all" ? t('experiences.allCreators') : creator}
                   </SelectItem>
                 ))}
               </SelectContent>

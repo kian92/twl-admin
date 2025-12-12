@@ -5,30 +5,32 @@ import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 import { LayoutDashboard, MapPin, Calendar, Users, Award, FileText, Settings, Compass, UserPlus, Link2, Receipt, MessageSquare } from "lucide-react"
+import { useTranslations } from 'next-intl'
 
 type UserRole = "admin" | "manager" | "support" | "sales" | "supplier";
 
 interface MenuItem {
-  name: string;
+  nameKey: string;
   href: string;
   icon: any;
   roles: UserRole[];
 }
 
 const allMenuItems: MenuItem[] = [
-  { name: "Dashboard", href: "/admin", icon: LayoutDashboard, roles: ["admin", "manager", "support"] },
-  { name: "Experiences", href: "/admin/experiences", icon: MapPin, roles: ["admin", "manager", "support", "supplier"] },
-  { name: "Bookings", href: "/admin/bookings", icon: Calendar, roles: ["admin", "manager", "support"] },
-  { name: "Testimonials", href: "/admin/testimonials", icon: MessageSquare, roles: ["admin", "manager", "support"] },
-  { name: "Payment Links", href: "/admin/payment-links", icon: Link2, roles: ["admin", "manager", "support", "sales"] },
-  { name: "Submissions", href: "/admin/payment-submissions", icon: Receipt, roles: ["admin", "manager", "support", "sales"] },
-  { name: "Users", href: "/admin/users", icon: Users, roles: ["admin", "manager", "support"] },
-  { name: "Team", href: "/admin/staff", icon: UserPlus, roles: ["admin"] },
-  { name: "Settings", href: "/admin/settings", icon: Settings, roles: ["admin", "sales", "supplier"] },
+  { nameKey: "dashboard", href: "/admin", icon: LayoutDashboard, roles: ["admin", "manager", "support"] },
+  { nameKey: "experiences", href: "/admin/experiences", icon: MapPin, roles: ["admin", "manager", "support", "supplier"] },
+  { nameKey: "bookings", href: "/admin/bookings", icon: Calendar, roles: ["admin", "manager", "support"] },
+  { nameKey: "testimonials", href: "/admin/testimonials", icon: MessageSquare, roles: ["admin", "manager", "support"] },
+  { nameKey: "paymentLinks", href: "/admin/payment-links", icon: Link2, roles: ["admin", "manager", "support", "sales"] },
+  { nameKey: "submissions", href: "/admin/payment-submissions", icon: Receipt, roles: ["admin", "manager", "support", "sales"] },
+  { nameKey: "users", href: "/admin/users", icon: Users, roles: ["admin", "manager", "support"] },
+  { nameKey: "team", href: "/admin/staff", icon: UserPlus, roles: ["admin"] },
+  { nameKey: "settings", href: "/admin/settings", icon: Settings, roles: ["admin", "sales", "supplier"] },
 ];
 
 export function AdminSidebar() {
   const pathname = usePathname()
+  const t = useTranslations('navigation')
   const [userRole, setUserRole] = useState<UserRole | null>(null)
   const [navigation, setNavigation] = useState<MenuItem[]>([])
 
@@ -66,7 +68,7 @@ export function AdminSidebar() {
           </div> */}
           <div>
             <h1 className="font-bold text-lg">The Wandering Lens</h1>
-            <p className="text-xs text-muted-foreground">Admin Portal</p>
+            <p className="text-xs text-muted-foreground">{t('adminPortal')}</p>
           </div>
         </Link>
       </div>
@@ -76,7 +78,7 @@ export function AdminSidebar() {
           const isActive = pathname === item.href
           return (
             <Link
-              key={item.name}
+              key={item.nameKey}
               href={item.href}
               className={cn(
                 "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
@@ -86,7 +88,7 @@ export function AdminSidebar() {
               )}
             >
               <item.icon className="w-5 h-5" />
-              {item.name}
+              {t(item.nameKey)}
             </Link>
           )
         })}
@@ -98,7 +100,7 @@ export function AdminSidebar() {
           className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
         >
           <Compass className="w-5 h-5" />
-          View Site
+          {t('viewSite')}
         </Link>
       </div>
     </div>

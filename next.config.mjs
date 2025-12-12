@@ -1,3 +1,7 @@
+import createNextIntlPlugin from 'next-intl/plugin';
+
+const withNextIntl = createNextIntlPlugin();
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: {
@@ -8,16 +12,16 @@ const nextConfig = {
       {
         protocol: "https",
         hostname: "twl-media.b-cdn.net",
-        pathname: "/development/**",  
+        pathname: "/development/**",
       },
       {
         protocol: "https",
         hostname: "twl-media.b-cdn.net",
-        pathname: "/production/**",  
+        pathname: "/production/**",
       },
     ],
   },
-  
+
 }
 
-export default nextConfig
+export default withNextIntl(nextConfig);

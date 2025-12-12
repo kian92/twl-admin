@@ -5,6 +5,8 @@ import { GeistMono } from "geist/font/mono"
 import { Playfair_Display } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { Toaster } from "sonner"
+import { NextIntlClientProvider } from 'next-intl'
+import { getMessages } from 'next-intl/server'
 import "./globals.css"
 import { Suspense } from "react"
 
@@ -19,22 +21,26 @@ export const metadata: Metadata = {
   description: "Administration console for The Wandering Lens platform.",
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const messages = await getMessages();
+
   return (
     <html lang="en">
       <body
         className={`font-sans ${GeistSans.variable} ${GeistMono.variable} ${playfair.variable} antialiased`}
         suppressHydrationWarning
       >
-        <Suspense fallback={null}>
-          {children}
-          <Analytics />
-        </Suspense>
-        <Toaster />
+        <NextIntlClientProvider messages={messages}>
+          <Suspense fallback={null}>
+            {children}
+            <Analytics />
+          </Suspense>
+          <Toaster />
+        </NextIntlClientProvider>
       </body>
     </html>
   )

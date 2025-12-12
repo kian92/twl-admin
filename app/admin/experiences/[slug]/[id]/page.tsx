@@ -19,6 +19,7 @@ import { toast } from "sonner"
 import { PackageFormSection, PackageFormData } from "@/components/admin/PackageFormSection"
 import { RichTextEditor } from "@/components/admin/RichTextEditor"
 import { useAdmin } from "@/components/admin-context"
+import { useTranslations } from 'next-intl'
 
 type ExperienceRow = Database["public"]["Tables"]["experiences"]["Row"]
 
@@ -59,6 +60,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
 
   const router = useRouter()
   const { profile } = useAdmin()
+  const t = useTranslations('experiences')
   const [experience, setExperience] = useState<ExperienceRow | null>(null)
   const [form, setForm] = useState<FormState | null>(null)
   const [itinerary, setItinerary] = useState<ItineraryItem[]>([])
@@ -302,19 +304,19 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
         );
   
       if (alreadyExists) {
-        toast.error(`"${file.name}" is already added.`);
+        toast.error(t('messages.imageAlreadyAdded', { name: file.name }));
         continue;
       }
-  
+
       // Type validation
       if (!acceptedTypes.includes(file.type)) {
-        toast.error(`"${file.name}" is not a valid image. Only PNG & JPG allowed.`);
+        toast.error(t('messages.invalidImageType', { name: file.name }));
         continue;
       }
-  
+
       //  Size validation
       if (file.size > maxSize) {
-        toast.error(`"${file.name}" is too large. Max allowed size is 10MB.`);
+        toast.error(t('messages.imageTooLarge', { name: file.name }));
         continue;
       }
   
@@ -579,15 +581,15 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
       console.log(`Package creation complete. Success: ${successCount}, Failed: ${failCount}`);
 
       if (failCount > 0) {
-        toast.warning(`Experience updated, but ${failCount} package(s) failed to save. Check console for details.`);
+        toast.warning(t('messages.packageSaveWarning', { count: failCount }));
       }
 
-      const statusMessage = finalStatus === "draft" ? "saved as draft" : finalStatus === "review" ? "submitted for review" : "published"
-      toast.success(`Experience ${statusMessage} successfully`)
+      const statusMessage = finalStatus === "draft" ? t('messages.savedAsDraft') : finalStatus === "review" ? t('messages.submittedForReview') : t('messages.published')
+      toast.success(t('messages.experienceStatusSuccess', { status: statusMessage }))
       router.push("/admin/experiences")
     } catch (err) {
       console.error("Failed to update experience", err)
-      const errorMessage = (err as any)?.message || "Unable to save changes. Please try again."
+      const errorMessage = (err as any)?.message || t('messages.unableToSaveChanges')
       setError(errorMessage)
       toast.error(errorMessage)
     } finally {
@@ -643,40 +645,40 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
           </Link>
         </Button>
         <div>
-          <h1 className="text-3xl font-bold">Edit Experience</h1>
-          <p className="text-muted-foreground">Update experience details</p>
+          <h1 className="text-3xl font-bold">{t('editExperience')}</h1>
+          <p className="text-muted-foreground">{t('form.updateExperienceDetails')}</p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Basic Information</CardTitle>
+            <CardTitle>{t('form.basicInformation')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="title">Experience Title</Label>
+              <Label htmlFor="title">{t('form.title')}</Label>
               <Input id="title" value={form.title} onChange={handleChange("title")} required />
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="location">Location</Label>
+                <Label htmlFor="location">{t('form.location')}</Label>
                 <Input id="location" value={form.location} onChange={handleChange("location")} required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="country">Country</Label>
+                <Label htmlFor="country">{t('form.country')}</Label>
                 <CountryCombobox
                   value={form.country}
                   onValueChange={handleSelectChange("country")}
-                  placeholder="Select country"
+                  placeholder={t('form.countryPlaceholder')}
                   required
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t('form.description')}</Label>
               <Textarea
                 id="description"
                 value={form.description}
@@ -688,7 +690,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
+                <Label htmlFor="category">{t('form.category')}</Label>
                 <Select value={form.category} onValueChange={handleSelectChange("category")} required>
                   <SelectTrigger>
                     <SelectValue />
@@ -703,7 +705,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="duration">Duration</Label>
+                <Label htmlFor="duration">{t('form.duration')}</Label>
                 <Input id="duration" value={form.duration} onChange={handleChange("duration")} required />
               </div>
             </div>
@@ -720,13 +722,13 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
         {/* Gallery Section */}
         <Card>
           <CardHeader>
-            <CardTitle>Images</CardTitle>
+            <CardTitle>{t('form.images')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-4">
               <div>
-                <Label>Upload Images</Label>
-                <p className="text-sm text-muted-foreground">Add multiple images for the gallery</p>
+                <Label>{t('form.uploadImages')}</Label>
+                <p className="text-sm text-muted-foreground">{t('form.addMultipleImages')}</p>
               </div>
 
               {/* Thumbnails */}
@@ -736,7 +738,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                     <div key={index} className="relative aspect-video rounded-lg overflow-hidden border group">
                       <img src={url} alt={`Image ${index + 1}`} className="object-cover w-full h-full" />
                       <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                        {index === 0 ? "Main" : `Image ${index + 1}`}
+                        {index === 0 ? t('form.mainImage') : t('form.imageNumber', { number: index + 1 })}
                       </div>
                       <Button
                         type="button"
@@ -757,14 +759,14 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                 onClick={() => fileInputRef.current?.click()}
               >
                 <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground mb-2">Click to upload or drag and drop</p>
-                <p className="text-xs text-muted-foreground">PNG, JPG up to 10MB (multiple files allowed)</p>
+                <p className="text-sm text-muted-foreground mb-2">{t('form.clickToUpload')}</p>
+                <p className="text-xs text-muted-foreground">{t('form.imageFormat')}</p>
                 <input ref={fileInputRef} type="file" multiple accept="image/*" className="hidden" onChange={handleSelectFiles} />
               </div>
 
               {/* No images message */}
               {galleryPreviewUrls.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">No images uploaded yet</p>
+                <p className="text-sm text-muted-foreground text-center py-4">{t('form.noImagesUploaded')}</p>
               )}
 
               {/* Featured Destination Image */}
@@ -781,9 +783,9 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                     className="h-4 w-4 rounded border-gray-300"
                   />
                   <label htmlFor="is_destination_featured" className="text-sm">
-                    <span className="font-medium">Use as destination image</span>
+                    <span className="font-medium">{t('form.useAsDestination')}</span>
                     <span className="text-muted-foreground ml-2">
-                      (First image will represent {form.country} on destination pages)
+                      {t('form.destinationImageDesc', { country: form.country })}
                     </span>
                   </label>
                 </div>
@@ -794,14 +796,14 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
 
         <Card>
           <CardHeader>
-            <CardTitle>Highlights & Inclusions</CardTitle>
+            <CardTitle>{t('form.highlightsAndInclusions')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="highlights">Highlights (one per line)</Label>
+              <Label htmlFor="highlights">{t('form.highlightsOnePerLine')}</Label>
               <Textarea
                 id="highlights"
-                placeholder="Trek to the summit of an active volcano&#10;Witness spectacular sunrise views"
+                placeholder={t('form.highlightsPlaceholder')}
                 value={form.highlights}
                 onChange={handleChange("highlights")}
                 rows={4}
@@ -809,10 +811,10 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="inclusions">Inclusions (one per line)</Label>
+              <Label htmlFor="inclusions">{t('form.inclusionsOnePerLine')}</Label>
               <Textarea
                 id="inclusions"
-                placeholder="Hotel pickup&#10;Professional guide&#10;Breakfast"
+                placeholder={t('form.inclusionsPlaceholder')}
                 value={form.inclusions}
                 onChange={handleChange("inclusions")}
                 rows={4}
@@ -820,10 +822,10 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="exclusions">Exclusions (one per line)</Label>
+              <Label htmlFor="exclusions">{t('form.exclusionsOnePerLine')}</Label>
               <Textarea
                 id="exclusions"
-                placeholder="Personal expenses&#10;Travel insurance&#10;Gratuities"
+                placeholder={t('form.exclusionsPlaceholder')}
                 value={form.exclusions}
                 onChange={handleChange("exclusions")}
                 rows={3}
@@ -835,20 +837,20 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Itinerary</CardTitle>
+              <CardTitle>{t('form.itinerary')}</CardTitle>
               <Button type="button" size="sm" onClick={addItineraryItem}>
                 <Plus className="w-4 h-4 mr-2" />
-                Add Item
+                {t('form.addItem')}
               </Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             {
-              itinerary.length === 0 ? 
+              itinerary.length === 0 ?
               (
                 <div className="flex items-center justify-center py-10">
                   <p className="text-sm text-muted-foreground text-center">
-                    No itinerary items yet. Click "Add Item" to create one.
+                    {t('form.noItineraryItems')}
                   </p>
                 </div>
               )
@@ -859,7 +861,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                     <div className="grid gap-4 md:grid-cols-3">
                       {/* Day Field */}
                       <div className="space-y-2">
-                        <Label htmlFor={`day-${index}`}>Day</Label>
+                        <Label htmlFor={`day-${index}`}>{t('form.day')}</Label>
                         <Input
                           id={`day-${index}`}
                           type="number"
@@ -872,10 +874,10 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                       </div>
                       {/* Time Field */}
                       <div className="space-y-2 md:col-span-2">
-                        <Label htmlFor={`time-${index}`}>Time <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                        <Label htmlFor={`time-${index}`}>{t('form.time')} <span className="text-muted-foreground text-xs">({t('form.optional')})</span></Label>
                         <Input
                           id={`time-${index}`}
-                          placeholder="e.g., 02:00 AM or leave empty"
+                          placeholder={t('form.durationPlaceholder')}
                           value={item.time || ""}
                           onChange={(e) => updateItineraryItem(index, "time", e.target.value)}
                         />
@@ -883,11 +885,11 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                     </div>
                     {/* Activity Field */}
                     <div className="space-y-2">
-                      <Label htmlFor={`activity-${index}`}>Activity</Label>
+                      <Label htmlFor={`activity-${index}`}>{t('form.activity')}</Label>
                       <RichTextEditor
                         content={item.activity}
                         onChange={(html) => updateItineraryItem(index, "activity", html)}
-                        placeholder="e.g., Hotel pickup, breakfast at the lodge, guided tour..."
+                        placeholder={t('form.descriptionPlaceholder')}
                       />
                     </div>
                   </div>
@@ -908,14 +910,14 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
 
         <Card>
           <CardHeader>
-            <CardTitle>Additional Details</CardTitle>
+            <CardTitle>{t('form.additionalDetails')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="what_to_bring">What to Bring (one per line)</Label>
+              <Label htmlFor="what_to_bring">{t('form.whatToBringOnePerLine')}</Label>
               <Textarea
                 id="what_to_bring"
-                placeholder="Hiking shoes&#10;Warm jacket&#10;Camera&#10;Water bottle"
+                placeholder={t('form.whatToBringPlaceholder')}
                 value={form.what_to_bring}
                 onChange={handleChange("what_to_bring")}
                 rows={4}
@@ -923,10 +925,10 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="not_suitable_for">Not Suitable For (one per line)</Label>
+              <Label htmlFor="not_suitable_for">{t('form.notSuitableForOnePerLine')}</Label>
               <Textarea
                 id="not_suitable_for"
-                placeholder="Pregnant women&#10;People with mobility issues&#10;Children under 5"
+                placeholder={t('form.notSuitableForPlaceholder')}
                 value={form.not_suitable_for}
                 onChange={handleChange("not_suitable_for")}
                 rows={3}
@@ -934,20 +936,20 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="meeting_point">Meeting Point</Label>
+              <Label htmlFor="meeting_point">{t('form.meetingPoint')}</Label>
               <Input
                 id="meeting_point"
-                placeholder="e.g., Hotel lobby or specific address"
+                placeholder={t('form.meetingPointPlaceholder')}
                 value={form.meeting_point}
                 onChange={handleChange("meeting_point")}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="cancellation">Cancellation Policy</Label>
+              <Label htmlFor="cancellation">{t('form.cancellationPolicy')}</Label>
               <Input
                 id="cancellation"
-                placeholder="e.g., Free cancellation up to 24 hours before"
+                placeholder={t('form.cancellationPolicyPlaceholder')}
                 value={form.cancellation_policy}
                 onChange={handleChange("cancellation_policy")}
               />
@@ -958,10 +960,10 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>FAQs</CardTitle>
+              <CardTitle>{t('form.faqs')}</CardTitle>
               <Button type="button" size="sm" onClick={addFAQItem}>
                 <Plus className="w-4 h-4 mr-2" />
-                Add FAQ
+                {t('form.addFaq')}
               </Button>
             </div>
           </CardHeader>
@@ -969,7 +971,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
             {faqs.map((item, index) => (
               <div key={index} className="space-y-4 pb-4 border-b last:border-0">
                 <div className="flex justify-between items-start">
-                  <Label htmlFor={`faq-question-${index}`}>FAQ #{index + 1}</Label>
+                  <Label htmlFor={`faq-question-${index}`}>{t('form.faqNumber', { number: index + 1 })}</Label>
                   {faqs.length > 1 && (
                     <Button
                       type="button"
@@ -982,19 +984,19 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor={`faq-question-${index}`}>Question</Label>
+                  <Label htmlFor={`faq-question-${index}`}>{t('form.question')}</Label>
                   <Input
                     id={`faq-question-${index}`}
-                    placeholder="e.g., What is the difficulty level of this trek?"
+                    placeholder={t('form.faqQuestionPlaceholder')}
                     value={item.question}
                     onChange={(e) => updateFAQItem(index, "question", e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor={`faq-answer-${index}`}>Answer</Label>
+                  <Label htmlFor={`faq-answer-${index}`}>{t('form.answer')}</Label>
                   <Textarea
                     id={`faq-answer-${index}`}
-                    placeholder="Provide a detailed answer..."
+                    placeholder={t('form.faqAnswerPlaceholder')}
                     rows={3}
                     value={item.answer}
                     onChange={(e) => updateFAQItem(index, "answer", e.target.value)}
@@ -1014,12 +1016,12 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
             {saving ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
+                {t('form.saving')}
               </>
             ) : (
               <>
                 <Check className="mr-2 h-4 w-4" />
-                {profile?.role === 'supplier' ? 'Submit for Review' : (form?.status === "draft" ? "Publish" : "Save & Publish")}
+                {profile?.role === 'supplier' ? t('form.submitForReview') : (form?.status === "draft" ? t('form.publish') : t('form.saveAndPublish'))}
               </>
             )}
           </Button>
@@ -1030,10 +1032,10 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
             disabled={saving}
           >
             <FileText className="mr-2 h-4 w-4" />
-            Save as Draft
+            {t('form.saveAsDraft')}
           </Button>
           <Button type="button" variant="outline" asChild>
-            <Link href="/admin/experiences">Cancel</Link>
+            <Link href="/admin/experiences">{t('form.cancel')}</Link>
           </Button>
         </div>
       </form>

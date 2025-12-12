@@ -13,10 +13,13 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { LogOut, User } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { LanguageSwitcher } from "@/components/admin/language-switcher"
+import { useTranslations } from 'next-intl'
 
 export function AdminHeader() {
   const { profile, user, signOut, isLoading } = useAdmin()
   const router = useRouter()
+  const t = useTranslations()
 
   const handleSignOut = async () => {
     await signOut()
@@ -32,11 +35,14 @@ export function AdminHeader() {
   return (
     <header className="h-16 border-b bg-card flex items-center justify-between px-6">
       <div>
-        <h2 className="text-lg font-semibold">Welcome back, {displayName}</h2>
-        <p className="text-sm text-muted-foreground capitalize">{role} Account</p>
+        <h2 className="text-lg font-semibold">{t('header.welcomeBack', { name: displayName })}</h2>
+        <p className="text-sm text-muted-foreground capitalize">{t('header.account', { role })}</p>
       </div>
 
-      <DropdownMenu>
+      <div className="flex items-center gap-4">
+        <LanguageSwitcher />
+
+        <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-10 w-10 rounded-full">
             <Avatar>
@@ -56,14 +62,15 @@ export function AdminHeader() {
           <DropdownMenuSeparator />
           <DropdownMenuItem>
             <User className="mr-2 h-4 w-4" />
-            Profile
+            {t('common.profile')}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={handleSignOut}>
             <LogOut className="mr-2 h-4 w-4" />
-            Sign Out
+            {t('common.signOut')}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      </div>
     </header>
   )
 }
