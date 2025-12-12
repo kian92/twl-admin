@@ -26,6 +26,13 @@ export async function GET(
 
     const { id, slug } = await params
 
+    // Check user role to determine access
+    const { data: profile } = await supabase
+      .from("admin_profiles")
+      .select("role")
+      .eq("id", session.user.id)
+      .maybeSingle<{ role: string | null }>()
+
     const { data, error } = await supabase
       .from("experiences")
       .select(EXPERIENCE_SELECT_FIELDS)
@@ -39,6 +46,11 @@ export async function GET(
 
     if (!data) {
       return NextResponse.json({ error: "Experience not found" }, { status: 404 })
+    }
+
+    // If user is a supplier, verify they own this experience
+    if (profile?.role === "supplier" && data.created_by !== session.user.id) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 })
     }
 
     return NextResponse.json(data)
@@ -76,15 +88,27 @@ export async function PUT(
     const normalized = normalizeExperiencePayload(parsed.data)
     const { id } = await params
 
+    // Check user role to determine access
+    const { data: profile } = await supabase
+      .from("admin_profiles")
+      .select("role")
+      .eq("id", session.user.id)
+      .maybeSingle<{ role: string | null }>()
+
     // ✅ Fetch the current experience
     const { data: current } = await supabase
     .from("experiences")
-    .select("slug, title")
+    .select("slug, title, created_by")
     .eq("id", id)
-    .maybeSingle<ExperienceSlugInfo>()
+    .maybeSingle<ExperienceSlugInfo & { created_by: string | null }>()
 
     if (!current) {
     return NextResponse.json({ error: "Experience not found" }, { status: 404 })
+    }
+
+    // If user is a supplier, verify they own this experience
+    if (profile?.role === "supplier" && current.created_by !== session.user.id) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 })
     }
 
     // ✅ Determine new slug
@@ -142,15 +166,27 @@ export async function DELETE(
 
     const { id } = await params;
 
+    // Check user role to determine access
+    const { data: profile } = await supabase
+      .from("admin_profiles")
+      .select("role")
+      .eq("id", session.user.id)
+      .maybeSingle<{ role: string | null }>()
+
     // Fetch experience with gallery
     const { data: experience, error: fetchError } = await supabase
       .from("experiences")
-      .select("gallery")
+      .select("gallery, created_by")
       .eq("id", id)
-      .maybeSingle();
+      .maybeSingle<{ gallery: string[] | null; created_by: string | null }>();
 
     if (fetchError || !experience) {
       return NextResponse.json({ error: "Experience not found" }, { status: 404 });
+    }
+
+    // If user is a supplier, verify they own this experience
+    if (profile?.role === "supplier" && experience.created_by !== session.user.id) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 })
     }
 
     const gallery: string[] = experience?.gallery ?? [];

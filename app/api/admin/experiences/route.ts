@@ -16,7 +16,22 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { data, error } = await supabase.from("experiences").select(EXPERIENCE_SELECT_FIELDS).order("created_at", {
+    // Check user role to determine filtering
+    const { data: profile } = await supabase
+      .from("admin_profiles")
+      .select("role")
+      .eq("id", session.user.id)
+      .maybeSingle<{ role: string | null }>()
+
+    // Build query
+    let query = supabase.from("experiences").select(EXPERIENCE_SELECT_FIELDS)
+
+    // If user is a supplier, only show their own experiences
+    if (profile?.role === "supplier") {
+      query = query.eq("created_by", session.user.id)
+    }
+
+    const { data, error } = await query.order("created_at", {
       ascending: false,
     })
 
@@ -75,7 +90,13 @@ export async function POST(request: Request) {
 
     normalized.slug = uniqueSlug;
 
-    const { data, error } = await supabase.from("experiences").insert(normalized as any).select("id, slug").single()
+    // Set created_by to current user
+    const experienceData = {
+      ...normalized,
+      created_by: session.user.id,
+    }
+
+    const { data, error } = await supabase.from("experiences").insert(experienceData as any).select("id, slug").single()
 
     if (error) {
       console.error("Failed to create experience", error)
