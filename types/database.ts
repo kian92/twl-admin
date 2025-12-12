@@ -456,6 +456,54 @@ export interface Database {
           updated_at?: string | null
         }
       }
+      testimonials: {
+        Row: {
+          id: string
+          author_name: string
+          author_location: string | null
+          tour_name: string | null
+          tour_date: string | null
+          content: string
+          platform: "instagram" | "facebook" | "twitter" | "google" | "website" | "email" | "other" | null
+          social_media_url: string | null
+          image_url: string | null
+          is_featured: boolean
+          is_active: boolean
+          display_order: number
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          author_name: string
+          author_location?: string | null
+          tour_name?: string | null
+          tour_date?: string | null
+          content: string
+          platform?: "instagram" | "facebook" | "twitter" | "google" | "website" | "email" | "other" | null
+          social_media_url?: string | null
+          image_url?: string | null
+          is_featured?: boolean
+          is_active?: boolean
+          display_order?: number
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          author_name?: string
+          author_location?: string | null
+          tour_name?: string | null
+          tour_date?: string | null
+          content?: string
+          platform?: "instagram" | "facebook" | "twitter" | "google" | "website" | "email" | "other" | null
+          social_media_url?: string | null
+          image_url?: string | null
+          is_featured?: boolean
+          is_active?: boolean
+          display_order?: number
+          updated_at?: string | null
+        }
+      }
     }
     Views: Record<string, never>
     Functions: {

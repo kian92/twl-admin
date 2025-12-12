@@ -326,25 +326,40 @@ export default function TestimonialsPage() {
             {/* Pagination */}
             {totalPages > 1 && (
               <Pagination className="mt-8">
-                <PaginationPrevious
-                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                />
+                {currentPage > 1 ? (
+                  <PaginationPrevious
+                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                    style={{ cursor: "pointer" }}
+                  />
+                ) : (
+                  <PaginationPrevious
+                    style={{ cursor: "not-allowed", opacity: 0.5 }}
+                    onClick={(e) => e.preventDefault()}
+                  />
+                )}
                 <div className="flex gap-2">
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                     <PaginationLink
                       key={page}
                       onClick={() => setCurrentPage(page)}
                       isActive={currentPage === page}
+                      style={{ cursor: "pointer" }}
                     >
                       {page}
                     </PaginationLink>
                   ))}
                 </div>
-                <PaginationNext
-                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
-                />
+                {currentPage < totalPages ? (
+                  <PaginationNext
+                    onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                    style={{ cursor: "pointer" }}
+                  />
+                ) : (
+                  <PaginationNext
+                    style={{ cursor: "not-allowed", opacity: 0.5 }}
+                    onClick={(e) => e.preventDefault()}
+                  />
+                )}
               </Pagination>
             )}
           </>
