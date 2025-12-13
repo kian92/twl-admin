@@ -295,6 +295,14 @@ export default function NewExperiencePage() {
             base_infant_price: pkg.base_infant_price,
             base_senior_price: pkg.base_senior_price,
 
+            // Supplier currency fields
+            supplier_currency: pkg.supplier_currency || 'USD',
+            supplier_cost_adult: pkg.supplier_cost_adult,
+            supplier_cost_child: pkg.supplier_cost_child,
+            supplier_cost_infant: pkg.supplier_cost_infant,
+            supplier_cost_senior: pkg.supplier_cost_senior,
+            exchange_rate: pkg.exchange_rate || 1.0,
+
             // Selling prices (what customer pays)
             adult_price: pkg.adult_price,
             child_price: pkg.child_price,
