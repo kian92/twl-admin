@@ -652,16 +652,15 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                       </div>
                     )}
 
-                    {/* Selling Prices */}
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-medium">{isSupplier ? t('packagePricing') : t('sellingPrices')}</h4>
-                        {!isSupplier && (
+                    {/* Selling Prices - Hidden for suppliers */}
+                    {!isSupplier && (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium">{t('sellingPrices')}</h4>
                           <span className="text-xs text-muted-foreground">
                             {pkg.markup_type && pkg.markup_type !== 'none' ? t('autoCalculated') : t('manualEntry')}
                           </span>
-                        )}
-                      </div>
+                        </div>
                       <div className="grid gap-4 md:grid-cols-4">
                         <div className="space-y-2">
                           <Label>{t('packageAdultPrice')}</Label>
@@ -738,7 +737,8 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                           />
                         </div>
                       </div>
-                    </div>
+                      </div>
+                    )}
 
                     {/* Group Size */}
                     <div className="grid gap-4 md:grid-cols-2">
