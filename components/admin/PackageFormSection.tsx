@@ -477,29 +477,31 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                         </Select>
                       </div>
 
-                      {/* Exchange Rate */}
-                      <div className="space-y-2">
-                        <Label>{t('exchangeRate')}</Label>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">1 {pkg.supplier_currency || 'USD'} =</span>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.000001"
-                            value={pkg.exchange_rate ?? 1.0}
-                            onChange={(e) => {
-                              const value = parseFloat(e.target.value);
-                              updateSupplierCost(index, 'exchange_rate', isNaN(value) ? 1.0 : value);
-                            }}
-                            placeholder="1.0"
-                            className="w-32"
-                          />
-                          <span className="text-sm text-muted-foreground">USD</span>
+                      {/* Exchange Rate - Only visible to admin/manager */}
+                      {!isSupplier && (
+                        <div className="space-y-2">
+                          <Label>{t('exchangeRate')}</Label>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">1 {pkg.supplier_currency || 'USD'} =</span>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.000001"
+                              value={pkg.exchange_rate ?? 1.0}
+                              onChange={(e) => {
+                                const value = parseFloat(e.target.value);
+                                updateSupplierCost(index, 'exchange_rate', isNaN(value) ? 1.0 : value);
+                              }}
+                              placeholder="1.0"
+                              className="w-32"
+                            />
+                            <span className="text-sm text-muted-foreground">USD</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {t('exchangeRateHelper')}
+                          </p>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                          {t('exchangeRateHelper')}
-                        </p>
-                      </div>
+                      )}
 
                       {/* Supplier Cost Prices */}
                       <div className="grid gap-4 md:grid-cols-4">
