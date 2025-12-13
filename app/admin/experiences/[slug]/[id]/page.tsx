@@ -179,6 +179,10 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                 const markupType = adultTier?.markup_type || 'none';
                 const markupValue = adultTier?.markup_value || 0;
 
+                // Get supplier currency info from adult tier (assuming all tiers use same currency)
+                const supplierCurrency = adultTier?.supplier_currency || 'USD';
+                const exchangeRate = adultTier?.exchange_rate || 1.0;
+
                 return {
                   id: pkg.id,
                   package_name: pkg.package_name,
@@ -197,6 +201,14 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                   base_child_price: childTier?.base_price || 0,
                   base_infant_price: infantTier?.base_price || 0,
                   base_senior_price: seniorTier?.base_price || 0,
+
+                  // Supplier currency fields
+                  supplier_currency: supplierCurrency,
+                  supplier_cost_adult: adultTier?.supplier_cost,
+                  supplier_cost_child: childTier?.supplier_cost,
+                  supplier_cost_infant: infantTier?.supplier_cost,
+                  supplier_cost_senior: seniorTier?.supplier_cost,
+                  exchange_rate: exchangeRate,
 
                   // Selling prices (what customer pays)
                   adult_price: adultTier?.selling_price || adultTier?.base_price || 0,
@@ -549,6 +561,14 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
           base_child_price: baseChildPrice,
           ...(baseInfantPrice !== undefined && { base_infant_price: baseInfantPrice }),
           ...(baseSeniorPrice !== undefined && { base_senior_price: baseSeniorPrice }),
+
+          // Supplier currency fields
+          supplier_currency: pkg.supplier_currency || 'USD',
+          supplier_cost_adult: pkg.supplier_cost_adult,
+          supplier_cost_child: pkg.supplier_cost_child,
+          supplier_cost_infant: pkg.supplier_cost_infant,
+          supplier_cost_senior: pkg.supplier_cost_senior,
+          exchange_rate: pkg.exchange_rate || 1.0,
 
           // Selling prices (what customer pays)
           adult_price: adultPrice,
