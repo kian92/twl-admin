@@ -75,6 +75,14 @@ export interface PackagePricingTier {
   currency: string;
   cost_price?: number; // For margin calculation
 
+  // Supplier currency fields
+  supplier_currency?: string; // ISO currency code (e.g., EUR, JPY, CNY)
+  supplier_cost_adult?: number; // Cost in supplier's currency
+  supplier_cost_child?: number;
+  supplier_cost_infant?: number;
+  supplier_cost_senior?: number;
+  exchange_rate?: number; // Conversion rate: 1 supplier_currency = X USD
+
   is_active: boolean;
 
   created_at: string;

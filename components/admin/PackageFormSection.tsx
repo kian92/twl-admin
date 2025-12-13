@@ -11,6 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useTranslations } from 'next-intl';
+import { CURRENCIES, formatCurrency } from '@/lib/constants/currencies';
+import { convertToUSD, roundCurrency } from '@/lib/utils/currency-converter';
 
 export interface AddOnItem {
   id?: string;
@@ -47,6 +49,14 @@ export interface PackageFormData {
   base_child_price?: number;
   base_infant_price?: number;
   base_senior_price?: number;
+
+  // Supplier currency fields
+  supplier_currency?: string;
+  supplier_cost_adult?: number;
+  supplier_cost_child?: number;
+  supplier_cost_infant?: number;
+  supplier_cost_senior?: number;
+  exchange_rate?: number;
 
   // Selling prices (calculated or manual)
   adult_price: number;
@@ -122,6 +132,12 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
       base_child_price: 0,
       base_infant_price: 0,
       base_senior_price: 0,
+      supplier_currency: 'USD',
+      supplier_cost_adult: 0,
+      supplier_cost_child: 0,
+      supplier_cost_infant: 0,
+      supplier_cost_senior: 0,
+      exchange_rate: 1.0,
       adult_price: 0,
       child_price: 0,
       infant_price: 0,
@@ -173,6 +189,41 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
       return basePrice + markupValue;
     }
     return basePrice;
+  };
+
+  // Handle supplier currency cost updates and auto-convert to base prices
+  const updateSupplierCost = (index: number, field: string, value: any) => {
+    const updated = [...packages];
+    updated[index] = { ...updated[index], [field]: value };
+
+    const pkg = updated[index];
+    const exchangeRate = pkg.exchange_rate || 1.0;
+
+    // Auto-convert supplier costs to base prices (USD)
+    if (field.startsWith('supplier_cost_') || field === 'exchange_rate' || field === 'supplier_currency') {
+      if (pkg.supplier_cost_adult) {
+        updated[index].base_adult_price = roundCurrency(convertToUSD(pkg.supplier_cost_adult, exchangeRate));
+      }
+      if (pkg.supplier_cost_child) {
+        updated[index].base_child_price = roundCurrency(convertToUSD(pkg.supplier_cost_child, exchangeRate));
+      }
+      if (pkg.supplier_cost_infant) {
+        updated[index].base_infant_price = roundCurrency(convertToUSD(pkg.supplier_cost_infant, exchangeRate));
+      }
+      if (pkg.supplier_cost_senior) {
+        updated[index].base_senior_price = roundCurrency(convertToUSD(pkg.supplier_cost_senior, exchangeRate));
+      }
+
+      // Also recalculate selling prices with markup
+      const markupType = pkg.markup_type || 'none';
+      const markupValue = pkg.markup_value || 0;
+      updated[index].adult_price = calculateSellingPrice(updated[index].base_adult_price || 0, markupType, markupValue);
+      updated[index].child_price = calculateSellingPrice(updated[index].base_child_price || 0, markupType, markupValue);
+      updated[index].infant_price = calculateSellingPrice(updated[index].base_infant_price || 0, markupType, markupValue);
+      updated[index].senior_price = calculateSellingPrice(updated[index].base_senior_price || 0, markupType, markupValue);
+    }
+
+    onChange(updated);
   };
 
   const updatePricingWithMarkup = (index: number, field: string, value: any) => {
@@ -396,6 +447,140 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                         </div>
                       </div>
                     )}
+
+                    {/* Supplier Currency Section */}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium">{isSupplier ? t('yourCostPrices') : t('supplierCostPrices')}</h4>
+                        <span className="text-xs text-muted-foreground">
+                          {isSupplier ? t('enterInYourCurrency') : t('supplierOriginalCurrency')}
+                        </span>
+                      </div>
+
+                      {/* Currency Selector */}
+                      <div className="space-y-2">
+                        <Label>{t('currency')}</Label>
+                        <Select
+                          value={pkg.supplier_currency || 'USD'}
+                          onValueChange={(value) => updateSupplierCost(index, 'supplier_currency', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={t('selectCurrency')} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {CURRENCIES.map((currency) => (
+                              <SelectItem key={currency.code} value={currency.code}>
+                                {currency.symbol} {currency.code} - {currency.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Exchange Rate */}
+                      <div className="space-y-2">
+                        <Label>{t('exchangeRate')}</Label>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">1 {pkg.supplier_currency || 'USD'} =</span>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.000001"
+                            value={pkg.exchange_rate ?? 1.0}
+                            onChange={(e) => {
+                              const value = parseFloat(e.target.value);
+                              updateSupplierCost(index, 'exchange_rate', isNaN(value) ? 1.0 : value);
+                            }}
+                            placeholder="1.0"
+                            className="w-32"
+                          />
+                          <span className="text-sm text-muted-foreground">USD</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {t('exchangeRateHelper')}
+                        </p>
+                      </div>
+
+                      {/* Supplier Cost Prices */}
+                      <div className="grid gap-4 md:grid-cols-4">
+                        <div className="space-y-2">
+                          <Label>{t('adultCost')} ({pkg.supplier_currency || 'USD'})</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={pkg.supplier_cost_adult ?? ''}
+                            onChange={(e) => {
+                              const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                              updateSupplierCost(index, 'supplier_cost_adult', isNaN(value) ? 0 : value);
+                            }}
+                            placeholder="0.00"
+                          />
+                          {pkg.supplier_cost_adult && pkg.exchange_rate && (
+                            <p className="text-xs text-muted-foreground">
+                              ≈ {formatCurrency(convertToUSD(pkg.supplier_cost_adult, pkg.exchange_rate), 'USD')}
+                            </p>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          <Label>{t('childCost')} ({pkg.supplier_currency || 'USD'})</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={pkg.supplier_cost_child ?? ''}
+                            onChange={(e) => {
+                              const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                              updateSupplierCost(index, 'supplier_cost_child', isNaN(value) ? 0 : value);
+                            }}
+                            placeholder="0.00"
+                          />
+                          {pkg.supplier_cost_child && pkg.exchange_rate && (
+                            <p className="text-xs text-muted-foreground">
+                              ≈ {formatCurrency(convertToUSD(pkg.supplier_cost_child, pkg.exchange_rate), 'USD')}
+                            </p>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          <Label>{t('infantCost')} ({pkg.supplier_currency || 'USD'})</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={pkg.supplier_cost_infant ?? ''}
+                            onChange={(e) => {
+                              const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                              updateSupplierCost(index, 'supplier_cost_infant', isNaN(value) ? 0 : value);
+                            }}
+                            placeholder={t('optional')}
+                          />
+                          {pkg.supplier_cost_infant && pkg.exchange_rate && (
+                            <p className="text-xs text-muted-foreground">
+                              ≈ {formatCurrency(convertToUSD(pkg.supplier_cost_infant, pkg.exchange_rate), 'USD')}
+                            </p>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          <Label>{t('seniorCost')} ({pkg.supplier_currency || 'USD'})</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={pkg.supplier_cost_senior ?? ''}
+                            onChange={(e) => {
+                              const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                              updateSupplierCost(index, 'supplier_cost_senior', isNaN(value) ? 0 : value);
+                            }}
+                            placeholder={t('optional')}
+                          />
+                          {pkg.supplier_cost_senior && pkg.exchange_rate && (
+                            <p className="text-xs text-muted-foreground">
+                              ≈ {formatCurrency(convertToUSD(pkg.supplier_cost_senior, pkg.exchange_rate), 'USD')}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
 
                     {/* Base Prices - Hidden for suppliers */}
                     {!isSupplier && (
