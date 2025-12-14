@@ -1,28 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Eye, Download } from "lucide-react";
+import { Search, Eye, Download, ArrowUpDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import {
   Pagination,
   PaginationLink,
   PaginationPrevious,
   PaginationNext,
 } from "@/components/ui/pagination";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Database } from "@/types/database";
 
@@ -31,15 +22,13 @@ type BookingRow = Database["public"]["Tables"]["bookings"]["Row"] & {
 };
 
 export default function BookingsPage() {
+  const router = useRouter();
   const [bookings, setBookings] = useState<BookingRow[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [selectedBooking, setSelectedBooking] = useState<BookingRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-
-  const [notes, setNotes] = useState("");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc"); // Default: newest first
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -84,7 +73,7 @@ export default function BookingsPage() {
   }, []);
 
   const filteredBookings = useMemo(() => {
-    return bookings.filter((booking) => {
+    const filtered = bookings.filter((booking) => {
       const matchesSearch =
         booking.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
         booking.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -93,7 +82,14 @@ export default function BookingsPage() {
       const matchesStatus = statusFilter === "all" || booking.booking_status === statusFilter;
       return matchesSearch && matchesStatus;
     });
-  }, [bookings, searchQuery, statusFilter]);
+
+    // Sort by created_at (timestamp) instead of booking_date (date only)
+    return filtered.sort((a, b) => {
+      const dateA = new Date(a.created_at || a.booking_date).getTime();
+      const dateB = new Date(b.created_at || b.booking_date).getTime();
+      return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
+    });
+  }, [bookings, searchQuery, statusFilter, sortOrder]);
 
   const getStatusColor = (booking_status: string) => {
     switch (booking_status) {
@@ -115,30 +111,43 @@ export default function BookingsPage() {
     return filteredBookings.slice(start, start + itemsPerPage);
   }, [filteredBookings, currentPage]);
 
-  const handleSaveChanges = async () => {
-    if (!selectedBooking) return;
+  const handleViewBooking = (bookingId: string) => {
+    router.push(`/admin/bookings/${bookingId}`);
+  };
 
-    const res = await fetch(`/api/bookings/${selectedBooking.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        booking_status: selectedBooking.booking_status,
-        notes: notes,
-      }),
+  const toggleSortOrder = () => {
+    setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric"
     });
+  };
 
-    if (!res.ok) {
-      console.log("Failed to update booking");
-      return;
+  const formatDateTime = (dateString: string | null | undefined) => {
+    if (!dateString) return "N/A";
+
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "Invalid Date";
+
+      const dateFormatted = date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric"
+      });
+      const timeFormatted = date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true
+      });
+      return `${dateFormatted}, ${timeFormatted}`;
+    } catch (error) {
+      return "Invalid Date";
     }
-
-    const { booking } = await res.json();
-
-    setBookings((prev) =>
-      prev.map((b) => (b.id === booking.id ? booking : b))
-    );
-
-    setDialogOpen(false);
   };
 
   return (
@@ -199,9 +208,17 @@ export default function BookingsPage() {
               <table className="w-full">
                 <thead className="border-b bg-muted/50">
                   <tr>
-                    <th className="p-4 text-left">Booking ID</th>
+                    <th className="p-4 text-left">Booking No.</th>
                     <th className="p-4 text-left">Customer</th>
-                    <th className="p-4 text-left">Experiences</th>
+                    <th className="p-4 text-left">
+                      <button
+                        onClick={toggleSortOrder}
+                        className="flex items-center gap-2 hover:text-primary transition-colors"
+                      >
+                        Booking Date
+                        <ArrowUpDown className="w-4 h-4" />
+                      </button>
+                    </th>
                     <th className="p-4 text-left">Travel Date</th>
                     <th className="p-4 text-left">Payment Method</th>
                     <th className="p-4 text-left">Total</th>
@@ -213,7 +230,11 @@ export default function BookingsPage() {
                 <tbody>
                   {paginatedBookings.map((booking) => (
                     <tr key={booking.id} className="border-b hover:bg-muted/50">
-                      <td className="p-4">{booking.id}</td>
+                      <td className="p-4">
+                        <span className="font-mono font-semibold text-sm">
+                          {booking.booking_no || `#${booking.id.substring(0, 8)}`}
+                        </span>
+                      </td>
 
                       <td className="p-4">
                         <p>{booking.customer_name}</p>
@@ -221,11 +242,11 @@ export default function BookingsPage() {
                       </td>
 
                       <td className="p-4">
-                        {(booking.experience_items?.length ?? 0).toLocaleString()} experience(s)
+                        <span>{formatDateTime(booking.created_at || booking.booking_date)}</span>
                       </td>
 
-                      <td className="p-4">{booking.travel_date}</td>
-                      <td className="p-4">{booking.payment_method}</td>
+                      <td className="p-4">{formatDate(booking.travel_date)}</td>
+                      <td className="p-4 capitalize">{booking.payment_method}</td>
 
                       <td className="p-4 font-semibold">{currency.format(booking.total_cost)}</td>
 
@@ -237,15 +258,11 @@ export default function BookingsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => {
-                            setSelectedBooking(booking);
-                            setNotes(booking.notes ?? "");
-                            setDialogOpen(true);
-                          }}
+                          onClick={() => handleViewBooking(booking.id)}
                           className="flex items-center gap-2"
                         >
                           <Eye className="w-4 h-4" />
-                          View
+                          View Details
                         </Button>
                       </td>
                     </tr>
@@ -253,7 +270,7 @@ export default function BookingsPage() {
 
                   {paginatedBookings.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="p-6 text-center text-muted-foreground">
+                      <td colSpan={8} className="p-6 text-center text-muted-foreground">
                         No bookings found.
                       </td>
                     </tr>
@@ -291,110 +308,6 @@ export default function BookingsPage() {
           )}
         </CardContent>
       </Card>
-
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>
-              Booking Details - {selectedBooking?.id}
-            </DialogTitle>
-            <DialogDescription>Manage booking information</DialogDescription>
-          </DialogHeader>
-
-          {selectedBooking && (
-            <div className="space-y-5">
-              {/* Customer Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                <div>
-                  <p className="text-muted-foreground">Customer</p>
-                  <p className="font-medium">{selectedBooking.customer_name}</p>
-                </div>
-
-                <div>
-                  <p className="text-muted-foreground">Email</p>
-                  <p className="font-medium">{selectedBooking.customer_email}</p>
-                </div>
-
-                <div>
-                  <p className="text-muted-foreground">Phone</p>
-                  <p className="font-medium">{selectedBooking.customer_phone}</p>
-                </div>
-
-                <div>
-                  <p className="text-muted-foreground">Travel Date</p>
-                  <p className="font-medium">{selectedBooking.travel_date}</p>
-                </div>
-              </div>
-
-              {/* Experience items */}
-              <div>
-                <p className="text-muted-foreground font-medium text-sm">Experiences</p>
-
-                <div className="space-y-2">
-                  {(selectedBooking.experience_items ?? []).map((item, index) => (
-                    <div
-                      key={index}
-                      className="flex justify-between bg-muted px-2 py-3 rounded-md"
-                    >
-                      <span>{item.experience_title}</span>
-                      <span className="font-bold">
-                        {currency.format(item.price * (item.quantity ?? 1))}
-                      </span>
-                    </div>
-                  ))}
-
-                  {(selectedBooking.experience_items?.length ?? 0) === 0 && (
-                    <p className="text-sm text-muted-foreground">No experiences added.</p>
-                  )}
-
-                  <div className="flex justify-between bg-muted px-2 py-3 rounded-md mt-2 font-bold">
-                    <span>Total</span>
-                    <span>{currency.format(selectedBooking.total_cost)}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Status */}
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select
-                  value={selectedBooking.booking_status}
-                  onValueChange={(value) =>
-                    setSelectedBooking((prev) =>
-                      prev ? { ...prev, booking_status: value } : prev
-                    )
-                  }
-                >
-                  <SelectTrigger className="min-w-[140px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="confirmed">Confirmed</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Notes */}
-              <div className="space-y-2">
-                <Label>Notes</Label>
-                <Textarea
-                  placeholder="Add notes..."
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                />
-              </div>
-
-              {/* Buttons */}
-              <div className="flex gap-3">
-                <Button onClick={handleSaveChanges}>Save Changes</Button>
-                <Button variant="outline">Send Confirmation Email</Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

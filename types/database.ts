@@ -147,6 +147,7 @@ export interface Database {
       bookings: {
         Row: {
           id: string
+          booking_no: string | null
           customer_name: string
           customer_email: string
           customer_phone: string | null
@@ -157,11 +158,18 @@ export interface Database {
           payment_method: string
           total_cost: number
           notes: string | null
+          payment_reference: string | null
+          payment_date: string | null
+          special_requests: string | null
+          number_of_adults: number | null
+          number_of_children: number | null
+          number_of_infants: number | null
           created_at: string | null
           updated_at: string | null
         }
         Insert: {
           id?: string
+          booking_no?: string | null
           customer_name: string
           customer_email: string
           customer_phone?: string | null
@@ -172,20 +180,33 @@ export interface Database {
           payment_method: string
           total_cost: number
           notes?: string | null
+          payment_reference?: string | null
+          payment_date?: string | null
+          special_requests?: string | null
+          number_of_adults?: number | null
+          number_of_children?: number | null
+          number_of_infants?: number | null
           created_at?: string | null
           updated_at?: string | null
         }
         Update: {
+          booking_no?: string | null
           customer_name?: string
           customer_email?: string
           customer_phone?: string | null
           booking_date?: string
           travel_date?: string
-          booking_status: string
+          booking_status?: string
           payment_status?: string
-          payment_method: string
+          payment_method?: string
           total_cost?: number
           notes?: string | null
+          payment_reference?: string | null
+          payment_date?: string | null
+          special_requests?: string | null
+          number_of_adults?: number | null
+          number_of_children?: number | null
+          number_of_infants?: number | null
           updated_at?: string | null
         }
       }
@@ -197,6 +218,14 @@ export interface Database {
           experience_title: string
           price: number
           quantity: number
+          package_id: string | null
+          package_name: string | null
+          tier_type: string | null
+          tier_label: string | null
+          pax_count: number | null
+          unit_price: number | null
+          subtotal: number | null
+          addons: Json | null
           created_at: string | null
         }
         Insert: {
@@ -206,6 +235,14 @@ export interface Database {
           experience_title: string
           price: number
           quantity?: number
+          package_id?: string | null
+          package_name?: string | null
+          tier_type?: string | null
+          tier_label?: string | null
+          pax_count?: number | null
+          unit_price?: number | null
+          subtotal?: number | null
+          addons?: Json | null
           created_at?: string | null
         }
         Update: {
@@ -214,6 +251,14 @@ export interface Database {
           experience_title?: string
           price?: number
           quantity?: number
+          package_id?: string | null
+          package_name?: string | null
+          tier_type?: string | null
+          tier_label?: string | null
+          pax_count?: number | null
+          unit_price?: number | null
+          subtotal?: number | null
+          addons?: Json | null
         }
       }
       customer_profiles: {

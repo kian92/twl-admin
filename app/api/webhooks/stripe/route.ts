@@ -58,6 +58,98 @@ export async function POST(request: Request) {
           const charge = paymentIntent.latest_charge as Stripe.Charge;
           const receiptUrl = charge?.receipt_url || null;
 
+          // Get the submission data to create booking
+          const { data: submission, error: fetchError } = await supabase
+            .from("payment_submissions")
+            .select("*")
+            .eq("id", submissionId)
+            .single();
+
+          if (fetchError || !submission) {
+            console.error("Failed to fetch submission:", fetchError);
+          } else {
+            // DEBUG: Log submission data
+            console.log("=== WEBHOOK DEBUG: Submission Data ===");
+            console.log("Travel Date:", submission.travel_date, "Type:", typeof submission.travel_date);
+            console.log("Travelers:", submission.travelers, "Type:", typeof submission.travelers);
+            console.log("Amount:", submission.amount);
+            console.log("====================================");
+            // Get payment link details for experience info
+            const { data: paymentLink } = await supabase
+              .from("payment_links")
+              .select("*")
+              .eq("id", submission.payment_link_id)
+              .single();
+
+            // Create the booking record
+            const bookingData: Database["public"]["Tables"]["bookings"]["Insert"] = {
+              customer_name: `${submission.first_name} ${submission.last_name}`,
+              customer_email: submission.email,
+              customer_phone: `${submission.phone_country_code}${submission.phone_number}`,
+              booking_date: new Date().toISOString().split('T')[0],
+              travel_date: submission.travel_date,
+              booking_status: "confirmed",
+              payment_status: "paid",
+              payment_method: "stripe",
+              payment_reference: paymentIntent.id,
+              payment_date: new Date().toISOString(),
+              total_cost: submission.amount,
+              special_requests: submission.notes,
+              number_of_adults: submission.travelers, // Assuming all are adults for now
+              number_of_children: 0,
+              number_of_infants: 0,
+              notes: `Created from payment link: ${paymentLink?.title || 'Unknown'}`,
+            };
+
+            const { data: booking, error: bookingError } = await supabase
+              .from("bookings")
+              .insert([bookingData])
+              .select()
+              .single();
+
+            if (bookingError) {
+              console.error("Failed to create booking:", bookingError);
+            } else if (booking && paymentLink) {
+              console.log("Booking created successfully:", booking.id);
+              // DEBUG: Log created booking data
+              console.log("=== WEBHOOK DEBUG: Created Booking ===");
+              console.log("Booking ID:", booking.id);
+              console.log("Booking No:", booking.booking_no);
+              console.log("Travel Date:", booking.travel_date, "Type:", typeof booking.travel_date);
+              console.log("Number of Adults:", booking.number_of_adults);
+              console.log("======================================");
+
+              // Create booking item(s) with proper pax_count
+              const bookingItemData: Database["public"]["Tables"]["booking_items"]["Insert"] = {
+                booking_id: booking.id,
+                experience_id: paymentLink.experience_id,
+                experience_title: paymentLink.title,
+                price: paymentLink.price,
+                quantity: submission.travelers,
+                pax_count: submission.travelers, // Set the new pax_count field
+                unit_price: paymentLink.price,
+                subtotal: paymentLink.price * submission.travelers,
+                tier_type: "adult", // Default to adult tier
+                tier_label: "Adult",
+              };
+
+              const { error: itemError } = await supabase
+                .from("booking_items")
+                .insert([bookingItemData]);
+
+              if (itemError) {
+                console.error("Failed to create booking item:", itemError);
+              } else {
+                console.log("Booking item created successfully");
+                // DEBUG: Log booking item data
+                console.log("=== WEBHOOK DEBUG: Booking Item ===");
+                console.log("Pax Count:", bookingItemData.pax_count);
+                console.log("Quantity:", bookingItemData.quantity);
+                console.log("===================================");
+              }
+            }
+          }
+
           // Update the submission with payment details
           const { error: updateError } = await supabase
             .from("payment_submissions")
