@@ -78,12 +78,23 @@ export function hasAccessToPage(role: UserRole | null, pathname: string): boolea
     return salesAllowedPages.some((page) => pathname.startsWith(page));
   }
 
-  // Manager and support have access to everything except settings
-  if (role === "manager" || role === "support") {
+  // Manager has access to everything except settings
+  if (role === "manager") {
     return !pathname.startsWith("/admin/settings");
   }
 
+  // Support has access to everything except settings and media
+  if (role === "support") {
+    return !pathname.startsWith("/admin/settings") && !pathname.startsWith("/admin/media");
+  }
+
   return false;
+}
+
+// Check if user can access media management
+export async function canAccessMedia(): Promise<boolean> {
+  const role = await getUserRole();
+  return role === "admin" || role === "manager";
 }
 
 // Get accessible menu items based on role
@@ -96,6 +107,7 @@ export function getAccessibleMenuItems(role: UserRole | null) {
     { name: "Bookings", href: "/admin/bookings", roles: ["admin", "manager", "support"] },
     { name: "Payment Links", href: "/admin/payment-links", roles: ["admin", "manager", "support", "sales"] },
     { name: "Submissions", href: "/admin/payment-submissions", roles: ["admin", "manager", "support", "sales"] },
+    { name: "Media Library", href: "/admin/media", roles: ["admin", "manager"] },
     { name: "Users", href: "/admin/users", roles: ["admin", "manager", "support"] },
     { name: "Team", href: "/admin/staff", roles: ["admin"] },
     { name: "Settings", href: "/admin/settings", roles: ["admin", "sales"] },

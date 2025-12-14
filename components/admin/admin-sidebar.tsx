@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, MapPin, Calendar, Users, Award, FileText, Settings, Compass, UserPlus, Link2, Receipt, MessageSquare, BookOpen } from "lucide-react"
+import { LayoutDashboard, MapPin, Calendar, Users, Award, FileText, Settings, Compass, UserPlus, Link2, Receipt, MessageSquare, BookOpen, Image } from "lucide-react"
 import { useTranslations } from 'next-intl'
 
 type UserRole = "admin" | "manager" | "support" | "sales" | "supplier";
@@ -21,6 +21,7 @@ const allMenuItems: MenuItem[] = [
   { nameKey: "experiences", href: "/admin/experiences", icon: MapPin, roles: ["admin", "manager", "support", "supplier"] },
   { nameKey: "bookings", href: "/admin/bookings", icon: Calendar, roles: ["admin", "manager", "support"] },
   { nameKey: "blog", href: "/admin/blog", icon: BookOpen, roles: ["admin", "manager"] },
+  { nameKey: "media", href: "/admin/media", icon: Image, roles: ["admin", "manager"] },
   { nameKey: "testimonials", href: "/admin/testimonials", icon: MessageSquare, roles: ["admin", "manager", "support"] },
   { nameKey: "paymentLinks", href: "/admin/payment-links", icon: Link2, roles: ["admin", "manager", "support", "sales"] },
   { nameKey: "submissions", href: "/admin/payment-submissions", icon: Receipt, roles: ["admin", "manager", "support", "sales"] },

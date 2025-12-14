@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { useAdmin } from "@/components/admin-context"
 import { Button } from "@/components/ui/button"
 import {
@@ -15,15 +16,33 @@ import { LogOut, User } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { LanguageSwitcher } from "@/components/admin/language-switcher"
 import { useTranslations } from 'next-intl'
+import { toast } from "sonner"
 
 export function AdminHeader() {
   const { profile, user, signOut, isLoading } = useAdmin()
   const router = useRouter()
   const t = useTranslations()
+  const [signingOut, setSigningOut] = useState(false)
 
   const handleSignOut = async () => {
-    await signOut()
-    router.push("/admin/login")
+    if (signingOut) return
+
+    setSigningOut(true)
+    try {
+      await signOut()
+      toast.success("Signed out successfully")
+      router.push("/admin/login")
+      // Force a hard reload to clear all state
+      if (typeof window !== 'undefined') {
+        setTimeout(() => {
+          window.location.href = "/admin/login"
+        }, 100)
+      }
+    } catch (error) {
+      console.error("Sign out error:", error)
+      toast.error("Failed to sign out")
+      setSigningOut(false)
+    }
   }
 
   if (isLoading || !user) return null
@@ -64,9 +83,9 @@ export function AdminHeader() {
             <User className="mr-2 h-4 w-4" />
             {t('common.profile')}
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={handleSignOut}>
+          <DropdownMenuItem onClick={handleSignOut} disabled={signingOut}>
             <LogOut className="mr-2 h-4 w-4" />
-            {t('common.signOut')}
+            {signingOut ? "Signing out..." : t('common.signOut')}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

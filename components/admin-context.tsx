@@ -185,13 +185,31 @@ export function AdminProvider({
   )
 
   const signOut = useCallback(async () => {
-    const { error } = await supabase.auth.signOut()
-    if (error) {
-      console.error("Admin sign out failed", error)
+    try {
+      // Clear state first
+      setUser(null)
+      setProfile(null)
+      setIsLoading(false)
+
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut()
+      if (error) {
+        console.error("Admin sign out failed", error)
+        throw error
+      }
+
+      // Clear local storage
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('supabase.auth.token')
+        sessionStorage.clear()
+      }
+    } catch (error) {
+      console.error("Sign out error:", error)
+      // Still clear state even if sign out fails
+      setUser(null)
+      setProfile(null)
+      setIsLoading(false)
     }
-    setUser(null)
-    setProfile(null)
-    setIsLoading(false)
   }, [supabase])
 
   return (
