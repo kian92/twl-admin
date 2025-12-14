@@ -29,6 +29,7 @@ export default function BookingsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc"); // Default: newest first
+  const [isExporting, setIsExporting] = useState(false);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -119,6 +120,34 @@ export default function BookingsPage() {
     setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
   };
 
+  const handleExportCSV = async () => {
+    setIsExporting(true);
+    try {
+      const params = new URLSearchParams();
+      if (statusFilter !== "all") {
+        params.append("status", statusFilter);
+      }
+
+      const response = await fetch(`/api/bookings/export?${params.toString()}`);
+      if (!response.ok) throw new Error("Export failed");
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `bookings-export-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error("Export failed:", error);
+      alert("Failed to export bookings. Please try again.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
@@ -159,9 +188,9 @@ export default function BookingsPage() {
             View and manage all customer bookings ({filteredBookings.length})
           </p>
         </div>
-        <Button variant="outline">
+        <Button variant="outline" onClick={handleExportCSV} disabled={isExporting}>
           <Download className="w-4 h-4 mr-2" />
-          Export CSV
+          {isExporting ? "Exporting..." : "Export CSV"}
         </Button>
       </div>
 
