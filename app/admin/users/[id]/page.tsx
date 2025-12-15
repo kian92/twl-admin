@@ -136,10 +136,6 @@ export default function UserDetailsPage() {
             <h2 className="text-lg font-semibold mb-4">User Information</h2>
             <div className="space-y-4">
               <div>
-                <p className="text-sm text-muted-foreground">User ID</p>
-                <p className="text-sm font-mono break-all mt-1">{user.id}</p>
-              </div>
-              <div>
                 <p className="text-sm text-muted-foreground">Email</p>
                 <p className="text-sm mt-1">{user.email ?? "—"}</p>
               </div>
