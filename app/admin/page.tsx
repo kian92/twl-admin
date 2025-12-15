@@ -38,19 +38,57 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     let isMounted = true
+    let timeoutId: NodeJS.Timeout
 
     const loadData = async () => {
       setLoading(true)
       setError(null)
+
+      // Set a timeout to stop loading after 10 seconds
+      timeoutId = setTimeout(() => {
+        if (isMounted && loading) {
+          console.warn("Dashboard data loading timed out")
+          setLoading(false)
+          setError("Dashboard is taking longer than expected. Showing empty state.")
+          setData({
+            metrics: {
+              totalRevenue: 0,
+              totalBookings: 0,
+              activeUsers: 0,
+              totalExperiences: 0,
+            },
+            bookingTrend: [],
+            revenueTrend: [],
+            topDestinations: [],
+            recentBookings: [],
+          })
+        }
+      }, 10000)
+
       try {
         const response = await getDashboardData(supabase)
         if (!isMounted) return
+        clearTimeout(timeoutId)
         setData(response)
+        setError(null)
       } catch (err) {
         console.error("Failed to load dashboard data", err)
         if (!isMounted) return
-        setError("Unable to load dashboard data. Please try again.")
-        setData(null)
+        clearTimeout(timeoutId)
+        setError("Unable to load dashboard data. Showing empty state.")
+        // Set empty data instead of null
+        setData({
+          metrics: {
+            totalRevenue: 0,
+            totalBookings: 0,
+            activeUsers: 0,
+            totalExperiences: 0,
+          },
+          bookingTrend: [],
+          revenueTrend: [],
+          topDestinations: [],
+          recentBookings: [],
+        })
       } finally {
         if (isMounted) {
           setLoading(false)
@@ -62,12 +100,34 @@ export default function AdminDashboard() {
 
     return () => {
       isMounted = false
+      clearTimeout(timeoutId)
     }
   }, [supabase])
 
   const stats = useMemo(() => {
     if (!data) {
-      return []
+      return [
+        {
+          title: "Total Revenue",
+          value: currencyFormatter.format(0),
+          icon: DollarSign,
+        },
+        {
+          title: "Total Bookings",
+          value: numberFormatter.format(0),
+          icon: Calendar,
+        },
+        {
+          title: "Active Users",
+          value: numberFormatter.format(0),
+          icon: Users,
+        },
+        {
+          title: "Total Experiences",
+          value: numberFormatter.format(0),
+          icon: MapPin,
+        },
+      ]
     }
     return [
       {
