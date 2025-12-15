@@ -1,7 +1,7 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
-import { ShieldCheck, Mail, UserPlus } from "lucide-react"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { ShieldCheck, Mail, UserPlus, Search } from "lucide-react"
 
 import { useAdmin } from "@/components/admin-context"
 import { Button } from "@/components/ui/button"
@@ -68,6 +68,8 @@ export default function StaffPage() {
   const [staff, setStaff] = useState<StaffMember[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [searchInput, setSearchInput] = useState("")
+  const [searchQuery, setSearchQuery] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
 
@@ -102,12 +104,29 @@ export default function StaffPage() {
     void loadStaff()
   }, [loadStaff])
 
-  const totalPages = Math.max(1, Math.ceil(staff.length / itemsPerPage))
+  const filteredStaff = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return staff
+    return staff.filter((member) => {
+      const name = member.full_name?.toLowerCase() ?? ""
+      const company = member.company_name?.toLowerCase() ?? ""
+      const role = member.role?.toLowerCase() ?? ""
+      return name.includes(query) || company.includes(query) || role.includes(query)
+    })
+  }, [staff, searchQuery])
+
+  const totalPages = Math.max(1, Math.ceil(filteredStaff.length / itemsPerPage))
   useEffect(() => {
     setCurrentPage((page) => Math.min(page, totalPages))
   }, [totalPages])
 
-  const paginatedStaff = staff.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+  const paginatedStaff = filteredStaff.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+
+  const handleSearch = (event: React.FormEvent) => {
+    event.preventDefault()
+    setSearchQuery(searchInput)
+    setCurrentPage(1)
+  }
 
   const canInvite = profile?.role === "admin"
 
@@ -333,6 +352,21 @@ export default function StaffPage() {
         <CardContent>
           {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 
+          <form className="mb-4 flex gap-2" onSubmit={handleSearch}>
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search by name, role, or company..."
+                value={searchInput}
+                onChange={(event) => setSearchInput(event.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Button type="submit" variant="outline">
+              Search
+            </Button>
+          </form>
+
           {loading ? (
             <div className="space-y-4">
               {[0, 1, 2].map((skeleton) => (
@@ -348,10 +382,10 @@ export default function StaffPage() {
                 </div>
               ))}
             </div>
-          ) : staff.length === 0 ? (
+          ) : filteredStaff.length === 0 ? (
             <div className="flex items-center gap-3 rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
               <UserPlus className="h-5 w-5" />
-              No staff members yet. Create an account to get started.
+              {searchQuery ? "No staff match your search. Try a different name, email, or company." : "No staff members yet. Create an account to get started."}
             </div>
           ) : (
             <div className="space-y-3">
