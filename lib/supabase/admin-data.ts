@@ -51,26 +51,27 @@ export async function getDashboardData(supabase: PublicClient): Promise<Dashboar
     supabase
       .from("bookings")
       .select(
-        "id, customer_name, travel_date, total_cost, status, booking_items:booking_items(experience_title, price, quantity)",
+        "id, customer_name, travel_date, total_cost, booking_status, booking_items:booking_items(experience_title, price, quantity)",
       )
       .order("booking_date", { ascending: false })
       .limit(6),
   ])
 
+  // If any RPC calls fail (functions don't exist), return empty data instead of throwing
   if (metricsRes.error) {
-    throw metricsRes.error
+    console.warn("admin_dashboard_metrics RPC failed:", metricsRes.error)
   }
   if (bookingTrendRes.error) {
-    throw bookingTrendRes.error
+    console.warn("booking_trend RPC failed:", bookingTrendRes.error)
   }
   if (revenueTrendRes.error) {
-    throw revenueTrendRes.error
+    console.warn("revenue_trend RPC failed:", revenueTrendRes.error)
   }
   if (topDestinationsRes.error) {
-    throw topDestinationsRes.error
+    console.warn("top_destinations RPC failed:", topDestinationsRes.error)
   }
   if (recentBookingsRes.error) {
-    throw recentBookingsRes.error
+    console.warn("recent bookings query failed:", recentBookingsRes.error)
   }
 
   const bookingTrendData = (bookingTrendRes.data ?? []) as BookingTrendRow[]
@@ -98,7 +99,7 @@ export async function getDashboardData(supabase: PublicClient): Promise<Dashboar
     customer_name: booking.customer_name,
     travel_date: booking.travel_date,
     total_cost: booking.total_cost,
-    status: booking.status,
+    status: booking.booking_status,
     experiences:
       booking.booking_items?.map((item) => ({
         title: item.experience_title,
