@@ -12,6 +12,12 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Pagination,
+  PaginationLink,
+  PaginationPrevious,
+  PaginationNext,
+} from "@/components/ui/pagination"
 import type { Database } from "@/types/database"
 
 type StaffMember = Database["public"]["Tables"]["admin_profiles"]["Row"]
@@ -62,6 +68,8 @@ export default function StaffPage() {
   const [staff, setStaff] = useState<StaffMember[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
 
   const [inviteEmail, setInviteEmail] = useState("")
   const [inviteName, setInviteName] = useState("")
@@ -93,6 +101,13 @@ export default function StaffPage() {
   useEffect(() => {
     void loadStaff()
   }, [loadStaff])
+
+  const totalPages = Math.max(1, Math.ceil(staff.length / itemsPerPage))
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, totalPages))
+  }, [totalPages])
+
+  const paginatedStaff = staff.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
   const canInvite = profile?.role === "admin"
 
@@ -340,58 +355,81 @@ export default function StaffPage() {
             </div>
           ) : (
             <div className="space-y-3">
-          {staff.map((member) => {
-            const initials = member.full_name?.charAt(0)?.toUpperCase() ?? "?"
-            return (
-              <div key={member.id} className="flex items-center justify-between rounded-lg border p-4">
-                <div className="flex items-center gap-3">
-                  <Avatar>
-                    <AvatarFallback>{initials}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium">{member.full_name ?? "Pending invite"}</p>
-                    {member.role === 'supplier' && member.company_name && (
-                      <p className="text-sm text-muted-foreground">{member.company_name}</p>
-                    )}
-                    <p className="text-sm text-muted-foreground">
-                      Added {formatDate(member.created_at)}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right space-y-2">
-                  <div className="flex items-center gap-2 justify-end">
-                    <Badge className={roleBadgeStyles(member.role || "support")}>
-                      {(member.role || "support").charAt(0).toUpperCase() + (member.role || "support").slice(1)}
-                    </Badge>
-                    <Badge variant={member.is_active ? "outline" : "destructive"}>
-                      {member.is_active ? "Active" : "Disabled"}
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">Updated {formatDate(member.updated_at)}</p>
-                  {canInvite && (
-                    <div className="flex gap-2 justify-end">
-                      <Button
-                        size="sm"
-                        variant={member.is_active ? "outline" : "secondary"}
-                        onClick={() =>
-                          handleStaffAction(member, member.is_active ? "disable" : "enable")
-                        }
-                      >
-                        {member.is_active ? "Disable" : "Enable"}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleStaffAction(member, "delete")}
-                      >
-                        Delete
-                      </Button>
+              {paginatedStaff.map((member) => {
+                const initials = member.full_name?.charAt(0)?.toUpperCase() ?? "?"
+                return (
+                  <div key={member.id} className="flex items-center justify-between rounded-lg border p-4">
+                    <div className="flex items-center gap-3">
+                      <Avatar>
+                        <AvatarFallback>{initials}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">{member.full_name ?? "Pending invite"}</p>
+                        {member.role === 'supplier' && member.company_name && (
+                          <p className="text-sm text-muted-foreground">{member.company_name}</p>
+                        )}
+                        <p className="text-sm text-muted-foreground">
+                          Added {formatDate(member.created_at)}
+                        </p>
+                      </div>
                     </div>
-                  )}
-                </div>
-              </div>
-            )
-          })}
+                    <div className="text-right space-y-2">
+                      <div className="flex items-center gap-2 justify-end">
+                        <Badge className={roleBadgeStyles(member.role || "support")}>
+                          {(member.role || "support").charAt(0).toUpperCase() + (member.role || "support").slice(1)}
+                        </Badge>
+                        <Badge variant={member.is_active ? "outline" : "destructive"}>
+                          {member.is_active ? "Active" : "Disabled"}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Updated {formatDate(member.updated_at)}</p>
+                      {canInvite && (
+                        <div className="flex gap-2 justify-end">
+                          <Button
+                            size="sm"
+                            variant={member.is_active ? "outline" : "secondary"}
+                            onClick={() =>
+                              handleStaffAction(member, member.is_active ? "disable" : "enable")
+                            }
+                          >
+                            {member.is_active ? "Disable" : "Enable"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleStaffAction(member, "delete")}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+          {staff.length > itemsPerPage && (
+            <div className="mt-4 flex justify-center">
+              <Pagination>
+                <PaginationPrevious
+                  onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
+                  className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                />
+                {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+                  <PaginationLink
+                    key={page}
+                    isActive={page === currentPage}
+                    onClick={() => setCurrentPage(page)}
+                  >
+                    {page}
+                  </PaginationLink>
+                ))}
+                <PaginationNext
+                  onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
+                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                />
+              </Pagination>
             </div>
           )}
         </CardContent>
