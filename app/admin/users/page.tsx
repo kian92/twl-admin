@@ -46,7 +46,9 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
 
 const normalizeDate = (value: string | null) => {
   if (!value) return null
-  const date = new Date(value.endsWith("Z") ? value : value + "Z")
+  const hasTimezone = /[zZ]|[+-]\d{2}:?\d{2}$/.test(value)
+  const dateString = hasTimezone ? value : value + "Z"
+  const date = new Date(dateString)
   return Number.isNaN(date.getTime()) ? null : date
 }
 
