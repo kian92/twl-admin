@@ -22,7 +22,13 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
 
 const normalizeDate = (value: string | null) => {
   if (!value) return null
-  return new Date(value.endsWith("Z") ? value : value + "Z")
+  const date = new Date(value.endsWith("Z") ? value : value + "Z")
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+const formatDate = (value: string | null, fallback: string) => {
+  const date = normalizeDate(value)
+  return date ? dateFormatter.format(date) : fallback
 }
 
 const getStatusBadge = (status: string | null | undefined) => {
@@ -145,15 +151,11 @@ export default function UserDetailsPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Joined Date</p>
-                <p className="text-sm mt-1">
-                  {user.joinedDate ? dateFormatter.format(normalizeDate(user.joinedDate)!) : "—"}
-                </p>
+                <p className="text-sm mt-1">{formatDate(user.joinedDate, "—")}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Last Login</p>
-                <p className="text-sm mt-1">
-                  {user.last_login ? dateFormatter.format(normalizeDate(user.last_login)!) : "Never"}
-                </p>
+                <p className="text-sm mt-1">{formatDate(user.last_login, "Never")}</p>
               </div>
             </div>
           </CardContent>

@@ -46,7 +46,13 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
 
 const normalizeDate = (value: string | null) => {
   if (!value) return null
-  return new Date(value.endsWith("Z") ? value : value + "Z")
+  const date = new Date(value.endsWith("Z") ? value : value + "Z")
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+const formatDate = (value: string | null, fallback: string) => {
+  const date = normalizeDate(value)
+  return date ? dateFormatter.format(date) : fallback
 }
 
 const getStatusBadge = (status: string | null | undefined) => {
@@ -211,14 +217,10 @@ export default function UsersPage() {
                       <td className="p-4">{user.total_bookings ?? 0}</td>
                       <td className="p-4 font-semibold">$0</td>
                       <td className="p-4">
-                        {user.joinedDate
-                          ? dateFormatter.format(normalizeDate(user.joinedDate)!)
-                          : "—"}
+                        {formatDate(user.joinedDate, "—")}
                       </td>
                       <td className="p-4">
-                        {user.last_login
-                          ? dateFormatter.format(normalizeDate(user.last_login)!)
-                          : "Never"}
+                        {formatDate(user.last_login, "Never")}
                       </td>
                       <td className="p-4">{getStatusBadge(user.status)}</td>
                       <td className="p-4">
