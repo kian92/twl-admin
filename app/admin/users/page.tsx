@@ -39,7 +39,9 @@ const normalizeDate = (value: string | null) => {
   return new Date(value.endsWith("Z") ? value : value + "Z")
 }
 
-const getStatusBadge = (status: string) => {
+const getStatusBadge = (status: string | null | undefined) => {
+  if (!status) return <Badge variant="secondary">unknown</Badge>
+
   switch (status.toLowerCase()) {
     case "active":
       return <Badge className="bg-black text-white">active</Badge>
@@ -103,11 +105,11 @@ export default function UsersPage() {
   const filteredUsers = useMemo(() => {
     return customers.filter((user) => {
       const matchesSearch =
-        user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchQuery.toLowerCase())
+        user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.email?.toLowerCase().includes(searchQuery.toLowerCase())
       // const matchesTier = tierFilter === "all" || user.membership_tier === tierFilter
       // return matchesSearch && matchesTier
-      return matchesSearch 
+      return matchesSearch
     })
   }, [customers, searchQuery, tierFilter])
 
@@ -189,12 +191,12 @@ export default function UsersPage() {
                         <div className="flex items-center gap-3">
                           <Avatar>
                             <AvatarFallback className="bg-gradient-to-br from-teal-500 to-coral-500 text-white">
-                              {user.name.charAt(0)}
+                              {user.name?.charAt(0) ?? "?"}
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <p className="font-medium">{user.name}</p>
-                            <p className="text-sm text-muted-foreground">{user.email}</p>
+                            <p className="font-medium">{user.name ?? "Unknown"}</p>
+                            <p className="text-sm text-muted-foreground">{user.email ?? "—"}</p>
                           </div>
                         </div>
                       </td>
