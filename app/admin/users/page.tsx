@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
@@ -8,22 +9,31 @@ import { Badge } from "@/components/ui/badge"
 import { Search, Eye } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
-import type { Database } from "@/types/database"
 import {
   Pagination,
   PaginationLink,
   PaginationPrevious,
   PaginationNext,
 } from "@/components/ui/pagination"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-type CustomerRow = Database["public"]["Tables"]["customer_profiles"]["Row"]
+
+// Users table schema (not in database.ts yet)
+type UserRow = {
+  id: string
+  name: string | null
+  email: string
+  password: string | null
+  image: string | null
+  provider: string | null
+  membershipTier: string | null
+  points: number | null
+  joinedDate: string | null
+  last_login: string | null
+  created_at: string | null
+  updated_at: string | null
+  status: string
+  total_bookings?: number | null
+  total_spent?: number | null
+}
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   timeZone: "UTC",
@@ -53,12 +63,11 @@ const getStatusBadge = (status: string | null | undefined) => {
 }
 
 export default function UsersPage() {
-  const [customers, setCustomers] = useState<CustomerRow[]>([])
+  const router = useRouter()
+  const [customers, setCustomers] = useState<UserRow[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [tierFilter, setTierFilter] = useState("all")
-  const [selectedUser, setSelectedUser] = useState<CustomerRow | null>(null)
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
@@ -107,11 +116,9 @@ export default function UsersPage() {
       const matchesSearch =
         user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         user.email?.toLowerCase().includes(searchQuery.toLowerCase())
-      // const matchesTier = tierFilter === "all" || user.membership_tier === tierFilter
-      // return matchesSearch && matchesTier
       return matchesSearch
     })
-  }, [customers, searchQuery, tierFilter])
+  }, [customers, searchQuery])
 
   // Pagination calculations
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage)
@@ -180,6 +187,7 @@ export default function UsersPage() {
                     <th className="text-left p-4 font-medium">Bookings</th>
                     <th className="text-left p-4 font-medium">Total Spent</th>
                     <th className="text-left p-4 font-medium">Joined</th>
+                    <th className="text-left p-4 font-medium">Last Login</th>
                     <th className="text-left p-4 font-medium">Status</th>
                     <th className="text-left p-4 font-medium">Actions</th>
                   </tr>
@@ -207,89 +215,28 @@ export default function UsersPage() {
                           ? dateFormatter.format(normalizeDate(user.joinedDate)!)
                           : "—"}
                       </td>
+                      <td className="p-4">
+                        {user.last_login
+                          ? dateFormatter.format(normalizeDate(user.last_login)!)
+                          : "Never"}
+                      </td>
                       <td className="p-4">{getStatusBadge(user.status)}</td>
                       <td className="p-4">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setSelectedUser(user)}
-                              className="flex items-center gap-2"
-                            >
-                              <Eye className="w-4 h-4" />
-                              View
-                            </Button>
-                          </DialogTrigger>
-                          {/* <DialogContent className="max-w-xl">
-                            <DialogHeader>
-                              <DialogTitle>{selectedUser?.name}</DialogTitle>
-                              <DialogDescription>User details and membership insights</DialogDescription>
-                            </DialogHeader>
-                            {selectedUser && (
-                              <div className="space-y-4">
-                                <div className="grid gap-2 text-sm">
-                                  <div>
-                                    <span className="text-muted-foreground">Email: </span>
-                                    {selectedUser.email}
-                                  </div>
-                                  <div>
-                                    <span className="text-muted-foreground">Joined: </span>
-                                    {selectedUser.joinedDate
-                                      ? dateFormatter.format(normalizeDate(selectedUser.joinedDate)!)
-                                      : "—"}
-                                  </div>
-                                  <div>
-                                    <span className="text-muted-foreground">Status: </span>
-                                    <span className="capitalize">{selectedUser.status}</span>
-                                  </div>
-                                </div>
-
-                                <div>
-                                  <h3 className="font-semibold mb-2 flex items-center gap-2">
-                                    <Award className="w-4 h-4" />
-                                    Membership Benefits
-                                  </h3>
-                                  <ul className="list-disc list-inside text-sm space-y-1">
-                                    {getTierBenefits(selectedUser.membershipTier.toLowerCase()).map((benefit) => (
-                                      <li key={benefit}>{benefit}</li>
-                                    ))}
-                                  </ul>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div>
-                                    <Label>Total Bookings</Label>
-                                    <p className="text-sm font-semibold">{selectedUser.total_bookings}</p>
-                                  </div>
-                                  <div>
-                                    <Label>Total Spent</Label>
-                                    <p className="text-sm font-semibold">${selectedUser.total_spent.toFixed(2)}</p>
-                                  </div>
-                                  <div>
-                                    <Label>Points Balance</Label>
-                                    <p className="text-sm font-semibold">{selectedUser.points.toLocaleString()}</p>
-                                  </div>
-                                  <div>
-                                    <Label>Membership Tier</Label>
-                                    <p className="text-sm font-semibold capitalize">{selectedUser.membershipTier}</p>
-                                  </div>
-                                </div>
-
-                                <div className="flex justify-end gap-2">
-                                  <Button variant="outline">Adjust Points</Button>
-                                  <Button>Send Message</Button>
-                                </div>
-                              </div>
-                            )}
-                          </DialogContent> */}
-                        </Dialog>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => router.push(`/admin/users/${user.id}`)}
+                          className="flex items-center gap-2"
+                        >
+                          <Eye className="w-4 h-4" />
+                          View
+                        </Button>
                       </td>
                     </tr>
                   ))}
                   {paginatedUsers.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="p-6 text-center text-sm text-muted-foreground">
+                      <td colSpan={7} className="p-6 text-center text-sm text-muted-foreground">
                         No users match the current filters.
                       </td>
                     </tr>
