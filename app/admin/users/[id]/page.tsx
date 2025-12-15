@@ -12,7 +12,7 @@ import { ArrowLeft } from "lucide-react"
 type UserRow = any
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
-  timeZone: "UTC",
+  timeZone: "Asia/Singapore",
   year: "numeric",
   month: "short",
   day: "numeric",
