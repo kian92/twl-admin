@@ -59,8 +59,37 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const { supabase } = roleCheck
     const { id } = await params
 
-    const payload = (await request.json().catch(() => null)) as { action?: "disable" | "enable" } | null
-    if (!payload || (payload.action !== "disable" && payload.action !== "enable")) {
+    const payload = (await request.json().catch(() => null)) as
+      | { action: "disable" | "enable" }
+      | { action: "update_role"; role: string }
+      | null
+
+    if (!payload) {
+      return NextResponse.json({ error: "Invalid request" }, { status: 400 })
+    }
+
+    // Handle role update
+    if (payload.action === "update_role") {
+      const validRoles = ["admin", "manager", "support", "sales", "supplier"]
+      if (!("role" in payload) || !validRoles.includes(payload.role)) {
+        return NextResponse.json({ error: "Invalid role" }, { status: 400 })
+      }
+
+      const { error: updateError } = await (supabase as any)
+        .from("admin_profiles")
+        .update({ role: payload.role })
+        .eq("id", id)
+
+      if (updateError) {
+        console.error("Failed to update staff role", updateError)
+        return NextResponse.json({ error: "Failed to update role" }, { status: 500 })
+      }
+
+      return NextResponse.json({ success: true })
+    }
+
+    // Handle enable/disable
+    if (payload.action !== "disable" && payload.action !== "enable") {
       return NextResponse.json({ error: "Invalid action" }, { status: 400 })
     }
 

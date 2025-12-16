@@ -80,6 +80,8 @@ export default function StaffPage() {
   const [inviteCompanyName, setInviteCompanyName] = useState("")
   const [inviteStatus, setInviteStatus] = useState<{ type: "success" | "error"; message: string } | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [editingRoleId, setEditingRoleId] = useState<string | null>(null)
+  const [updatingRole, setUpdatingRole] = useState(false)
 
   const loadStaff = useCallback(async () => {
     setLoading(true)
@@ -169,6 +171,37 @@ export default function StaffPage() {
       })
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleRoleChange = async (memberId: string, newRole: "admin" | "manager" | "support" | "sales" | "supplier") => {
+    setInviteStatus(null)
+    setUpdatingRole(true)
+
+    try {
+      const response = await fetch(`/api/admin/staff/${memberId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "update_role", role: newRole }),
+      })
+
+      const payload = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Failed to update role")
+      }
+
+      setInviteStatus({ type: "success", message: "Role updated successfully." })
+      setEditingRoleId(null)
+      await loadStaff()
+    } catch (err) {
+      console.error("Role update failed", err)
+      setInviteStatus({
+        type: "error",
+        message: err instanceof Error ? err.message : "Failed to update role",
+      })
+    } finally {
+      setUpdatingRole(false)
     }
   }
 
@@ -409,9 +442,50 @@ export default function StaffPage() {
                     </div>
                     <div className="text-right space-y-2">
                       <div className="flex items-center gap-2 justify-end">
-                        <Badge className={roleBadgeStyles(member.role || "support")}>
-                          {(member.role || "support").charAt(0).toUpperCase() + (member.role || "support").slice(1)}
-                        </Badge>
+                        {canInvite && editingRoleId === member.id ? (
+                          <Select
+                            value={member.role || "support"}
+                            onValueChange={(value) => handleRoleChange(member.id, value as typeof inviteRole)}
+                            disabled={updatingRole}
+                          >
+                            <SelectTrigger className="w-[140px] h-6 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {ROLE_OPTIONS.map((role) => (
+                                <SelectItem key={role.value} value={role.value}>
+                                  {role.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Badge className={roleBadgeStyles(member.role || "support")}>
+                            {(member.role || "support").charAt(0).toUpperCase() + (member.role || "support").slice(1)}
+                          </Badge>
+                        )}
+                        {canInvite && editingRoleId === member.id ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setEditingRoleId(null)}
+                            disabled={updatingRole}
+                            className="h-6 px-2"
+                          >
+                            Cancel
+                          </Button>
+                        ) : (
+                          canInvite && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setEditingRoleId(member.id)}
+                              className="h-6 px-2 text-xs"
+                            >
+                              Edit Role
+                            </Button>
+                          )
+                        )}
                         <Badge variant={member.is_active ? "outline" : "destructive"}>
                           {member.is_active ? "Active" : "Disabled"}
                         </Badge>

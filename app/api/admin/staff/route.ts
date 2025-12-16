@@ -3,7 +3,7 @@ import { NextResponse } from "next/server"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
 import type { Database } from "@/types/database"
 
-const STAFF_SELECT_FIELDS = "id, full_name, role, avatar_url, is_active, created_at, updated_at"
+const STAFF_SELECT_FIELDS = "id, full_name, role, avatar_url, is_active, created_at, updated_at, company_name"
 
 export async function GET() {
   try {
