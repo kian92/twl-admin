@@ -31,7 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Plus, Search, Edit, Trash2, Eye } from "lucide-react"
+import { Plus, Search, Edit, Trash2 } from "lucide-react"
 import { BlogPost, BlogCategory } from "@/types/blog"
 
 export default function BlogPage() {
@@ -188,20 +188,19 @@ export default function BlogPage() {
               <TableHead>{t('status')}</TableHead>
               <TableHead>{t('author')}</TableHead>
               <TableHead>{t('publishedDate')}</TableHead>
-              <TableHead>{t('views')}</TableHead>
               <TableHead className="text-right">{t('actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8">
+                <TableCell colSpan={6} className="text-center py-8">
                   {t('loading')}
                 </TableCell>
               </TableRow>
             ) : filteredPosts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8">
+                <TableCell colSpan={6} className="text-center py-8">
                   {t('noPostsFound')}
                 </TableCell>
               </TableRow>
@@ -224,7 +223,6 @@ export default function BlogPage() {
                       ? new Date(post.published_at).toLocaleDateString()
                       : "-"}
                   </TableCell>
-                  <TableCell>{post.views_count}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
                       <Button
