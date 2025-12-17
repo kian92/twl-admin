@@ -9,9 +9,8 @@ export function slugify(text: string): string {
     .trim()
     // Replace spaces and special punctuation with hyphens
     .replace(/[\s\.,!?;:'"(){}[\]\/\\|<>@#$%^&*+=~`]+/g, "-")
-    // Keep alphanumeric characters (including Chinese, Japanese, Korean, etc.)
-    // Remove only truly problematic URL characters
-    .replace(/[^\w\u4e00-\u9fa5\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af-]/g, "")
+    // Keep alphanumeric characters, hyphens, and CJK characters (Chinese, Japanese, Korean)
+    .replace(/[^\w\u4e00-\u9fa5\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af\-]/g, "")
     // Clean up multiple consecutive hyphens
     .replace(/-+/g, "-")
     // Remove leading and trailing hyphens
