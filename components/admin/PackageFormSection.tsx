@@ -13,6 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useTranslations } from 'next-intl';
 import { CURRENCIES, formatCurrency } from '@/lib/constants/currencies';
 import { convertToUSD, roundCurrency } from '@/lib/utils/currency-converter';
+import { BlockedDatesManager } from './BlockedDatesManager';
 
 export interface AddOnItem {
   id?: string;
@@ -992,6 +993,20 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                         </div>
                       )}
                     </div>
+
+                    {/* Blocked Dates Management - Only show if package has an ID (saved) */}
+                    {pkg.id ? (
+                      <BlockedDatesManager
+                        packageId={pkg.id}
+                        packageName={pkg.package_name}
+                      />
+                    ) : (
+                      <div className="mt-4 p-4 border border-dashed rounded-lg bg-muted/30">
+                        <p className="text-sm text-muted-foreground text-center">
+                          💡 Save this package first to manage blocked dates
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

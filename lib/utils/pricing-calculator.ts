@@ -472,3 +472,47 @@ export function checkDepartureAvailability(
     availableSlots,
   };
 }
+
+/**
+ * Check if a travel date is blocked for a package
+ * This function should be called before allowing a booking
+ */
+export async function checkBlockedDate(
+  packageId: string,
+  travelDate: string | Date
+): Promise<{ blocked: boolean; reason?: string; notes?: string }> {
+  try {
+    const dateStr = typeof travelDate === 'string' ? travelDate : travelDate.toISOString().split('T')[0];
+
+    const response = await fetch(`/api/admin/blocked-dates?package_id=${packageId}`);
+    const result = await response.json();
+
+    if (!response.ok || !result.data) {
+      // If we can't fetch blocked dates, allow the booking (fail open)
+      return { blocked: false };
+    }
+
+    const blockedDates = result.data;
+    const checkDate = new Date(dateStr);
+
+    // Check if the travel date falls within any blocked date range
+    for (const blockedRange of blockedDates) {
+      const startDate = new Date(blockedRange.start_date);
+      const endDate = new Date(blockedRange.end_date);
+
+      if (checkDate >= startDate && checkDate <= endDate) {
+        return {
+          blocked: true,
+          reason: blockedRange.reason,
+          notes: blockedRange.notes,
+        };
+      }
+    }
+
+    return { blocked: false };
+  } catch (error) {
+    console.error('Error checking blocked dates:', error);
+    // Fail open - allow booking if we can't check blocked dates
+    return { blocked: false };
+  }
+}

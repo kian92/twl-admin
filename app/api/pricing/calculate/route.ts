@@ -67,6 +67,34 @@ export async function POST(request: NextRequest) {
       .select('*')
       .eq('is_active', true);
 
+    // Check if travel date is blocked
+    if (input.travel_date) {
+      const { data: blockedDates } = await supabase
+        .from('package_blocked_dates')
+        .select('start_date, end_date, reason')
+        .eq('package_id', input.package_id);
+
+      if (blockedDates && blockedDates.length > 0) {
+        const travelDate = new Date(input.travel_date);
+
+        for (const blockedRange of blockedDates) {
+          const startDate = new Date(blockedRange.start_date);
+          const endDate = new Date(blockedRange.end_date);
+
+          if (travelDate >= startDate && travelDate <= endDate) {
+            return NextResponse.json(
+              {
+                error: 'This date is not available for booking',
+                reason: blockedRange.reason,
+                blocked: true
+              },
+              { status: 400 }
+            );
+          }
+        }
+      }
+    }
+
     // Check for departure-specific pricing
     let departure = null;
     if (input.travel_date) {
