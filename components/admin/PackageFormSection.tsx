@@ -40,6 +40,7 @@ export interface PackageFormData {
   exclusions: string[];
   display_order: number;
   is_active: boolean;
+  requires_full_payment?: boolean;
 
   // Markup settings
   markup_type?: 'percentage' | 'fixed' | 'none';
@@ -127,6 +128,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
       exclusions: [],
       display_order: packages.length,
       is_active: true,
+      requires_full_payment: false,
       markup_type: 'percentage',
       markup_value: 0,
       base_adult_price: 0,
@@ -401,6 +403,24 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                           </SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+
+                    {/* Requires Full Payment Checkbox */}
+                    <div className="flex items-center space-x-2 p-4 bg-muted/20 rounded-lg border">
+                      <Checkbox
+                        id={`requires-full-payment-${index}`}
+                        checked={pkg.requires_full_payment || false}
+                        onCheckedChange={(checked) => updatePackage(index, 'requires_full_payment', checked)}
+                      />
+                      <Label
+                        htmlFor={`requires-full-payment-${index}`}
+                        className="text-sm font-normal cursor-pointer"
+                      >
+                        <span className="font-medium">{t('requiresFullPayment')}</span>
+                        <span className="text-xs text-muted-foreground block mt-1">
+                          {t('requiresFullPaymentDesc')}
+                        </span>
+                      </Label>
                     </div>
 
                     {/* Markup Configuration - Hidden for suppliers */}

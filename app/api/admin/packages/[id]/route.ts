@@ -62,6 +62,7 @@ export async function PUT(
         exclusions: body.exclusions || [],
         display_order: body.display_order,
         is_active: body.is_active,
+        requires_full_payment: body.requires_full_payment || false,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)

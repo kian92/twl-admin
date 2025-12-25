@@ -140,6 +140,8 @@
       "groupTourDesc": "Join scheduled departures with other travelers",
       "privateTour": "Private Tour",
       "privateTourDesc": "Exclusive booking for your group only",
+      "requiresFullPayment": "Requires Full Payment",
+      "requiresFullPaymentDesc": "Check this if customers must pay the full amount upfront instead of just a deposit",
       "markupConfiguration": "Markup Configuration",
       "markupOptional": "Optional",
       "markupType": "Markup Type",

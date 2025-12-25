@@ -140,6 +140,8 @@
       "groupTourDesc": "加入预定行程与其他旅客同行",
       "privateTour": "私人游",
       "privateTourDesc": "仅为您的团队专属预订",
+      "requiresFullPayment": "需要全额付款",
+      "requiresFullPaymentDesc": "如果客户必须预先支付全额而不仅仅是押金，请勾选此项",
       "markupConfiguration": "加价配置",
       "markupOptional": "可选",
       "markupType": "加价类型",

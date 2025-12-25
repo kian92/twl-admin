@@ -284,6 +284,7 @@ export default function NewExperiencePage() {
             exclusions: pkg.exclusions,
             display_order: pkg.display_order,
             is_active: pkg.is_active,
+            requires_full_payment: pkg.requires_full_payment || false,
 
             // Markup configuration
             markup_type: pkg.markup_type || 'none',

@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
         exclusions: body.exclusions || [],
         display_order: body.display_order || 0,
         is_active: body.is_active !== false,
+        requires_full_payment: body.requires_full_payment || false,
       })
       .select()
       .single();

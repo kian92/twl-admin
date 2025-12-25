@@ -191,6 +191,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                   tour_type: pkg.tour_type || 'group',
                   min_group_size: pkg.min_group_size,
                   max_group_size: pkg.max_group_size,
+                  requires_full_payment: pkg.requires_full_payment || false,
 
                   // Markup settings
                   markup_type: markupType,
@@ -548,6 +549,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
           inclusions: pkg.inclusions,
           exclusions: pkg.exclusions,
           is_active: pkg.is_active,
+          requires_full_payment: pkg.requires_full_payment || false,
           display_order: pkg.display_order,
           available_from: pkg.available_from || null,
           available_to: pkg.available_to || null,
