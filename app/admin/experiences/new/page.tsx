@@ -54,6 +54,7 @@ const initialForm: ExperienceInsert = {
   meeting_point: "",
   what_to_bring: [],
   cancellation_policy: "",
+  pick_up_information: "",
   itinerary: null,
   gallery: [],
   faqs: null,
@@ -244,6 +245,7 @@ export default function NewExperiencePage() {
         not_suitable_for: notSuitableForText.split("\n").filter(Boolean),
         what_to_bring: whatToBringText.split("\n").filter(Boolean),
         gallery: uploadedUrls,
+        pick_up_information: form.pick_up_information || "",
 
         itinerary: itinerary.filter(item => item.day && item.activity).length > 0
           ? (itinerary.filter(item => item.day && item.activity) as any)
@@ -688,6 +690,17 @@ export default function NewExperiencePage() {
                 rows={4}
                 value={whatToBringText}
                 onChange={(event) => setWhatToBringText(event.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="pick_up_information">Pick Up Information</Label>
+              <Textarea
+                id="pick_up_information"
+                placeholder="Enter pick up details, instructions, and locations..."
+                rows={4}
+                value={form.pick_up_information ?? ""}
+                onChange={(event) => setForm((prev) => ({ ...prev, pick_up_information: event.target.value }))}
               />
             </div>
 

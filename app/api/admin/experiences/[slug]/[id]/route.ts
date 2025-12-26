@@ -81,11 +81,14 @@ export async function PUT(
 
     const parsed = experiencePayloadSchema.safeParse(payload)
     if (!parsed.success) {
+      console.error("Validation failed:", parsed.error.errors)
       const issue = parsed.error.errors.at(0)
       return NextResponse.json({ error: issue?.message ?? "Validation failed" }, { status: 400 })
     }
 
+    console.log("Parsed payload:", JSON.stringify(parsed.data, null, 2))
     const normalized = normalizeExperiencePayload(parsed.data)
+    console.log("Normalized payload:", JSON.stringify(normalized, null, 2))
     const { id } = await params
 
     // Check user role to determine access
@@ -134,6 +137,8 @@ export async function PUT(
     normalized.slug = newSlug
     }
 
+    console.log("About to update experience with normalized payload keys:", Object.keys(normalized))
+    console.log("pick_up_information value:", normalized.pick_up_information)
 
     // @ts-expect-error - Supabase type inference issue
     const { error } = await supabase.from("experiences").update(normalized).eq("id", id)
@@ -142,6 +147,8 @@ export async function PUT(
       console.error("Failed to update experience", error)
       return NextResponse.json({ error: "Failed to update experience" }, { status: 500 })
     }
+
+    console.log("Successfully updated experience")
 
     return NextResponse.json({ success: true })
   } catch (error) {

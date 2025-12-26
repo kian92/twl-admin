@@ -33,6 +33,7 @@ create table if not exists public.experiences (
   highlights text[],
   inclusions text[],
   cancellation_policy text,
+  pick_up_information text,
   itinerary jsonb,
   created_at timestamp with time zone default timezone('utc'::text, now()),
   updated_at timestamp with time zone default timezone('utc'::text, now())

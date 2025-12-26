@@ -66,6 +66,7 @@ export interface Database {
           meeting_point: string | null
           what_to_bring: string[] | null
           cancellation_policy: string | null
+          pick_up_information: string | null
           itinerary: Json | null
           gallery: string[] | null
           faqs: Json | null
@@ -101,6 +102,7 @@ export interface Database {
           meeting_point?: string | null
           what_to_bring?: string[] | null
           cancellation_policy?: string | null
+          pick_up_information?: string | null
           itinerary?: Json | null
           gallery?: string[] | null
           faqs?: Json | null
@@ -135,6 +137,7 @@ export interface Database {
           meeting_point?: string | null
           what_to_bring?: string[] | null
           cancellation_policy?: string | null
+          pick_up_information?: string | null
           itinerary?: Json | null
           is_destination_featured?: boolean
           status?: "draft" | "review" | "active"

@@ -12,12 +12,6 @@ const nextConfig = {
       {
         protocol: "https",
         hostname: "twl-media.b-cdn.net",
-        pathname: "/development/**",
-      },
-      {
-        protocol: "https",
-        hostname: "twl-media.b-cdn.net",
-        pathname: "/production/**",
       },
     ],
   },

@@ -22,6 +22,7 @@ export const EXPERIENCE_SELECT_FIELDS = `
   not_suitable_for,
   meeting_point,
   what_to_bring,
+  pick_up_information,
   cancellation_policy,
   itinerary,
   gallery,

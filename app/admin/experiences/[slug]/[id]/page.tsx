@@ -48,6 +48,7 @@ interface FormState {
   not_suitable_for: string
   meeting_point: string
   what_to_bring: string
+  pick_up_information: string
   gallery: string
   cancellation_policy: string
   is_destination_featured?: boolean
@@ -136,6 +137,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
           not_suitable_for: (experienceData.not_suitable_for ?? []).join("\n"),
           meeting_point: experienceData.meeting_point ?? "",
           what_to_bring: (experienceData.what_to_bring ?? []).join("\n"),
+          pick_up_information: experienceData.pick_up_information ?? "",
           gallery: (experienceData.gallery ?? []).join("\n"),
           cancellation_policy: experienceData.cancellation_policy ?? "",
           is_destination_featured: (experienceData as any).is_destination_featured ?? false,
@@ -470,6 +472,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
         not_suitable_for: notSuitableForList,
         meeting_point: form.meeting_point,
         what_to_bring: whatToBringList,
+        pick_up_information: form.pick_up_information,
         gallery: updatedGallery,
         cancellation_policy: form.cancellation_policy,
         is_destination_featured: form.is_destination_featured ?? false,
@@ -942,6 +945,17 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                 placeholder={t('form.whatToBringPlaceholder')}
                 value={form.what_to_bring}
                 onChange={handleChange("what_to_bring")}
+                rows={4}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="pick_up_information">Pick Up Information</Label>
+              <Textarea
+                id="pick_up_information"
+                placeholder="Enter pick up details, instructions, and locations..."
+                value={form.pick_up_information}
+                onChange={handleChange("pick_up_information")}
                 rows={4}
               />
             </div>
