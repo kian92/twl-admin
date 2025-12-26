@@ -695,12 +695,10 @@ export default function NewExperiencePage() {
 
             <div className="space-y-2">
               <Label htmlFor="pick_up_information">Pick Up Information</Label>
-              <Textarea
-                id="pick_up_information"
+              <RichTextEditor
+                content={form.pick_up_information ?? ""}
+                onChange={(html) => setForm((prev) => ({ ...prev, pick_up_information: html }))}
                 placeholder="Enter pick up details, instructions, and locations..."
-                rows={4}
-                value={form.pick_up_information ?? ""}
-                onChange={(event) => setForm((prev) => ({ ...prev, pick_up_information: event.target.value }))}
               />
             </div>
 

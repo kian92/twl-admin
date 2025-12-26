@@ -951,12 +951,10 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
 
             <div className="space-y-2">
               <Label htmlFor="pick_up_information">Pick Up Information</Label>
-              <Textarea
-                id="pick_up_information"
+              <RichTextEditor
+                content={form.pick_up_information}
+                onChange={(html) => setForm((prev) => ({ ...prev, pick_up_information: html }))}
                 placeholder="Enter pick up details, instructions, and locations..."
-                value={form.pick_up_information}
-                onChange={handleChange("pick_up_information")}
-                rows={4}
               />
             </div>
 
