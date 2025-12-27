@@ -82,6 +82,11 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
     max_group_size: null,
     adult_price: 0,
     child_price: 0,
+    // Age(child and adult)
+    adult_min_age: 18,
+    adult_max_age: null,
+    child_min_age: 3,
+    child_max_age: 17,
     infant_price: 0,
     senior_price: 0,
     inclusions: [],
@@ -176,6 +181,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                 const childTier = pkg.pricing_tiers?.find((t: any) => t.tier_type === 'child');
                 const infantTier = pkg.pricing_tiers?.find((t: any) => t.tier_type === 'infant');
                 const seniorTier = pkg.pricing_tiers?.find((t: any) => t.tier_type === 'senior');
+console.log('adultTier',adultTier);
 
                 // Get markup info from adult tier (assuming all tiers have same markup settings)
                 const markupType = adultTier?.markup_type || 'none';
@@ -218,6 +224,12 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                   child_price: childTier?.selling_price || childTier?.base_price || 0,
                   infant_price: infantTier?.selling_price || infantTier?.base_price || 0,
                   senior_price: seniorTier?.selling_price || seniorTier?.base_price || 0,
+
+                  // Age(child and adult)
+                  adult_min_age: adultTier?.min_age || 0,
+                  adult_max_age: adultTier?.max_age || 0,
+                  child_min_age: childTier?.min_age || 0,
+                  child_max_age: childTier?.max_age || 0,
 
                   inclusions: Array.isArray(pkg.inclusions) ? pkg.inclusions : [],
                   exclusions: Array.isArray(pkg.exclusions) ? pkg.exclusions : [],
@@ -428,6 +440,24 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
       const adultPrice = Number.isFinite(firstPackage.adult_price) ? firstPackage.adult_price : 0
       const childPrice = Number.isFinite(firstPackage.child_price) ? firstPackage.child_price : 0
 
+      const adultMinAge = typeof firstPackage.adult_min_age === "number"
+        ? firstPackage.adult_min_age
+        : 0
+
+      const adultMaxAge = typeof firstPackage.adult_max_age === "number"
+        ? firstPackage.adult_max_age
+        : null
+
+      const childMinAge = typeof firstPackage.child_min_age === "number"
+        ? firstPackage.child_min_age
+        : 0
+
+      const childMaxAge = typeof firstPackage.child_max_age === "number"
+        ? firstPackage.child_max_age
+        : 0
+
+
+
       // Upload new images
       const uploadedUrls: string[] = []
 
@@ -460,6 +490,10 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
         price: adultPrice,
         adult_price: adultPrice,
         child_price: childPrice,
+        adult_min_age: adultMinAge,
+        adult_max_age: adultMaxAge,
+        child_min_age: childMinAge,
+        child_max_age: childMaxAge,
         available_from: firstPackage.available_from || null,
         available_to: firstPackage.available_to || null,
         min_group_size: Number.isFinite(firstPackage.min_group_size) ? firstPackage.min_group_size : 1,
@@ -532,6 +566,10 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
         // Ensure prices are numbers
         const adultPrice = Number(pkg.adult_price) || 0;
         const childPrice = Number(pkg.child_price) || 0;
+        const adultMinAge = Number(pkg.adult_min_age) || 0;
+        const adultMaxAge = Number(pkg.adult_max_age) || 0;
+        const childMinAge = Number(pkg.child_min_age) || 0;
+        const childMaxAge = Number(pkg.child_max_age) || 0;
         const infantPrice = pkg.infant_price ? Number(pkg.infant_price) : undefined;
         const seniorPrice = pkg.senior_price ? Number(pkg.senior_price) : undefined;
 
@@ -578,6 +616,10 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
           // Selling prices (what customer pays)
           adult_price: adultPrice,
           child_price: childPrice,
+          adult_min_age: adultMinAge,
+          adult_max_age: adultMaxAge,
+          child_min_age: childMinAge,
+          child_max_age: childMaxAge,
           ...(infantPrice !== undefined && { infant_price: infantPrice }),
           ...(seniorPrice !== undefined && { senior_price: seniorPrice }),
 
