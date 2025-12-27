@@ -339,7 +339,7 @@ export default function ExperiencesPage() {
             <Card key={experience.id} className="overflow-hidden">
               <div className="relative h-48">
                 <Image
-                  src={experience.gallery?.[0] || "/placeholder.svg"}
+                  src={experience.image_url || "/placeholder.svg"}
                   alt={experience.title}
                   fill
                   className="object-cover"

@@ -66,6 +66,12 @@ export interface PackageFormData {
   infant_price?: number;
   senior_price?: number;
 
+  // Age(child and adult)
+  adult_min_age?: number;
+  adult_max_age?: number | null;
+  child_min_age?: number;
+  child_max_age?: number;
+
   // Add-ons
   addons?: AddOnItem[];
 }
@@ -143,6 +149,10 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
       exchange_rate: 1.0,
       adult_price: 0,
       child_price: 0,
+      adult_min_age: 18,
+      adult_max_age: null,
+      child_min_age: 3,
+      child_max_age: 17,
       infant_price: 0,
       senior_price: 0,
       addons: [],
@@ -325,9 +335,18 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                     </Badge>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">
-                      Adult: ${pkg.adult_price} | Child: ${pkg.child_price}
-                    </span>
+                  <span className="text-sm text-muted-foreground">
+                    Adult: ${pkg.adult_price}
+                    {pkg.adult_min_age !== undefined && (
+                      <> ({pkg.adult_min_age}{pkg.adult_max_age ? `–${pkg.adult_max_age}` : '+'})</>
+                    )}
+                    {" | "}
+                    Child: ${pkg.child_price}
+                    {pkg.child_min_age !== undefined && pkg.child_max_age !== undefined && (
+                      <> ({pkg.child_min_age}–{pkg.child_max_age})</>
+                    )}
+                  </span>
+
                     {packages.length > 1 && (
                       <Button
                         type="button"
@@ -523,6 +542,100 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                           </p>
                         </div>
                       )}
+
+                      {/* Age Ranges */}
+                      <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium">{t('ageRanges')}</h4>
+                          <span className="text-xs text-muted-foreground">
+                          {t('usedForPricingTiers')}
+                          </span>
+                        </div>
+
+                        <div className="grid gap-6 md:grid-cols-2">
+                          {/* Child Age */}
+                          <div className="space-y-3">
+                            <h5 className="text-sm font-medium">{t('child')}</h5>
+                            <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-2">
+                              <div className="space-y-1">
+                                <Label>{t('minAge')}</Label>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  value={pkg.child_min_age ?? ''}
+                                  onChange={(e) =>
+                                    updatePackage(
+                                      index,
+                                      'child_min_age',
+                                      e.target.value === '' ? undefined : Number(e.target.value)
+                                    )
+                                  }
+                                  placeholder="e.g. 3"
+                                />
+                              </div>
+                              {/* Dash */}
+                              <div className="pb-2 text-sm text-muted-foreground">–</div>
+                              <div className="space-y-1">
+                                <Label>{t('maxAge')}</Label>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  value={pkg.child_max_age ?? ''}
+                                  onChange={(e) =>
+                                    updatePackage(
+                                      index,
+                                      'child_max_age',
+                                      e.target.value === '' ? undefined : Number(e.target.value)
+                                    )
+                                  }
+                                  placeholder="e.g. 17"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Adult Age */}
+                          <div className="space-y-3">
+                            <h5 className="text-sm font-medium">{t('adult')}</h5>
+                            <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-2">
+                              <div className="space-y-1">
+                                <Label>{t('minAge')}</Label>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  value={pkg.adult_min_age ?? ''}
+                                  onChange={(e) =>
+                                    updatePackage(
+                                      index,
+                                      'adult_min_age',
+                                      e.target.value === '' ? undefined : Number(e.target.value)
+                                    )
+                                  }
+                                  placeholder="e.g. 18"
+                                />
+                              </div>
+                              {/* Dash */}
+                              <div className="pb-2 text-sm text-muted-foreground">–</div>
+                              <div className="space-y-1">
+                                <Label>{t('maxAge')}</Label>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  value={pkg.adult_max_age ?? ''}
+                                  onChange={(e) =>
+                                    updatePackage(
+                                      index,
+                                      'adult_max_age',
+                                      e.target.value === '' ? null : Number(e.target.value)
+                                    )
+                                  }
+                                  placeholder="No limit"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
 
                       {/* Supplier Cost Prices */}
                       <div className="grid gap-4 md:grid-cols-4">

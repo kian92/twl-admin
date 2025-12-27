@@ -51,6 +51,11 @@ const initialForm: ExperienceInsert = {
   price: 0,
   adult_price: 0,
   child_price: 0,
+  // Age(child and adult)
+  adult_min_age: 18,
+  adult_max_age: null,
+  child_min_age: 3,
+  child_max_age: 17,
   category: "Adventure",
   description: "",
   highlights: [],
@@ -105,12 +110,17 @@ export default function NewExperiencePageWithPackages() {
       is_active: true,
       adult_price: 0,
       child_price: 0,
+      // Age(child and adult)
+      adult_min_age: 18,
+      adult_max_age: null,
+      child_min_age: 3,
+      child_max_age: 17,
     }
   ]);
 
   const handleInputChange = (field: keyof ExperienceInsert) => (event: React.ChangeEvent<HTMLInputElement>) => {
     const numericField =
-      field === "price" || field === "adult_price" || field === "child_price" || field === "min_group_size" || field === "max_group_size"
+      field === "price" || field === "adult_price" || field === "child_price" || field === "min_group_size" || field === "max_group_size" || field === "adult_min_age" || field === "adult_max_age" || field === "child_min_age" || field === "child_max_age";
     const value = numericField ? Number.parseFloat(event.target.value) : event.target.value
     setForm((prev) => {
       const next = { ...prev, [field]: value }
@@ -125,6 +135,21 @@ export default function NewExperiencePageWithPackages() {
         const updatedPackages = [...packages];
         updatedPackages[0].child_price = Number.isFinite(value as number) ? (value as number) : 0;
         setPackages(updatedPackages);
+      }
+      //  AGE SYNC
+      if (
+        (field === "adult_min_age" ||
+          field === "adult_max_age" ||
+          field === "child_min_age" ||
+          field === "child_max_age") &&
+        packages.length > 0
+      ) {
+        const updatedPackages = [...packages]
+        updatedPackages[0] = {
+          ...updatedPackages[0],
+          [field]: value,
+        }
+        setPackages(updatedPackages)
       }
       return next
     })
@@ -237,12 +262,31 @@ export default function NewExperiencePageWithPackages() {
       const firstPackage = packages[0];
       const adultPrice = Number.isFinite(firstPackage.adult_price) ? firstPackage.adult_price : 0;
       const childPrice = Number.isFinite(firstPackage.child_price) ? firstPackage.child_price : 0;
+      const adultMinAge = typeof firstPackage.adult_min_age === "number"
+        ? firstPackage.adult_min_age
+        : 0
+
+      const adultMaxAge = typeof firstPackage.adult_max_age === "number"
+        ? firstPackage.adult_max_age
+        : null
+
+      const childMinAge = typeof firstPackage.child_min_age === "number"
+        ? firstPackage.child_min_age
+        : 0
+
+      const childMaxAge = typeof firstPackage.child_max_age === "number"
+        ? firstPackage.child_max_age
+        : 0
 
       const payload: ExperienceInsert = {
         ...form,
         price: adultPrice,
         adult_price: adultPrice,
         child_price: childPrice,
+        adult_min_age: adultMinAge,
+        adult_max_age: adultMaxAge,
+        child_min_age: childMinAge,
+        child_max_age: childMaxAge,
         min_group_size: Number.isFinite(firstPackage.min_group_size) ? firstPackage.min_group_size : 1,
         max_group_size: Number.isFinite(firstPackage.max_group_size) ? firstPackage.max_group_size : 15,
         available_from: firstPackage.available_from || null,
@@ -295,6 +339,11 @@ export default function NewExperiencePageWithPackages() {
           child_price: pkg.child_price,
           infant_price: pkg.infant_price,
           senior_price: pkg.senior_price,
+          // Age (child and adult)
+          adult_min_age: pkg.adult_min_age,
+          adult_max_age: pkg.adult_max_age,
+          child_min_age: pkg.child_min_age,
+          child_max_age: pkg.child_max_age,
         };
 
         await fetch("/api/admin/packages", {

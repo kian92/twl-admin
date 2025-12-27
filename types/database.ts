@@ -50,12 +50,16 @@ export interface Database {
           price: number
           adult_price: number
           child_price: number
+          adult_min_age: number
+          adult_max_age: number | null
+          child_min_age: number
+          child_max_age: number
           available_from: string | null
           available_to: string | null
           min_group_size: number
           max_group_size: number | null
           category: string
-          // image_url: string | null
+          image_url: string | null
           rating: number | null
           review_count: number | null
           description: string | null
@@ -86,6 +90,10 @@ export interface Database {
           price: number
           adult_price: number
           child_price: number
+          adult_min_age: number
+          adult_max_age: number | null
+          child_min_age: number
+          child_max_age: number
           available_from?: string | null
           available_to?: string | null
           min_group_size?: number
@@ -121,6 +129,10 @@ export interface Database {
           price?: number
           adult_price?: number
           child_price?: number
+          adult_min_age?: number
+          adult_max_age?: number | null
+          child_min_age?: number
+          child_max_age?: number
           available_from?: string | null
           available_to?: string | null
           min_group_size?: number
