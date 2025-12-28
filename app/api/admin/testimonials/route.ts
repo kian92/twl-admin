@@ -15,7 +15,14 @@ export async function GET() {
 
     const { data, error } = await supabase
       .from("testimonials")
-      .select("*")
+      .select(`
+        *,
+        experiences!experience_id (
+          id,
+          title,
+          slug
+        )
+      `)
       .order("created_at", { ascending: false })
 
     if (error) {

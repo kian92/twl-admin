@@ -11,9 +11,10 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Card, CardContent } from "@/components/ui/card"
-import { User, MapPin, MessageSquare, Calendar, Image as ImageIcon, Upload } from "lucide-react"
+import { User, MapPin, MessageSquare, Calendar, Image as ImageIcon, Upload, Link2 } from "lucide-react"
 import { toast } from "sonner"
 import type { Database } from "@/types/database"
+import { ExperienceCombobox } from "./experience-combobox"
 
 type TestimonialRow = Database["public"]["Tables"]["testimonials"]["Row"]
 
@@ -29,6 +30,7 @@ const testimonialSchema = z.object({
   is_featured: z.boolean(),
   is_active: z.boolean(),
   display_order: z.number().int().nonnegative(),
+  experience_id: z.string().uuid().optional().nullable(),
 })
 
 type TestimonialFormData = z.infer<typeof testimonialSchema>
@@ -64,12 +66,14 @@ export function TestimonialForm({ testimonial, onSuccess }: TestimonialFormProps
       is_featured: testimonial?.is_featured ?? false,
       is_active: testimonial?.is_active ?? true,
       display_order: testimonial?.display_order ?? 0,
+      experience_id: testimonial?.experience_id || null,
     },
   })
 
   const platform = watch("platform")
   const isFeatured = watch("is_featured")
   const isActive = watch("is_active")
+  const experienceId = watch("experience_id")
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -203,12 +207,32 @@ export function TestimonialForm({ testimonial, onSuccess }: TestimonialFormProps
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="tour_name">Tour Name (Optional)</Label>
+            <Label className="flex items-center gap-2">
+              <Link2 className="h-4 w-4" />
+              Linked Experience/Tour
+            </Label>
+            <ExperienceCombobox
+              value={experienceId}
+              onChange={(id, experience) => {
+                setValue("experience_id", id)
+                // Optionally auto-fill tour name if not already set
+                if (experience && !watch("tour_name")) {
+                  setValue("tour_name", experience.title)
+                }
+              }}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="tour_name">Custom Tour Name (Optional)</Label>
             <Input
               id="tour_name"
               placeholder="e.g., Tibet Tour - Dec 2024"
               {...register("tour_name")}
             />
+            <p className="text-xs text-muted-foreground">
+              Use this for tours not in the system or for custom display text
+            </p>
           </div>
 
           <div className="space-y-2">

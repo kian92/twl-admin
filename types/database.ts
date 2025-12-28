@@ -542,6 +542,7 @@ export interface Database {
           is_featured: boolean
           is_active: boolean
           display_order: number
+          experience_id: string | null
           created_at: string | null
           updated_at: string | null
         }
@@ -558,6 +559,7 @@ export interface Database {
           is_featured?: boolean
           is_active?: boolean
           display_order?: number
+          experience_id?: string | null
           created_at?: string | null
           updated_at?: string | null
         }
@@ -573,6 +575,7 @@ export interface Database {
           is_featured?: boolean
           is_active?: boolean
           display_order?: number
+          experience_id?: string | null
           updated_at?: string | null
         }
       }

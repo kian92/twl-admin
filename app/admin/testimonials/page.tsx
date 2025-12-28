@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Search, Plus, Edit, Trash2, Star, ExternalLink } from "lucide-react"
+import { Search, Plus, Edit, Trash2, Star, ExternalLink, Link2 } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Dialog,
@@ -295,6 +295,20 @@ export default function TestimonialsPage() {
 
                     {testimonial.tour_name && (
                       <p className="text-sm font-medium text-primary mb-2">{testimonial.tour_name}</p>
+                    )}
+
+                    {(testimonial as any).experiences && (
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <Link2 className="h-3.5 w-3.5 text-muted-foreground" />
+                        <a
+                          href={`/admin/experiences/${(testimonial as any).experiences.slug}/${(testimonial as any).experiences.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-600 hover:underline"
+                        >
+                          {(testimonial as any).experiences.title}
+                        </a>
+                      </div>
                     )}
 
                     {testimonial.tour_date && (

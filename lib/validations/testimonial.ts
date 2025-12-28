@@ -21,6 +21,7 @@ export const testimonialPayloadSchema = z.object({
   is_featured: z.boolean().optional().nullable(),
   is_active: z.boolean().optional().nullable(),
   display_order: z.number().int().nonnegative().optional().nullable(),
+  experience_id: z.string().uuid().optional().nullable(),
 })
 
 type TestimonialInsert = Database["public"]["Tables"]["testimonials"]["Insert"]
@@ -40,5 +41,6 @@ export function normalizeTestimonialPayload(payload: TestimonialPayload): Testim
     is_featured: payload.is_featured ?? false,
     is_active: payload.is_active ?? true,
     display_order: payload.display_order ?? 0,
+    experience_id: payload.experience_id ?? null,
   }
 }
