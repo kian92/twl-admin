@@ -38,6 +38,11 @@ const nextConfig = {
         hostname: 'picsum.photos',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'backup.twanderinglens.com',
+        pathname: '/**',
+      },
     ],
   },
   

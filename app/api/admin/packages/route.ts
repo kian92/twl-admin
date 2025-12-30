@@ -46,6 +46,20 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
+    // Validate that the experience exists
+    const { data: experience, error: experienceError } = await supabase
+      .from('experiences')
+      .select('id')
+      .eq('id', body.experience_id)
+      .single();
+
+    if (experienceError || !experience) {
+      return NextResponse.json(
+        { error: `Experience with id ${body.experience_id} does not exist` },
+        { status: 400 }
+      );
+    }
+
     // Create package
     const { data: newPackage, error: packageError } = await supabase
       .from('experience_packages')

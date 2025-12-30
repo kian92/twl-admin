@@ -47,6 +47,22 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
 
+    // Validate that experience_id is not being changed, or if it is, that it exists
+    if (body.experience_id) {
+      const { data: experience, error: experienceError } = await supabase
+        .from('experiences')
+        .select('id')
+        .eq('id', body.experience_id)
+        .single();
+
+      if (experienceError || !experience) {
+        return NextResponse.json(
+          { error: `Experience with id ${body.experience_id} does not exist` },
+          { status: 400 }
+        );
+      }
+    }
+
     // Update package
     const { data: updatedPackage, error: packageError } = await supabase
       .from('experience_packages')

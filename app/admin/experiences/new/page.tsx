@@ -436,13 +436,10 @@ export default function NewExperiencePage() {
 
             <div className="space-y-2">
               <Label htmlFor="description">{t('experiences.form.description')}</Label>
-              <Textarea
-                id="description"
+              <RichTextEditor
+                content={form.description ?? ""}
+                onChange={(html) => setForm((prev) => ({ ...prev, description: html }))}
                 placeholder={t('experiences.form.descriptionPlaceholder')}
-                rows={4}
-                value={form.description ?? ""}
-                onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
-                required
               />
             </div>
 

@@ -746,12 +746,10 @@ console.log('adultTier',adultTier);
 
             <div className="space-y-2">
               <Label htmlFor="description">{t('form.description')}</Label>
-              <Textarea
-                id="description"
-                value={form.description}
-                onChange={handleChange("description")}
-                rows={4}
-                required
+              <RichTextEditor
+                content={form.description}
+                onChange={(html) => setForm((prev) => (prev ? { ...prev, description: html } : prev))}
+                placeholder={t('form.descriptionPlaceholder')}
               />
             </div>
 
