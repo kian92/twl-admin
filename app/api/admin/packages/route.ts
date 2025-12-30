@@ -93,80 +93,104 @@ export async function POST(request: NextRequest) {
     const markupType = body.markup_type || 'none';
     const markupValue = body.markup_value || 0;
 
-    if (body.adult_price !== undefined && body.adult_price !== null) {
-      pricingTiers.push({
-        package_id: newPackage.id,
-        tier_type: 'adult',
-        tier_label: body.adult_tier_label || 'Adult (18+ years)',
-        min_age: body.adult_min_age || 18,
-        max_age: body.adult_max_age || null,
-        base_price: body.base_adult_price || 0,
-        supplier_currency: body.supplier_currency || 'USD',
-        supplier_cost: body.supplier_cost_adult,
-        exchange_rate: body.exchange_rate || 1.0,
-        markup_type: markupType,
-        markup_value: markupValue,
-        selling_price: body.adult_price,
-        currency: 'USD',
-        is_active: true,
+    // Check if using custom pricing tiers
+    if (body.use_custom_tiers && body.custom_pricing_tiers && Array.isArray(body.custom_pricing_tiers)) {
+      // Use custom pricing tiers
+      body.custom_pricing_tiers.forEach((tier: any) => {
+        pricingTiers.push({
+          package_id: newPackage.id,
+          tier_type: tier.tier_type,
+          tier_label: tier.tier_label,
+          min_age: tier.min_age || null,
+          max_age: tier.max_age || null,
+          base_price: tier.base_price || 0,
+          supplier_currency: body.supplier_currency || 'USD',
+          supplier_cost: tier.supplier_cost || 0,
+          exchange_rate: body.exchange_rate || 1.0,
+          markup_type: markupType,
+          markup_value: markupValue,
+          selling_price: tier.selling_price,
+          currency: 'USD',
+          is_active: true,
+        });
       });
-    }
+    } else {
+      // Use standard adult/child/infant/senior pricing
+      if (body.adult_price !== undefined && body.adult_price !== null) {
+        pricingTiers.push({
+          package_id: newPackage.id,
+          tier_type: 'adult',
+          tier_label: body.adult_tier_label || 'Adult (18+ years)',
+          min_age: body.adult_min_age || 18,
+          max_age: body.adult_max_age || null,
+          base_price: body.base_adult_price || 0,
+          supplier_currency: body.supplier_currency || 'USD',
+          supplier_cost: body.supplier_cost_adult,
+          exchange_rate: body.exchange_rate || 1.0,
+          markup_type: markupType,
+          markup_value: markupValue,
+          selling_price: body.adult_price,
+          currency: 'USD',
+          is_active: true,
+        });
+      }
 
-    if (body.child_price !== undefined && body.child_price !== null) {
-      pricingTiers.push({
-        package_id: newPackage.id,
-        tier_type: 'child',
-        tier_label: body.child_tier_label || 'Child (3-17 years)',
-        min_age: body.child_min_age || 3,
-        max_age: body.child_max_age || 17,
-        base_price: body.base_child_price || 0,
-        supplier_currency: body.supplier_currency || 'USD',
-        supplier_cost: body.supplier_cost_child,
-        exchange_rate: body.exchange_rate || 1.0,
-        markup_type: markupType,
-        markup_value: markupValue,
-        selling_price: body.child_price,
-        currency: 'USD',
-        is_active: true,
-      });
-    }
+      if (body.child_price !== undefined && body.child_price !== null) {
+        pricingTiers.push({
+          package_id: newPackage.id,
+          tier_type: 'child',
+          tier_label: body.child_tier_label || 'Child (3-17 years)',
+          min_age: body.child_min_age || 3,
+          max_age: body.child_max_age || 17,
+          base_price: body.base_child_price || 0,
+          supplier_currency: body.supplier_currency || 'USD',
+          supplier_cost: body.supplier_cost_child,
+          exchange_rate: body.exchange_rate || 1.0,
+          markup_type: markupType,
+          markup_value: markupValue,
+          selling_price: body.child_price,
+          currency: 'USD',
+          is_active: true,
+        });
+      }
 
-    if (body.infant_price !== undefined && body.infant_price !== null) {
-      pricingTiers.push({
-        package_id: newPackage.id,
-        tier_type: 'infant',
-        tier_label: body.infant_tier_label || 'Infant (0-2 years)',
-        min_age: 0,
-        max_age: 2,
-        base_price: body.base_infant_price || 0,
-        supplier_currency: body.supplier_currency || 'USD',
-        supplier_cost: body.supplier_cost_infant,
-        exchange_rate: body.exchange_rate || 1.0,
-        markup_type: markupType,
-        markup_value: markupValue,
-        selling_price: body.infant_price,
-        currency: 'USD',
-        is_active: true,
-      });
-    }
+      if (body.infant_price !== undefined && body.infant_price !== null) {
+        pricingTiers.push({
+          package_id: newPackage.id,
+          tier_type: 'infant',
+          tier_label: body.infant_tier_label || 'Infant (0-2 years)',
+          min_age: 0,
+          max_age: 2,
+          base_price: body.base_infant_price || 0,
+          supplier_currency: body.supplier_currency || 'USD',
+          supplier_cost: body.supplier_cost_infant,
+          exchange_rate: body.exchange_rate || 1.0,
+          markup_type: markupType,
+          markup_value: markupValue,
+          selling_price: body.infant_price,
+          currency: 'USD',
+          is_active: true,
+        });
+      }
 
-    if (body.senior_price !== undefined && body.senior_price !== null) {
-      pricingTiers.push({
-        package_id: newPackage.id,
-        tier_type: 'senior',
-        tier_label: body.senior_tier_label || 'Senior (65+ years)',
-        min_age: 65,
-        max_age: null,
-        base_price: body.base_senior_price || 0,
-        supplier_currency: body.supplier_currency || 'USD',
-        supplier_cost: body.supplier_cost_senior,
-        exchange_rate: body.exchange_rate || 1.0,
-        markup_type: markupType,
-        markup_value: markupValue,
-        selling_price: body.senior_price,
-        currency: 'USD',
-        is_active: true,
-      });
+      if (body.senior_price !== undefined && body.senior_price !== null) {
+        pricingTiers.push({
+          package_id: newPackage.id,
+          tier_type: 'senior',
+          tier_label: body.senior_tier_label || 'Senior (65+ years)',
+          min_age: 65,
+          max_age: null,
+          base_price: body.base_senior_price || 0,
+          supplier_currency: body.supplier_currency || 'USD',
+          supplier_cost: body.supplier_cost_senior,
+          exchange_rate: body.exchange_rate || 1.0,
+          markup_type: markupType,
+          markup_value: markupValue,
+          selling_price: body.senior_price,
+          currency: 'USD',
+          is_active: true,
+        });
+      }
     }
 
     if (pricingTiers.length > 0) {

@@ -114,7 +114,7 @@ export function ImageUpload({ value, onChange, label }: ImageUploadProps) {
                   Click to upload or drag and drop
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  PNG, JPG, GIF up to 10MB
+                  PNG, JPG, GIF, WEBP up to 10MB
                 </p>
               </label>
             </div>

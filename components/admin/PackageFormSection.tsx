@@ -26,6 +26,18 @@ export interface AddOnItem {
   category?: string;
 }
 
+export interface CustomPricingTier {
+  id?: string;
+  tier_type: 'adult' | 'child' | 'infant' | 'senior';
+  tier_label: string;
+  min_age?: number;
+  max_age?: number | null;
+  base_price: number;
+  selling_price: number;
+  supplier_cost?: number;
+  description?: string;
+}
+
 export interface PackageFormData {
   id?: string;
   package_name: string;
@@ -71,6 +83,10 @@ export interface PackageFormData {
   adult_max_age?: number | null;
   child_min_age?: number;
   child_max_age?: number;
+
+  // Custom Pricing Tiers (overrides simple fields when enabled)
+  use_custom_tiers?: boolean;
+  custom_pricing_tiers?: CustomPricingTier[];
 
   // Add-ons
   addons?: AddOnItem[];
@@ -155,6 +171,8 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
       child_max_age: 17,
       infant_price: 0,
       senior_price: 0,
+      use_custom_tiers: false,
+      custom_pricing_tiers: [],
       addons: [],
     };
     onChange([...packages, newPackage]);
@@ -871,6 +889,247 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                           />
                         </div>
                       </div>
+                      </div>
+                    )}
+
+                    {/* Custom Pricing Tiers Section */}
+                    {!isSupplier && (
+                      <div className="space-y-4 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                              <Checkbox
+                                id={`use-custom-tiers-${index}`}
+                                checked={!!pkg.use_custom_tiers}
+                                onCheckedChange={(checked) => {
+                                  const booleanValue = checked === true;
+                                  updatePackage(index, 'use_custom_tiers', booleanValue);
+                                  if (booleanValue && (!pkg.custom_pricing_tiers || pkg.custom_pricing_tiers.length === 0)) {
+                                    // Initialize with empty array when enabling
+                                    updatePackage(index, 'custom_pricing_tiers', []);
+                                  }
+                                }}
+                              />
+                              <Label
+                                htmlFor={`use-custom-tiers-${index}`}
+                                className="text-base font-medium cursor-pointer"
+                              >
+                                {t('useCustomPricingTiers')}
+                              </Label>
+                              <Badge variant="secondary" className="ml-2">Advanced</Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground ml-6">
+                              {t('customTiersDescription')}
+                            </p>
+                          </div>
+                        </div>
+
+                        {pkg.use_custom_tiers && (
+                          <div className="space-y-3 mt-4">
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm font-medium">{t('customTiers')}</p>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  const currentTiers = pkg.custom_pricing_tiers || [];
+                                  const newTier: CustomPricingTier = {
+                                    tier_type: 'child',
+                                    tier_label: '',
+                                    min_age: undefined,
+                                    max_age: null,
+                                    base_price: 0,
+                                    selling_price: 0,
+                                    supplier_cost: 0,
+                                    description: '',
+                                  };
+                                  updatePackage(index, 'custom_pricing_tiers', [...currentTiers, newTier]);
+                                }}
+                              >
+                                <Plus className="w-4 h-4 mr-2" />
+                                {t('addTier')}
+                              </Button>
+                            </div>
+
+                            {pkg.custom_pricing_tiers && pkg.custom_pricing_tiers.length > 0 ? (
+                              <div className="space-y-3">
+                                {pkg.custom_pricing_tiers.map((tier, tierIndex) => (
+                                  <div key={tierIndex} className="p-4 border rounded-lg space-y-3 bg-white dark:bg-gray-900">
+                                    <div className="flex items-start justify-between">
+                                      <Badge variant="outline">{t('tierNumber', { number: tierIndex + 1 })}</Badge>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => {
+                                          const updated = (pkg.custom_pricing_tiers || []).filter((_, i) => i !== tierIndex);
+                                          updatePackage(index, 'custom_pricing_tiers', updated);
+                                        }}
+                                      >
+                                        <Trash2 className="w-4 h-4 text-red-500" />
+                                      </Button>
+                                    </div>
+
+                                    <div className="grid gap-3 md:grid-cols-2">
+                                      <div className="space-y-2">
+                                        <Label>{t('tierType')} *</Label>
+                                        <Select
+                                          value={tier.tier_type}
+                                          onValueChange={(value) => {
+                                            const updated = [...(pkg.custom_pricing_tiers || [])];
+                                            updated[tierIndex] = { ...updated[tierIndex], tier_type: value as any };
+                                            updatePackage(index, 'custom_pricing_tiers', updated);
+                                          }}
+                                        >
+                                          <SelectTrigger>
+                                            <SelectValue placeholder={t('selectTierType')} />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="adult">{t('adult')}</SelectItem>
+                                            <SelectItem value="child">{t('child')}</SelectItem>
+                                            <SelectItem value="infant">{t('infant')}</SelectItem>
+                                            <SelectItem value="senior">{t('senior')}</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label>{t('tierLabel')} *</Label>
+                                        <Input
+                                          value={tier.tier_label}
+                                          onChange={(e) => {
+                                            const updated = [...(pkg.custom_pricing_tiers || [])];
+                                            updated[tierIndex] = { ...updated[tierIndex], tier_label: e.target.value };
+                                            updatePackage(index, 'custom_pricing_tiers', updated);
+                                          }}
+                                          placeholder={t('tierLabelPlaceholder')}
+                                          required
+                                        />
+                                      </div>
+                                    </div>
+
+                                    <div className="grid gap-3 md:grid-cols-2">
+                                      <div className="space-y-2">
+                                        <Label>{t('ageRange')}</Label>
+                                        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            value={tier.min_age ?? ''}
+                                            onChange={(e) => {
+                                              const updated = [...(pkg.custom_pricing_tiers || [])];
+                                              updated[tierIndex] = {
+                                                ...updated[tierIndex],
+                                                min_age: e.target.value === '' ? undefined : Number(e.target.value),
+                                              };
+                                              updatePackage(index, 'custom_pricing_tiers', updated);
+                                            }}
+                                            placeholder={t('min')}
+                                          />
+                                          <span className="text-sm text-muted-foreground">–</span>
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            value={tier.max_age ?? ''}
+                                            onChange={(e) => {
+                                              const updated = [...(pkg.custom_pricing_tiers || [])];
+                                              updated[tierIndex] = {
+                                                ...updated[tierIndex],
+                                                max_age: e.target.value === '' ? null : Number(e.target.value),
+                                              };
+                                              updatePackage(index, 'custom_pricing_tiers', updated);
+                                            }}
+                                            placeholder={t('max')}
+                                          />
+                                        </div>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label>{t('supplierCost')} ({pkg.supplier_currency || 'USD'})</Label>
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          step="0.01"
+                                          value={tier.supplier_cost ?? ''}
+                                          onChange={(e) => {
+                                            const updated = [...(pkg.custom_pricing_tiers || [])];
+                                            const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                                            updated[tierIndex] = {
+                                              ...updated[tierIndex],
+                                              supplier_cost: isNaN(value) ? 0 : value,
+                                            };
+                                            updatePackage(index, 'custom_pricing_tiers', updated);
+                                          }}
+                                          placeholder="0.00"
+                                        />
+                                      </div>
+                                    </div>
+
+                                    <div className="grid gap-3 md:grid-cols-2">
+                                      <div className="space-y-2">
+                                        <Label>{t('basePrice')} (USD) *</Label>
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          step="0.01"
+                                          value={tier.base_price ?? ''}
+                                          onChange={(e) => {
+                                            const updated = [...(pkg.custom_pricing_tiers || [])];
+                                            const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                                            updated[tierIndex] = {
+                                              ...updated[tierIndex],
+                                              base_price: isNaN(value) ? 0 : value,
+                                            };
+                                            updatePackage(index, 'custom_pricing_tiers', updated);
+                                          }}
+                                          placeholder="0.00"
+                                          required
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label>{t('sellingPrice')} (USD) *</Label>
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          step="0.01"
+                                          value={tier.selling_price ?? ''}
+                                          onChange={(e) => {
+                                            const updated = [...(pkg.custom_pricing_tiers || [])];
+                                            const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                                            updated[tierIndex] = {
+                                              ...updated[tierIndex],
+                                              selling_price: isNaN(value) ? 0 : value,
+                                            };
+                                            updatePackage(index, 'custom_pricing_tiers', updated);
+                                          }}
+                                          placeholder="0.00"
+                                          required
+                                        />
+                                      </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                      <Label>{t('description')}</Label>
+                                      <Textarea
+                                        value={tier.description || ''}
+                                        onChange={(e) => {
+                                          const updated = [...(pkg.custom_pricing_tiers || [])];
+                                          updated[tierIndex] = { ...updated[tierIndex], description: e.target.value };
+                                          updatePackage(index, 'custom_pricing_tiers', updated);
+                                        }}
+                                        placeholder={t('tierDescriptionPlaceholder')}
+                                        rows={2}
+                                      />
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="text-center py-6 text-muted-foreground border rounded-lg border-dashed">
+                                <p className="text-sm">{t('noCustomTiers')}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
 

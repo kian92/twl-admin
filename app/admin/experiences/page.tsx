@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Search, Edit, Trash2, Star } from "lucide-react"
+import { Plus, Search, Edit, Trash2, Star, DollarSign } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -241,12 +241,20 @@ export default function ExperiencesPage() {
             )}
           </p>
         </div>
-        <Button asChild>
-          <Link href="/admin/experiences/new">
-            <Plus className="w-4 h-4 mr-2" />
-            {t('experiences.addExperience')}
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/admin/experiences/bulk-pricing">
+              <DollarSign className="w-4 h-4 mr-2" />
+              Bulk Pricing
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/admin/experiences/new">
+              <Plus className="w-4 h-4 mr-2" />
+              {t('experiences.addExperience')}
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -338,12 +346,27 @@ export default function ExperiencesPage() {
           paginatedExperiences.map((experience) => (
             <Card key={experience.id} className="overflow-hidden">
               <div className="relative h-48">
-                <Image
-                  src={experience.image_url || "/placeholder.svg"}
-                  alt={experience.title}
-                  fill
-                  className="object-cover"
-                />
+                {experience.gallery && experience.gallery.length > 0 ? (
+                  <Image
+                    src={experience.gallery[0]}
+                    alt={experience.title}
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
+                ) : experience.image_url ? (
+                  <Image
+                    src={experience.image_url}
+                    alt={experience.title}
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-muted">
+                    <span className="text-muted-foreground">No image</span>
+                  </div>
+                )}
                 <div className="absolute top-2 right-2 flex gap-2">
                   <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200">
                     {experience.country}

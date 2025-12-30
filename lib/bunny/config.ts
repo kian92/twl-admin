@@ -19,7 +19,12 @@ export const bunnyConfig = {
   streamApiKey: process.env.BUNNY_STREAM_API_KEY || "",
 };
 
-export const bunnyStorageEndpoint = `https://${bunnyConfig.storageEndpoint}/${bunnyConfig.storageZone}`;
+// Construct storage endpoint with region if provided
+const storageHost = bunnyConfig.storageRegion
+  ? `${bunnyConfig.storageRegion}.${bunnyConfig.storageEndpoint}`
+  : bunnyConfig.storageEndpoint;
+
+export const bunnyStorageEndpoint = `https://${storageHost}/${bunnyConfig.storageZone}`;
 export const bunnyStreamEndpoint = `https://video.bunnycdn.com/library/${bunnyConfig.streamLibraryId}/videos`;
 
 // Validate configuration

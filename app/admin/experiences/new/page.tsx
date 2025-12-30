@@ -346,6 +346,10 @@ export default function NewExperiencePage() {
             child_min_age: pkg.child_min_age,
             child_max_age: pkg.child_max_age,
 
+            // Custom pricing tiers
+            use_custom_tiers: pkg.use_custom_tiers || false,
+            ...(pkg.use_custom_tiers && pkg.custom_pricing_tiers && { custom_pricing_tiers: pkg.custom_pricing_tiers }),
+
             addons: pkg.addons || [],
           };
 

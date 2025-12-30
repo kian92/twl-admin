@@ -89,12 +89,18 @@ export async function POST(request: Request) {
       thumbnailUrl = `https://vz-${process.env.BUNNY_STREAM_LIBRARY_ID}.b-cdn.net/${result.videoId}/thumbnail.jpg`;
     } else {
       // Upload to Bunny Storage for images
-      cdnUrl = await uploadToBunny({
-        fileName,
-        file,
-        contentType: mimeType,
-        folder: fileType === "image" ? "images" : "videos",
-      });
+      try {
+        cdnUrl = await uploadToBunny({
+          fileName,
+          file,
+          contentType: mimeType,
+          folder: fileType === "image" ? "images" : "videos",
+        });
+        console.log('Image uploaded successfully, CDN URL:', cdnUrl);
+      } catch (uploadError) {
+        console.error('Failed to upload to Bunny:', uploadError);
+        throw uploadError;
+      }
     }
 
     // Parse tags

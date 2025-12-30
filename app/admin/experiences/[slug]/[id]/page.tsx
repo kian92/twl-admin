@@ -94,7 +94,9 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
     is_active: true,
     display_order: 1,
     available_from: '',
-    available_to: ''
+    available_to: '',
+    use_custom_tiers: false,
+    custom_pricing_tiers: []
   }]) 
 
   // Gallery
@@ -177,19 +179,51 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
 
             if (packagesData && Array.isArray(packagesData) && packagesData.length > 0) {
               const formattedPackages: PackageFormData[] = packagesData.map((pkg: any, index: number) => {
-                const adultTier = pkg.pricing_tiers?.find((t: any) => t.tier_type === 'adult');
-                const childTier = pkg.pricing_tiers?.find((t: any) => t.tier_type === 'child');
-                const infantTier = pkg.pricing_tiers?.find((t: any) => t.tier_type === 'infant');
-                const seniorTier = pkg.pricing_tiers?.find((t: any) => t.tier_type === 'senior');
-console.log('adultTier',adultTier);
+                // Check if this package has custom pricing tiers
+                // Custom tiers are detected when:
+                // 1. There are multiple tiers of the same type, OR
+                // 2. Any tier has a custom label (not the default labels)
+                const pricingTiers = pkg.pricing_tiers || [];
+                const tierTypeCounts: Record<string, number> = {};
+                pricingTiers.forEach((t: any) => {
+                  tierTypeCounts[t.tier_type] = (tierTypeCounts[t.tier_type] || 0) + 1;
+                });
 
-                // Get markup info from adult tier (assuming all tiers have same markup settings)
-                const markupType = adultTier?.markup_type || 'none';
-                const markupValue = adultTier?.markup_value || 0;
+                const hasMultipleTiersOfSameType = Object.values(tierTypeCounts).some(count => count > 1);
+                const hasCustomLabels = pricingTiers.some((t: any) => {
+                  const defaultLabels = ['Adult (18+ years)', 'Child (3-17 years)', 'Infant (0-2 years)', 'Senior (65+ years)'];
+                  return t.tier_label && !defaultLabels.includes(t.tier_label);
+                });
 
-                // Get supplier currency info from adult tier (assuming all tiers use same currency)
-                const supplierCurrency = adultTier?.supplier_currency || 'USD';
-                const exchangeRate = adultTier?.exchange_rate || 1.0;
+                const useCustomTiers = hasMultipleTiersOfSameType || hasCustomLabels;
+
+                // Get first tier of each type for simple mode
+                const adultTier = pricingTiers.find((t: any) => t.tier_type === 'adult');
+                const childTier = pricingTiers.find((t: any) => t.tier_type === 'child');
+                const infantTier = pricingTiers.find((t: any) => t.tier_type === 'infant');
+                const seniorTier = pricingTiers.find((t: any) => t.tier_type === 'senior');
+
+                // Get markup info from first tier (assuming all tiers have same markup settings)
+                const firstTier = pricingTiers[0] || {};
+                const markupType = firstTier.markup_type || 'none';
+                const markupValue = firstTier.markup_value || 0;
+
+                // Get supplier currency info from first tier (assuming all tiers use same currency)
+                const supplierCurrency = firstTier.supplier_currency || 'USD';
+                const exchangeRate = firstTier.exchange_rate || 1.0;
+
+                // Build custom pricing tiers array if applicable
+                const customPricingTiers = useCustomTiers ? pricingTiers.map((tier: any) => ({
+                  id: tier.id,
+                  tier_type: tier.tier_type,
+                  tier_label: tier.tier_label,
+                  min_age: tier.min_age,
+                  max_age: tier.max_age,
+                  base_price: tier.base_price || 0,
+                  selling_price: tier.selling_price || tier.base_price || 0,
+                  supplier_cost: tier.supplier_cost || 0,
+                  description: tier.description || ''
+                })) : undefined;
 
                 return {
                   id: pkg.id,
@@ -205,7 +239,7 @@ console.log('adultTier',adultTier);
                   markup_type: markupType,
                   markup_value: markupValue,
 
-                  // Base prices (cost from supplier)
+                  // Base prices (cost from supplier) - for simple mode
                   base_adult_price: adultTier?.base_price || 0,
                   base_child_price: childTier?.base_price || 0,
                   base_infant_price: infantTier?.base_price || 0,
@@ -219,17 +253,21 @@ console.log('adultTier',adultTier);
                   supplier_cost_senior: seniorTier?.supplier_cost,
                   exchange_rate: exchangeRate,
 
-                  // Selling prices (what customer pays)
+                  // Selling prices (what customer pays) - for simple mode
                   adult_price: adultTier?.selling_price || adultTier?.base_price || 0,
                   child_price: childTier?.selling_price || childTier?.base_price || 0,
                   infant_price: infantTier?.selling_price || infantTier?.base_price || 0,
                   senior_price: seniorTier?.selling_price || seniorTier?.base_price || 0,
 
-                  // Age(child and adult)
+                  // Age(child and adult) - for simple mode
                   adult_min_age: adultTier?.min_age || 0,
                   adult_max_age: adultTier?.max_age || 0,
                   child_min_age: childTier?.min_age || 0,
                   child_max_age: childTier?.max_age || 0,
+
+                  // Custom pricing tiers
+                  use_custom_tiers: useCustomTiers,
+                  custom_pricing_tiers: customPricingTiers,
 
                   inclusions: Array.isArray(pkg.inclusions) ? pkg.inclusions : [],
                   exclusions: Array.isArray(pkg.exclusions) ? pkg.exclusions : [],
@@ -622,6 +660,10 @@ console.log('adultTier',adultTier);
           child_max_age: childMaxAge,
           ...(infantPrice !== undefined && { infant_price: infantPrice }),
           ...(seniorPrice !== undefined && { senior_price: seniorPrice }),
+
+          // Custom pricing tiers
+          use_custom_tiers: pkg.use_custom_tiers || false,
+          ...(pkg.use_custom_tiers && pkg.custom_pricing_tiers && { custom_pricing_tiers: pkg.custom_pricing_tiers }),
 
           addons: pkg.addons || []
         }

@@ -94,27 +94,56 @@ export async function PUT(
       // Delete existing tiers
       await supabase.from('package_pricing_tiers').delete().eq('package_id', id);
 
-      // Create new tiers
-      const tiersToInsert = body.pricing_tiers.map((tier: any) => ({
-        package_id: id,
-        tier_type: tier.tier_type,
-        tier_label: tier.tier_label,
-        min_age: tier.min_age,
-        max_age: tier.max_age,
-        base_price: tier.base_price,
-        supplier_currency: tier.supplier_currency || body.supplier_currency || 'USD',
-        supplier_cost: tier.supplier_cost,
-        exchange_rate: tier.exchange_rate || body.exchange_rate || 1.0,
-        markup_type: tier.markup_type || body.markup_type || 'none',
-        markup_value: tier.markup_value || body.markup_value || 0,
-        selling_price: tier.selling_price,
-        currency: tier.currency || 'USD',
-        cost_price: tier.cost_price,
-        is_active: tier.is_active !== false,
-      }));
+      // Get markup settings
+      const markupType = body.markup_type || 'none';
+      const markupValue = body.markup_value || 0;
 
-      if (tiersToInsert.length > 0) {
-        await supabase.from('package_pricing_tiers').insert(tiersToInsert);
+      // Check if using custom pricing tiers
+      if (body.use_custom_tiers && body.custom_pricing_tiers && Array.isArray(body.custom_pricing_tiers)) {
+        // Use custom pricing tiers
+        const tiersToInsert = body.custom_pricing_tiers.map((tier: any) => ({
+          package_id: id,
+          tier_type: tier.tier_type,
+          tier_label: tier.tier_label,
+          min_age: tier.min_age || null,
+          max_age: tier.max_age || null,
+          base_price: tier.base_price || 0,
+          supplier_currency: body.supplier_currency || 'USD',
+          supplier_cost: tier.supplier_cost || 0,
+          exchange_rate: body.exchange_rate || 1.0,
+          markup_type: markupType,
+          markup_value: markupValue,
+          selling_price: tier.selling_price,
+          currency: 'USD',
+          is_active: true,
+        }));
+
+        if (tiersToInsert.length > 0) {
+          await supabase.from('package_pricing_tiers').insert(tiersToInsert);
+        }
+      } else {
+        // Use standard pricing_tiers array format
+        const tiersToInsert = body.pricing_tiers.map((tier: any) => ({
+          package_id: id,
+          tier_type: tier.tier_type,
+          tier_label: tier.tier_label,
+          min_age: tier.min_age,
+          max_age: tier.max_age,
+          base_price: tier.base_price,
+          supplier_currency: tier.supplier_currency || body.supplier_currency || 'USD',
+          supplier_cost: tier.supplier_cost,
+          exchange_rate: tier.exchange_rate || body.exchange_rate || 1.0,
+          markup_type: tier.markup_type || body.markup_type || 'none',
+          markup_value: tier.markup_value || body.markup_value || 0,
+          selling_price: tier.selling_price,
+          currency: tier.currency || 'USD',
+          cost_price: tier.cost_price,
+          is_active: tier.is_active !== false,
+        }));
+
+        if (tiersToInsert.length > 0) {
+          await supabase.from('package_pricing_tiers').insert(tiersToInsert);
+        }
       }
     }
 

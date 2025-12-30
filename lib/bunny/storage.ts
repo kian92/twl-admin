@@ -65,7 +65,16 @@ export async function uploadToBunny(options: UploadOptions): Promise<string> {
   }
 
   // Return the CDN URL
-  const cdnUrl = `${bunnyConfig.cdnHost}${filePath}`;
+  // Ensure cdnHost has proper format (should include https://)
+  let cdnHost = bunnyConfig.cdnHost;
+  if (!cdnHost.startsWith('http://') && !cdnHost.startsWith('https://')) {
+    cdnHost = `https://${cdnHost}`;
+  }
+  // Remove trailing slash from cdnHost if present
+  cdnHost = cdnHost.replace(/\/$/, '');
+
+  const cdnUrl = `${cdnHost}${filePath}`;
+  console.log('Generated CDN URL:', cdnUrl);
   return cdnUrl;
 }
 
