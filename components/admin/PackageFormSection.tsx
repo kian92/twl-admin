@@ -896,38 +896,42 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                     {!isSupplier && (
                       <div className="space-y-4 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
                         <div className="flex items-start justify-between">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <Checkbox
-                                id={`use-custom-tiers-${index}`}
-                                checked={!!pkg.use_custom_tiers}
-                                onCheckedChange={(checked) => {
-                                  console.log('Checkbox clicked, checked:', checked);
-                                  const booleanValue = checked === true;
-                                  updatePackage(index, 'use_custom_tiers', booleanValue);
-                                  if (booleanValue && (!pkg.custom_pricing_tiers || pkg.custom_pricing_tiers.length === 0)) {
-                                    // Initialize with empty array when enabling
-                                    updatePackage(index, 'custom_pricing_tiers', []);
-                                  }
-                                }}
-                                className="cursor-pointer"
-                              />
+                          <div className="space-y-1 w-full">
+                            <div
+                              className="flex items-center gap-2 cursor-pointer select-none"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                const newValue = !pkg.use_custom_tiers;
+                                console.log('Toggle clicked, current:', pkg.use_custom_tiers, 'new:', newValue);
+                                updatePackage(index, 'use_custom_tiers', newValue);
+                                if (newValue && (!pkg.custom_pricing_tiers || pkg.custom_pricing_tiers.length === 0)) {
+                                  updatePackage(index, 'custom_pricing_tiers', []);
+                                }
+                              }}
+                            >
+                              <div className="relative inline-flex">
+                                <Checkbox
+                                  id={`use-custom-tiers-${index}`}
+                                  checked={!!pkg.use_custom_tiers}
+                                  onCheckedChange={(checked) => {
+                                    console.log('Checkbox onCheckedChange fired, checked:', checked);
+                                    const booleanValue = checked === true;
+                                    updatePackage(index, 'use_custom_tiers', booleanValue);
+                                    if (booleanValue && (!pkg.custom_pricing_tiers || pkg.custom_pricing_tiers.length === 0)) {
+                                      updatePackage(index, 'custom_pricing_tiers', []);
+                                    }
+                                  }}
+                                  className="pointer-events-auto"
+                                />
+                              </div>
                               <Label
                                 htmlFor={`use-custom-tiers-${index}`}
-                                className="text-base font-medium cursor-pointer select-none"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  const newValue = !pkg.use_custom_tiers;
-                                  console.log('Label clicked, toggling to:', newValue);
-                                  updatePackage(index, 'use_custom_tiers', newValue);
-                                  if (newValue && (!pkg.custom_pricing_tiers || pkg.custom_pricing_tiers.length === 0)) {
-                                    updatePackage(index, 'custom_pricing_tiers', []);
-                                  }
-                                }}
+                                className="text-base font-medium pointer-events-none"
                               >
                                 {t('useCustomPricingTiers')}
                               </Label>
-                              <Badge variant="secondary" className="ml-2">Advanced</Badge>
+                              <Badge variant="secondary" className="ml-2 pointer-events-none">Advanced</Badge>
                             </div>
                             <p className="text-xs text-muted-foreground ml-6">
                               {t('customTiersDescription')}
