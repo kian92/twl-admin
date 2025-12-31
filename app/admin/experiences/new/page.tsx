@@ -302,7 +302,7 @@ export default function NewExperiencePage() {
         for (const pkg of packages) {
           const packagePayload = {
             experience_id: experienceId,
-            package_name: pkg.package_name,
+            package_name: pkg.package_name?.trim() || 'Standard Package',
             package_code: pkg.package_code,
             description: pkg.description,
             tour_type: pkg.tour_type || 'group',

@@ -324,7 +324,7 @@ export default function NewExperiencePageWithPackages() {
       for (const pkg of packages) {
         const packagePayload = {
           experience_id: experienceId,
-          package_name: pkg.package_name,
+          package_name: pkg.package_name?.trim() || 'Standard Package',
           package_code: pkg.package_code,
           description: pkg.description,
           min_group_size: pkg.min_group_size,
