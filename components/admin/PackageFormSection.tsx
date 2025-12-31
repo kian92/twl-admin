@@ -897,11 +897,12 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                       <div className="space-y-4 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
                         <div className="flex items-start justify-between">
                           <div className="space-y-1">
-                            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center gap-2">
                               <Checkbox
                                 id={`use-custom-tiers-${index}`}
                                 checked={!!pkg.use_custom_tiers}
                                 onCheckedChange={(checked) => {
+                                  console.log('Checkbox clicked, checked:', checked);
                                   const booleanValue = checked === true;
                                   updatePackage(index, 'use_custom_tiers', booleanValue);
                                   if (booleanValue && (!pkg.custom_pricing_tiers || pkg.custom_pricing_tiers.length === 0)) {
@@ -909,10 +910,20 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                                     updatePackage(index, 'custom_pricing_tiers', []);
                                   }
                                 }}
+                                className="cursor-pointer"
                               />
                               <Label
                                 htmlFor={`use-custom-tiers-${index}`}
-                                className="text-base font-medium cursor-pointer"
+                                className="text-base font-medium cursor-pointer select-none"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  const newValue = !pkg.use_custom_tiers;
+                                  console.log('Label clicked, toggling to:', newValue);
+                                  updatePackage(index, 'use_custom_tiers', newValue);
+                                  if (newValue && (!pkg.custom_pricing_tiers || pkg.custom_pricing_tiers.length === 0)) {
+                                    updatePackage(index, 'custom_pricing_tiers', []);
+                                  }
+                                }}
                               >
                                 {t('useCustomPricingTiers')}
                               </Label>
