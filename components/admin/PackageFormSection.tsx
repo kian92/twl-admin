@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -136,6 +136,23 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
     return `${prefix}-${randomNum}`;
   };
 
+  useEffect(() => {
+    packages.forEach((pkg, index) => {
+      // When unchecked → remove tiers
+      if (!pkg.use_custom_tiers && pkg.custom_pricing_tiers?.length) {
+        updatePackage(index, 'custom_pricing_tiers', []);
+      }
+
+      // When checked first time → ensure array exists
+      if (
+        pkg.use_custom_tiers &&
+        (!pkg.custom_pricing_tiers || pkg.custom_pricing_tiers.length === 0)
+      ) {
+        updatePackage(index, 'custom_pricing_tiers', []);
+      }
+    });
+  }, [packages.map(p => p.use_custom_tiers).join('|')]);
+  
   const addPackage = () => {
     const newPackage: PackageFormData = {
       package_name: '',
@@ -897,41 +914,24 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                       <div className="space-y-4 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
                         <div className="flex items-start justify-between">
                           <div className="space-y-1 w-full">
-                            <div
-                              className="flex items-center gap-2 cursor-pointer select-none"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                const newValue = !pkg.use_custom_tiers;
-                                console.log('Toggle clicked, current:', pkg.use_custom_tiers, 'new:', newValue);
-                                updatePackage(index, 'use_custom_tiers', newValue);
-                                if (newValue && (!pkg.custom_pricing_tiers || pkg.custom_pricing_tiers.length === 0)) {
-                                  updatePackage(index, 'custom_pricing_tiers', []);
-                                }
-                              }}
-                            >
-                              <div className="relative inline-flex">
-                                <Checkbox
-                                  id={`use-custom-tiers-${index}`}
-                                  checked={!!pkg.use_custom_tiers}
-                                  onCheckedChange={(checked) => {
-                                    console.log('Checkbox onCheckedChange fired, checked:', checked);
-                                    const booleanValue = checked === true;
-                                    updatePackage(index, 'use_custom_tiers', booleanValue);
-                                    if (booleanValue && (!pkg.custom_pricing_tiers || pkg.custom_pricing_tiers.length === 0)) {
-                                      updatePackage(index, 'custom_pricing_tiers', []);
-                                    }
-                                  }}
-                                  className="pointer-events-auto"
-                                />
-                              </div>
+                            <div className="flex items-center gap-2 select-none">
+
+                              <Checkbox
+                                id={`use-custom-tiers-${index}`}
+                                checked={!!pkg.use_custom_tiers}
+                                onCheckedChange={(checked) => {
+                                  updatePackage(index, 'use_custom_tiers', checked === true);
+                                }}
+                              />
                               <Label
                                 htmlFor={`use-custom-tiers-${index}`}
-                                className="text-base font-medium pointer-events-none"
+                                className="text-base font-medium cursor-pointer"
                               >
                                 {t('useCustomPricingTiers')}
                               </Label>
-                              <Badge variant="secondary" className="ml-2 pointer-events-none">Advanced</Badge>
+                              <Badge variant="secondary" className="ml-2 cursor-pointer">
+                                Advanced
+                              </Badge>
                             </div>
                             <p className="text-xs text-muted-foreground ml-6">
                               {t('customTiersDescription')}
