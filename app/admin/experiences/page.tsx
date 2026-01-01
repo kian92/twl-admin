@@ -16,13 +16,13 @@ import { useTranslations } from 'next-intl'
 import {
   Pagination,
   PaginationContent,
-  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { getPagination } from "@/utils/pagination"
 
 type ExperienceRow = Database["public"]["Tables"]["experiences"]["Row"]
 
@@ -446,78 +446,79 @@ export default function ExperiencesPage() {
       {!loading && filteredExperiences.length === 0 && (
         <div className="text-center py-12">
           <p className="text-muted-foreground">{t('experiences.noMatchingExperiences')}</p>
-                      <Button
-                        variant="outline"
-                        className="mt-4"
-                        onClick={() => {
-                          setSelectedCategory("all")
-                          setSelectedCountry("all")
-                          setSelectedStatus("all")
-                          if (profile?.role === 'admin') {
-                            setSelectedCreator("all")
-                          }
-                          setSearchQuery("")
-                          void loadExperiences()
-                        }}
-                      >
-                        {t('experiences.clearFilters')}
-                      </Button>
+            <Button
+              variant="outline"
+              className="mt-4"
+              onClick={() => {
+                setSelectedCategory("all")
+                setSelectedCountry("all")
+                setSelectedStatus("all")
+                if (profile?.role === 'admin') {
+                  setSelectedCreator("all")
+                }
+                setSearchQuery("")
+                void loadExperiences()
+              }}
+            >
+              {t('experiences.clearFilters')}
+            </Button>
         </div>
       )}
 
       {/* Pagination */}
-      {!loading && filteredExperiences.length > 0 && totalPages > 1 && (
-        <div className="mt-8">
-          <Pagination>
+      {totalPages > 1 && (
+        <>
+          <Pagination className="mt-8">
             <PaginationContent>
+              {/* Previous */}
               <PaginationItem>
                 <PaginationPrevious
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    if (currentPage > 1) setCurrentPage(currentPage - 1)
-                  }}
-                  className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(1, prev - 1))
+                  }
+                  aria-disabled={currentPage === 1}
                 />
               </PaginationItem>
 
-              {getPageNumbers().map((page, index) => (
-                <PaginationItem key={index}>
-                  {page === 'ellipsis' ? (
-                    <PaginationEllipsis />
-                  ) : (
+              {/* Page numbers */}
+              {getPagination(currentPage, totalPages).map((page, index) =>
+                page === "..." ? (
+                  <PaginationItem key={`dots-${index}`}>
+                    <span className="px-3 text-muted-foreground">...</span>
+                  </PaginationItem>
+                ) : (
+                  <PaginationItem key={page}>
                     <PaginationLink
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        setCurrentPage(page as number)
-                      }}
                       isActive={currentPage === page}
-                      className="cursor-pointer"
+                      onClick={() => setCurrentPage(page)}
                     >
                       {page}
                     </PaginationLink>
-                  )}
-                </PaginationItem>
-              ))}
+                  </PaginationItem>
+                )
+              )}
 
+              {/* Next */}
               <PaginationItem>
                 <PaginationNext
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    if (currentPage < totalPages) setCurrentPage(currentPage + 1)
-                  }}
-                  className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  onClick={() =>
+                    setCurrentPage((prev) =>
+                      Math.min(totalPages, prev + 1)
+                    )
+                  }
+                  aria-disabled={currentPage === totalPages}
                 />
               </PaginationItem>
             </PaginationContent>
           </Pagination>
 
+          {/* Footer text */}
           <div className="text-center mt-4 text-sm text-muted-foreground">
-            Showing {startIndex + 1} to {Math.min(endIndex, filteredExperiences.length)} of {filteredExperiences.length} experiences
+            Showing {startIndex + 1} to{" "}
+            {Math.min(endIndex, filteredExperiences.length)} of{" "}
+            {filteredExperiences.length} experiences
           </div>
-        </div>
+        </>
       )}
     </div>
   )
