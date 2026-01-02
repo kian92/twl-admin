@@ -74,6 +74,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Verify package exists
+    const { data: packageExists, error: packageError } = await supabase
+      .from('experience_packages')
+      .select('id')
+      .eq('id', package_id)
+      .single();
+
+    if (packageError || !packageExists) {
+      return NextResponse.json(
+        { error: 'Package not found' },
+        { status: 404 }
+      );
+    }
+
     // Check for overlapping blocked dates
     const { data: overlapping, error: overlapError } = await supabase
       .from('package_blocked_dates')
