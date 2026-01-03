@@ -1218,6 +1218,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                                                 updated[tierIndex] = {
                                                   ...updated[tierIndex],
                                                   base_price: convertedPrice,
+                                                  selling_price: convertedPrice,
                                                 };
                                                 updatePackage(index, 'custom_pricing_tiers', updated);
                                               }}
