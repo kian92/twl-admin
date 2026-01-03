@@ -358,6 +358,18 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
     onChange(updated);
   };
 
+  // Color scheme for different packages
+  const packageColors = [
+    { border: 'border-l-blue-500', bg: 'bg-blue-50/50 dark:bg-blue-950/20', label: 'bg-blue-100 text-blue-700' },
+    { border: 'border-l-purple-500', bg: 'bg-purple-50/50 dark:bg-purple-950/20', label: 'bg-purple-100 text-purple-700' },
+    { border: 'border-l-amber-500', bg: 'bg-amber-50/50 dark:bg-amber-950/20', label: 'bg-amber-100 text-amber-700' },
+    { border: 'border-l-green-500', bg: 'bg-green-50/50 dark:bg-green-950/20', label: 'bg-green-100 text-green-700' },
+    { border: 'border-l-pink-500', bg: 'bg-pink-50/50 dark:bg-pink-950/20', label: 'bg-pink-100 text-pink-700' },
+    { border: 'border-l-cyan-500', bg: 'bg-cyan-50/50 dark:bg-cyan-950/20', label: 'bg-cyan-100 text-cyan-700' },
+  ];
+
+  const getPackageColor = (index: number) => packageColors[index % packageColors.length];
+
   return (
     <Card>
       <CardHeader>
@@ -381,19 +393,22 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
           </div>
         ) : (
           <div className="space-y-4">
-            {packages.map((pkg, index) => (
-              <div key={index} className="border rounded-lg">
+            {packages.map((pkg, index) => {
+              const colors = getPackageColor(index);
+              return (
+              <div key={index} className={`border rounded-lg border-l-4 ${colors.border} ${colors.bg}`}>
                 {/* Package Header */}
                 <div
-                  className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50"
+                  className="flex items-center justify-between p-4 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5"
                   onClick={() => setExpandedPackage(expandedPackage === index ? -1 : index)}
                 >
                   <div className="flex items-center gap-3">
+                    <Badge className={`${colors.label} font-semibold`}>#{index + 1}</Badge>
                     <span className="font-medium">{pkg.package_name || t('packageName')}</span>
                     {pkg.package_code && (
                       <Badge variant="outline">{pkg.package_code}</Badge>
                     )}
-                    <Badge variant={pkg.tour_type === 'private' ? 'default' : 'secondary'} className={pkg.tour_type === 'private' ? 'bg-purple-600' : 'bg-blue-600'}>
+                    <Badge variant={pkg.tour_type === 'private' ? 'default' : 'secondary'} className={pkg.tour_type === 'private' ? 'bg-purple-600' : 'bg-blue-400'}>
                       {pkg.tour_type === 'private' ? t('packagePrivate') : t('packageGroup')}
                     </Badge>
                     <Badge variant={pkg.is_active ? 'default' : 'secondary'}>
@@ -1600,7 +1615,8 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                   </div>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </CardContent>
