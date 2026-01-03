@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, X, Trash2, Package } from 'lucide-react';
+import { Plus, X, Trash2, Package, ChevronDown, ChevronUp } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -1420,14 +1420,27 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                     {/* Price Calculator - Only show if package has an ID (saved) */}
                     {pkg.id && (
                       <div className="mt-4">
-                        <PriceCalculatorWidget
-                          packageId={pkg.id}
-                          packageName={pkg.package_name}
-                          useCustomTiers={pkg.use_custom_tiers || false}
-                          pricingTiers={pkg.pricing_tiers || []}
-                          minGroupSize={pkg.min_group_size}
-                          maxGroupSize={pkg.max_group_size}
-                        />
+                        <details className="group">
+                          <summary className="cursor-pointer list-none">
+                            <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium">💰 Price Calculator (Testing Tool)</span>
+                                <Badge variant="outline" className="text-xs">Optional</Badge>
+                              </div>
+                              <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+                            </div>
+                          </summary>
+                          <div className="mt-2">
+                            <PriceCalculatorWidget
+                              packageId={pkg.id}
+                              packageName={pkg.package_name}
+                              useCustomTiers={pkg.use_custom_tiers || false}
+                              pricingTiers={pkg.pricing_tiers || []}
+                              minGroupSize={pkg.min_group_size}
+                              maxGroupSize={pkg.max_group_size}
+                            />
+                          </div>
+                        </details>
                       </div>
                     )}
                   </div>
