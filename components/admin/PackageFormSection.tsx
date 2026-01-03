@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, X, Trash2, Package, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, X, Trash2, Package } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -14,7 +14,6 @@ import { useTranslations } from 'next-intl';
 import { CURRENCIES, formatCurrency } from '@/lib/constants/currencies';
 import { convertToUSD, roundCurrency } from '@/lib/utils/currency-converter';
 import { BlockedDatesManager } from './BlockedDatesManager';
-import { PriceCalculatorWidget } from './PriceCalculatorWidget';
 import type { PackagePricingTier } from '@/types/pricing';
 
 export interface AddOnItem {
@@ -1417,8 +1416,8 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                       </div>
                     )}
 
-                    {/* Price Calculator - Only show if package has an ID (saved) */}
-                    {pkg.id && (
+                    {/* Price Calculator - Hidden for now */}
+                    {/* {pkg.id && (
                       <div className="mt-4">
                         <details className="group">
                           <summary className="cursor-pointer list-none">
@@ -1442,7 +1441,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                           </div>
                         </details>
                       </div>
-                    )}
+                    )} */}
                   </div>
                 )}
               </div>
