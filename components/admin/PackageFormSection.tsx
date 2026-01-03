@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, X, Trash2, Package } from 'lucide-react';
+import { Plus, X, Trash2, Package, Copy } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -36,6 +36,8 @@ export interface CustomPricingTier {
   base_price: number;
   selling_price: number;
   supplier_cost?: number;
+  supplier_currency?: string;
+  tier_exchange_rate?: number;
   description?: string;
 }
 
@@ -195,6 +197,34 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
     };
     onChange([...packages, newPackage]);
     setExpandedPackage(packages.length);
+  };
+
+  const duplicatePackage = (index: number) => {
+    const pkgToDuplicate = packages[index];
+
+    // Deep clone the package to avoid reference issues
+    const duplicatedPackage: PackageFormData = {
+      ...pkgToDuplicate,
+      id: undefined, // Remove ID so it creates a new package
+      package_name: `${pkgToDuplicate.package_name} (Copy)`,
+      package_code: generatePackageCode(`${pkgToDuplicate.package_name} Copy`),
+      display_order: packages.length,
+      // Deep clone arrays
+      inclusions: [...(pkgToDuplicate.inclusions || [])],
+      exclusions: [...(pkgToDuplicate.exclusions || [])],
+      custom_pricing_tiers: pkgToDuplicate.custom_pricing_tiers?.map(tier => ({
+        ...tier,
+        id: undefined, // Remove tier IDs so they create new records
+      })) || [],
+      addons: pkgToDuplicate.addons?.map(addon => ({
+        ...addon,
+        id: undefined, // Remove addon IDs so they create new records
+      })) || [],
+    };
+
+    const newPackages = [...packages, duplicatedPackage];
+    onChange(newPackages);
+    setExpandedPackage(packages.length); // Expand the newly duplicated package
   };
 
   const removePackage = (index: number) => {
@@ -383,6 +413,19 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                     )}
                   </span>
 
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        duplicatePackage(index);
+                      }}
+                      title="Duplicate package"
+                    >
+                      <Copy className="w-4 h-4 text-blue-500" />
+                    </Button>
+
                     {packages.length > 1 && (
                       <Button
                         type="button"
@@ -392,6 +435,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                           e.stopPropagation();
                           removePackage(index);
                         }}
+                        title="Delete package"
                       >
                         <Trash2 className="w-4 h-4 text-red-500" />
                       </Button>
@@ -958,6 +1002,8 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                                     base_price: 0,
                                     selling_price: 0,
                                     supplier_cost: 0,
+                                    supplier_currency: pkg.supplier_currency || 'USD',
+                                    tier_exchange_rate: pkg.exchange_rate || 1.0,
                                     description: '',
                                   };
                                   updatePackage(index, 'custom_pricing_tiers', [...currentTiers, newTier]);
@@ -1059,30 +1105,112 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                                           />
                                         </div>
                                       </div>
-                                      <div className="space-y-2">
-                                        <Label>{t('supplierCost')} ({pkg.supplier_currency || 'USD'})</Label>
-                                        <Input
-                                          type="number"
-                                          min="0"
-                                          step="0.01"
-                                          value={tier.supplier_cost ?? ''}
-                                          onChange={(e) => {
-                                            const updated = [...(pkg.custom_pricing_tiers || [])];
-                                            const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                                            updated[tierIndex] = {
-                                              ...updated[tierIndex],
-                                              supplier_cost: isNaN(value) ? 0 : value,
-                                            };
-                                            updatePackage(index, 'custom_pricing_tiers', updated);
-                                          }}
-                                          placeholder="0.00"
-                                        />
+                                    </div>
+
+                                    {/* Supplier Currency & Cost */}
+                                    <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                                      <div className="grid gap-3 md:grid-cols-3">
+                                        <div className="space-y-2">
+                                          <Label>Supplier Currency</Label>
+                                          <Select
+                                            value={tier.supplier_currency || 'USD'}
+                                            onValueChange={(value) => {
+                                              const updated = [...(pkg.custom_pricing_tiers || [])];
+                                              updated[tierIndex] = {
+                                                ...updated[tierIndex],
+                                                supplier_currency: value,
+                                              };
+                                              updatePackage(index, 'custom_pricing_tiers', updated);
+                                            }}
+                                          >
+                                            <SelectTrigger>
+                                              <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              {CURRENCIES.map(curr => (
+                                                <SelectItem key={curr.code} value={curr.code}>
+                                                  {curr.code} - {curr.name}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
+                                        </div>
+                                        <div className="space-y-2">
+                                          <Label>Exchange Rate</Label>
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            step="0.0001"
+                                            value={tier.tier_exchange_rate ?? ''}
+                                            onChange={(e) => {
+                                              const updated = [...(pkg.custom_pricing_tiers || [])];
+                                              const value = e.target.value === '' ? 1.0 : parseFloat(e.target.value);
+                                              updated[tierIndex] = {
+                                                ...updated[tierIndex],
+                                                tier_exchange_rate: isNaN(value) ? 1.0 : value,
+                                              };
+                                              updatePackage(index, 'custom_pricing_tiers', updated);
+                                            }}
+                                            placeholder="1.0000"
+                                          />
+                                          <p className="text-xs text-muted-foreground">
+                                            1 {tier.supplier_currency || 'USD'} = X USD
+                                          </p>
+                                        </div>
+                                        <div className="space-y-2">
+                                          <Label>Supplier Cost ({tier.supplier_currency || 'USD'})</Label>
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            value={tier.supplier_cost ?? ''}
+                                            onChange={(e) => {
+                                              const updated = [...(pkg.custom_pricing_tiers || [])];
+                                              const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                                              updated[tierIndex] = {
+                                                ...updated[tierIndex],
+                                                supplier_cost: isNaN(value) ? 0 : value,
+                                              };
+                                              updatePackage(index, 'custom_pricing_tiers', updated);
+                                            }}
+                                            placeholder="0.00"
+                                          />
+                                          {tier.supplier_cost && tier.tier_exchange_rate && tier.supplier_currency !== 'USD' && (
+                                            <p className="text-xs text-muted-foreground">
+                                              ≈ {formatCurrency(convertToUSD(tier.supplier_cost, tier.tier_exchange_rate), 'USD')}
+                                            </p>
+                                          )}
+                                        </div>
                                       </div>
                                     </div>
 
+                                    {/* Base Price & Selling Price with Auto-Convert */}
                                     <div className="grid gap-3 md:grid-cols-2">
                                       <div className="space-y-2">
-                                        <Label>{t('basePrice')} (USD) *</Label>
+                                        <div className="flex items-center justify-between">
+                                          <Label>{t('basePrice')} (USD) *</Label>
+                                          {tier.supplier_cost && tier.tier_exchange_rate && tier.supplier_currency !== 'USD' && (
+                                            <Button
+                                              type="button"
+                                              variant="outline"
+                                              size="sm"
+                                              className="h-6 text-xs"
+                                              onClick={() => {
+                                                const updated = [...(pkg.custom_pricing_tiers || [])];
+                                                const convertedPrice = roundCurrency(
+                                                  convertToUSD(tier.supplier_cost || 0, tier.tier_exchange_rate || 1.0)
+                                                );
+                                                updated[tierIndex] = {
+                                                  ...updated[tierIndex],
+                                                  base_price: convertedPrice,
+                                                };
+                                                updatePackage(index, 'custom_pricing_tiers', updated);
+                                              }}
+                                            >
+                                              Auto-convert
+                                            </Button>
+                                          )}
+                                        </div>
                                         <Input
                                           type="number"
                                           min="0"
@@ -1102,7 +1230,34 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                                         />
                                       </div>
                                       <div className="space-y-2">
-                                        <Label>{t('sellingPrice')} (USD) *</Label>
+                                        <div className="flex items-center justify-between">
+                                          <Label>{t('sellingPrice')} (USD) *</Label>
+                                          {tier.base_price > 0 && pkg.markup_type && pkg.markup_type !== 'none' && pkg.markup_value && (
+                                            <Button
+                                              type="button"
+                                              variant="outline"
+                                              size="sm"
+                                              className="h-6 text-xs"
+                                              onClick={() => {
+                                                const updated = [...(pkg.custom_pricing_tiers || [])];
+                                                let calculatedPrice = tier.base_price;
+                                                const markupValue = pkg.markup_value || 0;
+                                                if (pkg.markup_type === 'percentage') {
+                                                  calculatedPrice = tier.base_price * (1 + (markupValue / 100));
+                                                } else if (pkg.markup_type === 'fixed') {
+                                                  calculatedPrice = tier.base_price + markupValue;
+                                                }
+                                                updated[tierIndex] = {
+                                                  ...updated[tierIndex],
+                                                  selling_price: roundCurrency(calculatedPrice),
+                                                };
+                                                updatePackage(index, 'custom_pricing_tiers', updated);
+                                              }}
+                                            >
+                                              Apply markup
+                                            </Button>
+                                          )}
+                                        </div>
                                         <Input
                                           type="number"
                                           min="0"
