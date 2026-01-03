@@ -37,11 +37,12 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error('Error fetching blocked dates:', error);
       return NextResponse.json(
-        { error: 'Failed to fetch blocked dates' },
+        { error: 'Failed to fetch blocked dates', details: error },
         { status: 500 }
       );
     }
 
+    console.log(`Fetched ${data?.length || 0} blocked dates for package ${packageId}`);
     return NextResponse.json({ data });
   } catch (error) {
     console.error('Unexpected error in GET /api/admin/blocked-dates:', error);
@@ -138,11 +139,12 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error('Error creating blocked date:', error);
       return NextResponse.json(
-        { error: 'Failed to create blocked date' },
+        { error: 'Failed to create blocked date', details: error },
         { status: 500 }
       );
     }
 
+    console.log('Successfully created blocked date:', data);
     return NextResponse.json({ data }, { status: 201 });
   } catch (error) {
     console.error('Unexpected error in POST /api/admin/blocked-dates:', error);
