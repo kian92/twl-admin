@@ -617,7 +617,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
         const baseInfantPrice = pkg.base_infant_price ? Number(pkg.base_infant_price) : undefined;
         const baseSeniorPrice = pkg.base_senior_price ? Number(pkg.base_senior_price) : undefined;
 
-        const packagePayload = {
+        const packagePayload: any = {
           experience_id: experience.id,
           package_name: pkg.package_name?.trim() || 'Standard Package',
           package_code: pkg.package_code,
@@ -637,35 +637,40 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
           markup_type: pkg.markup_type || 'none',
           markup_value: pkg.markup_value || 0,
 
-          // Base prices (cost from supplier)
-          base_adult_price: baseAdultPrice,
-          base_child_price: baseChildPrice,
-          ...(baseInfantPrice !== undefined && { base_infant_price: baseInfantPrice }),
-          ...(baseSeniorPrice !== undefined && { base_senior_price: baseSeniorPrice }),
-
           // Supplier currency fields
           supplier_currency: pkg.supplier_currency || 'USD',
-          supplier_cost_adult: pkg.supplier_cost_adult,
-          supplier_cost_child: pkg.supplier_cost_child,
-          supplier_cost_infant: pkg.supplier_cost_infant,
-          supplier_cost_senior: pkg.supplier_cost_senior,
           exchange_rate: pkg.exchange_rate || 1.0,
-
-          // Selling prices (what customer pays)
-          adult_price: adultPrice,
-          child_price: childPrice,
-          adult_min_age: adultMinAge,
-          adult_max_age: adultMaxAge,
-          child_min_age: childMinAge,
-          child_max_age: childMaxAge,
-          ...(infantPrice !== undefined && { infant_price: infantPrice }),
-          ...(seniorPrice !== undefined && { senior_price: seniorPrice }),
 
           // Custom pricing tiers
           use_custom_tiers: pkg.use_custom_tiers || false,
-          ...(pkg.use_custom_tiers && pkg.custom_pricing_tiers && { custom_pricing_tiers: pkg.custom_pricing_tiers }),
 
           addons: pkg.addons || []
+        };
+
+        // Only include standard pricing if NOT using custom tiers
+        if (pkg.use_custom_tiers && pkg.custom_pricing_tiers) {
+          // Custom tiers mode - send only custom tiers
+          packagePayload.custom_pricing_tiers = pkg.custom_pricing_tiers;
+        } else {
+          // Standard mode - send standard pricing fields
+          packagePayload.base_adult_price = baseAdultPrice;
+          packagePayload.base_child_price = baseChildPrice;
+          if (baseInfantPrice !== undefined) packagePayload.base_infant_price = baseInfantPrice;
+          if (baseSeniorPrice !== undefined) packagePayload.base_senior_price = baseSeniorPrice;
+
+          packagePayload.supplier_cost_adult = pkg.supplier_cost_adult;
+          packagePayload.supplier_cost_child = pkg.supplier_cost_child;
+          packagePayload.supplier_cost_infant = pkg.supplier_cost_infant;
+          packagePayload.supplier_cost_senior = pkg.supplier_cost_senior;
+
+          packagePayload.adult_price = adultPrice;
+          packagePayload.child_price = childPrice;
+          packagePayload.adult_min_age = adultMinAge;
+          packagePayload.adult_max_age = adultMaxAge;
+          packagePayload.child_min_age = childMinAge;
+          packagePayload.child_max_age = childMaxAge;
+          if (infantPrice !== undefined) packagePayload.infant_price = infantPrice;
+          if (seniorPrice !== undefined) packagePayload.senior_price = seniorPrice;
         }
 
         console.log('Creating package with payload:', packagePayload);

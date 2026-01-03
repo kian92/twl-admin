@@ -21,6 +21,7 @@ export type AddonCategory = 'Transportation' | 'Activities' | 'Meals' | 'Insuran
 /**
  * Package variant (e.g., Standard, Premium, Luxury)
  * Multiple packages can exist for the same experience with different service levels
+ * ENHANCED: Now includes use_custom_tiers flag for tier-ID-based selection
  */
 export interface ExperiencePackage {
   id: string;
@@ -43,6 +44,9 @@ export interface ExperiencePackage {
   inclusions?: string[];
   exclusions?: string[];
 
+  // NEW: Custom tier selection mode
+  use_custom_tiers?: boolean; // If true, use tier-ID selection; if false, use generic counts
+
   // Display
   display_order: number;
   is_active: boolean;
@@ -57,6 +61,7 @@ export interface ExperiencePackage {
 
 /**
  * Age-based pricing tier (adult, child, infant, senior, student)
+ * ENHANCED: Now supports custom tier selection with unique labels
  */
 export interface PackagePricingTier {
   id: string;
@@ -64,7 +69,9 @@ export interface PackagePricingTier {
 
   // Tier details
   tier_type: TierType;
-  tier_label?: string; // e.g., "Adult (18-64 years)"
+  tier_label?: string; // e.g., "Adult (18-64 years)" or "Child (Share twin bedroom with 1 Adult)"
+  tier_code?: string; // Unique code for this tier (e.g., "CHILD_TWIN_SHARE")
+  description?: string; // Additional description for the tier
 
   // Age restrictions (optional)
   min_age?: number;
@@ -72,16 +79,28 @@ export interface PackagePricingTier {
 
   // Pricing
   base_price: number;
+  selling_price?: number; // Customer-facing price (may include markup)
   currency: string;
   cost_price?: number; // For margin calculation
 
   // Supplier currency fields
   supplier_currency?: string; // ISO currency code (e.g., EUR, JPY, CNY)
-  supplier_cost_adult?: number; // Cost in supplier's currency
+  supplier_cost?: number; // Cost in supplier's currency for this specific tier
+  supplier_cost_adult?: number; // Legacy: Cost in supplier's currency
   supplier_cost_child?: number;
   supplier_cost_infant?: number;
   supplier_cost_senior?: number;
   exchange_rate?: number; // Conversion rate: 1 supplier_currency = X USD
+
+  // Markup fields
+  markup_type?: 'percentage' | 'fixed' | 'none';
+  markup_value?: number;
+
+  // NEW: Custom tier selection support
+  display_order?: number; // Order in which tiers should be displayed
+  requires_adult_accompaniment?: boolean; // Whether this tier requires at least one adult
+  max_per_booking?: number; // Maximum number of this tier allowed per booking
+  booking_notes?: string; // Additional requirements or notes
 
   is_active: boolean;
 
@@ -316,14 +335,29 @@ export interface PackageDeparturePricing {
 // =====================================================
 
 /**
+ * Tier selection for custom tier packages
+ * Used when use_custom_tiers = true
+ */
+export interface TierSelection {
+  tier_id: string; // References package_pricing_tiers.id
+  tier_label: string; // For display/logging purposes
+  quantity: number; // Number of passengers for this specific tier
+}
+
+/**
  * Input for calculating package price
+ * ENHANCED: Now supports both tier-ID selection (custom) and generic counts (legacy)
  */
 export interface PriceCalculationInput {
   package_id: string;
   travel_date: string; // ISO date
   booking_date?: string; // ISO date, defaults to today
 
-  // Passenger counts by type
+  // NEW: Tier-based selection (for custom tier packages with use_custom_tiers = true)
+  selected_tiers?: TierSelection[];
+
+  // LEGACY: Passenger counts by type (for standard packages with use_custom_tiers = false)
+  // These are still supported for backward compatibility
   adult_count?: number;
   child_count?: number;
   infant_count?: number;
@@ -354,7 +388,9 @@ export interface PriceCalculationResult {
   // Detailed breakdown
   breakdown: {
     pricing_tiers: Array<{
+      tier_id: string; // NEW: Tier ID for reference
       tier_type: TierType;
+      tier_label: string; // NEW: Full custom label (e.g., "Child (Share twin bedroom)")
       count: number;
       unit_price: number;
       subtotal: number;

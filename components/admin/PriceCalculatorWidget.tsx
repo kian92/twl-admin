@@ -1,30 +1,55 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { formatPrice } from '@/lib/utils/pricing-calculator';
-import type { PriceCalculationResult } from '@/types/pricing';
+import { TierSelectionForm } from '@/components/booking/TierSelectionForm';
+import type { PriceCalculationResult, PackagePricingTier, TierSelection } from '@/types/pricing';
 import { Calculator, Loader2 } from 'lucide-react';
 
 interface PriceCalculatorWidgetProps {
   packageId: string;
   packageName?: string;
+  useCustomTiers?: boolean;
+  pricingTiers?: PackagePricingTier[];
+  minGroupSize?: number;
+  maxGroupSize?: number | null;
 }
 
-export function PriceCalculatorWidget({ packageId, packageName }: PriceCalculatorWidgetProps) {
+export function PriceCalculatorWidget({
+  packageId,
+  packageName,
+  useCustomTiers = false,
+  pricingTiers = [],
+  minGroupSize = 1,
+  maxGroupSize = null,
+}: PriceCalculatorWidgetProps) {
   const [travelDate, setTravelDate] = useState('');
   const [bookingDate, setBookingDate] = useState(new Date().toISOString().split('T')[0]);
+
+  // Legacy mode (generic counts)
   const [adultCount, setAdultCount] = useState(2);
   const [childCount, setChildCount] = useState(0);
   const [infantCount, setInfantCount] = useState(0);
   const [seniorCount, setSeniorCount] = useState(0);
+
+  // New mode (tier selection)
+  const [selectedTiers, setSelectedTiers] = useState<TierSelection[]>([]);
+  const [useTierSelection, setUseTierSelection] = useState(useCustomTiers);
+
   const [promoCode, setPromoCode] = useState('');
   const [result, setResult] = useState<PriceCalculationResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Update mode when useCustomTiers changes
+  useEffect(() => {
+    setUseTierSelection(useCustomTiers);
+  }, [useCustomTiers]);
 
   const calculatePrice = async () => {
     if (!travelDate) {
@@ -32,10 +57,32 @@ export function PriceCalculatorWidget({ packageId, packageName }: PriceCalculato
       return;
     }
 
-    const totalPax = adultCount + childCount + infantCount + seniorCount;
-    if (totalPax === 0) {
-      setError('Please select at least one passenger');
-      return;
+    // Determine payload based on mode
+    let payload: any = {
+      package_id: packageId,
+      travel_date: travelDate,
+      booking_date: bookingDate,
+      promo_code: promoCode || undefined,
+    };
+
+    if (useTierSelection && useCustomTiers) {
+      // New mode: tier selection
+      if (selectedTiers.length === 0) {
+        setError('Please select at least one traveler');
+        return;
+      }
+      payload.selected_tiers = selectedTiers;
+    } else {
+      // Legacy mode: generic counts
+      const totalPax = adultCount + childCount + infantCount + seniorCount;
+      if (totalPax === 0) {
+        setError('Please select at least one passenger');
+        return;
+      }
+      payload.adult_count = adultCount;
+      payload.child_count = childCount;
+      payload.infant_count = infantCount;
+      payload.senior_count = seniorCount;
     }
 
     setLoading(true);
@@ -45,16 +92,7 @@ export function PriceCalculatorWidget({ packageId, packageName }: PriceCalculato
       const response = await fetch('/api/pricing/calculate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          package_id: packageId,
-          travel_date: travelDate,
-          booking_date: bookingDate,
-          adult_count: adultCount,
-          child_count: childCount,
-          infant_count: infantCount,
-          senior_count: seniorCount,
-          promo_code: promoCode || undefined,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -72,7 +110,9 @@ export function PriceCalculatorWidget({ packageId, packageName }: PriceCalculato
     }
   };
 
-  const totalPassengers = adultCount + childCount + infantCount + seniorCount;
+  const totalPassengers = useTierSelection
+    ? selectedTiers.reduce((sum, t) => sum + t.quantity, 0)
+    : adultCount + childCount + infantCount + seniorCount;
 
   return (
     <Card>
@@ -113,53 +153,83 @@ export function PriceCalculatorWidget({ packageId, packageName }: PriceCalculato
           </p>
         </div>
 
-        {/* Passenger Counts */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="adults">Adults (18+)</Label>
-            <Input
-              id="adults"
-              type="number"
-              min={0}
-              value={adultCount}
-              onChange={(e) => setAdultCount(Number(e.target.value))}
+        {/* Mode Toggle (for packages with custom tiers) */}
+        {useCustomTiers && pricingTiers.length > 0 && (
+          <div className="flex items-center space-x-2 p-3 bg-muted/30 rounded-lg">
+            <Switch
+              id="tier-selection-mode"
+              checked={useTierSelection}
+              onCheckedChange={setUseTierSelection}
             />
+            <Label htmlFor="tier-selection-mode" className="cursor-pointer">
+              Use custom tier selection
+            </Label>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="children">Children (3-17)</Label>
-            <Input
-              id="children"
-              type="number"
-              min={0}
-              value={childCount}
-              onChange={(e) => setChildCount(Number(e.target.value))}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="infants">Infants (0-2)</Label>
-            <Input
-              id="infants"
-              type="number"
-              min={0}
-              value={infantCount}
-              onChange={(e) => setInfantCount(Number(e.target.value))}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="seniors">Seniors (65+)</Label>
-            <Input
-              id="seniors"
-              type="number"
-              min={0}
-              value={seniorCount}
-              onChange={(e) => setSeniorCount(Number(e.target.value))}
-            />
-          </div>
-        </div>
+        )}
 
-        <div className="text-sm text-muted-foreground">
-          Total passengers: {totalPassengers}
-        </div>
+        {/* Tier Selection Mode */}
+        {useTierSelection && useCustomTiers && pricingTiers.length > 0 ? (
+          <div className="border rounded-lg p-4 bg-gray-50">
+            <TierSelectionForm
+              packageId={packageId}
+              pricingTiers={pricingTiers}
+              minGroupSize={minGroupSize}
+              maxGroupSize={maxGroupSize}
+              onChange={setSelectedTiers}
+              showValidation={false}
+            />
+          </div>
+        ) : (
+          /* Legacy Passenger Counts */
+          <>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="adults">Adults (18+)</Label>
+                <Input
+                  id="adults"
+                  type="number"
+                  min={0}
+                  value={adultCount}
+                  onChange={(e) => setAdultCount(Number(e.target.value))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="children">Children (3-17)</Label>
+                <Input
+                  id="children"
+                  type="number"
+                  min={0}
+                  value={childCount}
+                  onChange={(e) => setChildCount(Number(e.target.value))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="infants">Infants (0-2)</Label>
+                <Input
+                  id="infants"
+                  type="number"
+                  min={0}
+                  value={infantCount}
+                  onChange={(e) => setInfantCount(Number(e.target.value))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="seniors">Seniors (65+)</Label>
+                <Input
+                  id="seniors"
+                  type="number"
+                  min={0}
+                  value={seniorCount}
+                  onChange={(e) => setSeniorCount(Number(e.target.value))}
+                />
+              </div>
+            </div>
+
+            <div className="text-sm text-muted-foreground">
+              Total passengers: {totalPassengers}
+            </div>
+          </>
+        )}
 
         {/* Promo Code */}
         <div className="space-y-2">
@@ -202,9 +272,9 @@ export function PriceCalculatorWidget({ packageId, packageName }: PriceCalculato
 
             {/* Passenger Breakdown */}
             {result.breakdown.pricing_tiers.map((tier) => (
-              <div key={tier.tier_type} className="flex justify-between text-sm">
+              <div key={tier.tier_id} className="flex justify-between text-sm">
                 <span className="text-muted-foreground">
-                  {tier.count} × {tier.tier_type.charAt(0).toUpperCase() + tier.tier_type.slice(1)} @ {formatPrice(tier.unit_price, result.currency)}
+                  {tier.count} × {tier.tier_label} @ {formatPrice(tier.unit_price, result.currency)}
                 </span>
                 <span>{formatPrice(tier.subtotal, result.currency)}</span>
               </div>

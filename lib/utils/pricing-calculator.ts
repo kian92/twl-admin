@@ -111,42 +111,96 @@ export function calculatePackagePrice(
 
 /**
  * Calculate base price from pricing tiers
+ * ENHANCED: Now supports both tier-ID selection (custom tiers) and generic counts (legacy)
  */
 function calculateBasePrice(
   input: PriceCalculationInput,
   pricingTiers: PackagePricingTier[],
   departure?: PackageDeparturePricing | null
 ) {
-  const tierPrices: Map<TierType, { count: number; unitPrice: number; subtotal: number }> = new Map();
+  const tierPrices: Map<string, {
+    tier_id: string;
+    tier_type: TierType;
+    tier_label: string;
+    count: number;
+    unitPrice: number;
+    subtotal: number;
+  }> = new Map();
   let basePrice = 0;
 
-  const tierTypes: TierType[] = ['adult', 'child', 'infant', 'senior', 'student'];
+  // NEW: Handle tier-based selection (custom tiers with use_custom_tiers = true)
+  if (input.selected_tiers && input.selected_tiers.length > 0) {
+    for (const selection of input.selected_tiers) {
+      const tier = pricingTiers.find(t => t.id === selection.tier_id && t.is_active);
 
-  for (const tierType of tierTypes) {
-    const count = input[`${tierType}_count` as keyof PriceCalculationInput] as number || 0;
+      if (!tier || selection.quantity <= 0) continue;
 
-    if (count > 0) {
-      // Check if departure has custom pricing
+      // Determine unit price
       let unitPrice = 0;
-
       if (departure?.has_custom_pricing) {
-        const customPriceKey = `custom_${tierType}_price` as keyof PackageDeparturePricing;
-        unitPrice = (departure[customPriceKey] as number) || 0;
+        // Departure can override specific tier prices
+        // For now, fall back to tier's selling_price or base_price
+        unitPrice = tier.selling_price || tier.base_price;
       } else {
-        // Use standard pricing tier
-        const tier = pricingTiers.find((t) => t.tier_type === tierType && t.is_active);
-        unitPrice = tier?.base_price || 0;
+        // Use tier's selling_price if available, otherwise base_price
+        unitPrice = tier.selling_price || tier.base_price;
       }
 
-      const subtotal = unitPrice * count;
+      const subtotal = unitPrice * selection.quantity;
       basePrice += subtotal;
 
-      tierPrices.set(tierType, { count, unitPrice, subtotal });
+      tierPrices.set(tier.id, {
+        tier_id: tier.id,
+        tier_type: tier.tier_type,
+        tier_label: tier.tier_label || `${tier.tier_type.charAt(0).toUpperCase()}${tier.tier_type.slice(1)}`,
+        count: selection.quantity,
+        unitPrice,
+        subtotal,
+      });
+    }
+  }
+  // LEGACY: Handle generic type counts (backward compatibility with use_custom_tiers = false)
+  else {
+    const tierTypes: TierType[] = ['adult', 'child', 'infant', 'senior', 'student'];
+
+    for (const tierType of tierTypes) {
+      const count = input[`${tierType}_count` as keyof PriceCalculationInput] as number || 0;
+
+      if (count > 0) {
+        // Find first active tier of this type (legacy behavior)
+        const tier = pricingTiers.find((t) => t.tier_type === tierType && t.is_active);
+
+        if (!tier) continue;
+
+        // Check if departure has custom pricing
+        let unitPrice = 0;
+        if (departure?.has_custom_pricing) {
+          const customPriceKey = `custom_${tierType}_price` as keyof PackageDeparturePricing;
+          unitPrice = (departure[customPriceKey] as number) || tier.selling_price || tier.base_price;
+        } else {
+          // Use tier's selling_price if available, otherwise base_price
+          unitPrice = tier.selling_price || tier.base_price;
+        }
+
+        const subtotal = unitPrice * count;
+        basePrice += subtotal;
+
+        tierPrices.set(tier.id, {
+          tier_id: tier.id,
+          tier_type: tier.tier_type,
+          tier_label: tier.tier_label || `${tier.tier_type.charAt(0).toUpperCase()}${tier.tier_type.slice(1)}`,
+          count,
+          unitPrice,
+          subtotal,
+        });
+      }
     }
   }
 
-  const breakdown = Array.from(tierPrices.entries()).map(([tier_type, data]) => ({
-    tier_type,
+  const breakdown = Array.from(tierPrices.values()).map(data => ({
+    tier_id: data.tier_id,
+    tier_type: data.tier_type,
+    tier_label: data.tier_label, // ⭐ Now includes full custom label
     count: data.count,
     unit_price: data.unitPrice,
     subtotal: data.subtotal,
@@ -157,11 +211,12 @@ function calculateBasePrice(
 
 /**
  * Calculate seasonal pricing adjustments
+ * UPDATED: Now works with tier-ID-based Map structure
  */
 function calculateSeasonalAdjustment(
   travelDate: Date,
   seasonalPricing: PackageSeasonalPricing[],
-  tierPrices: Map<TierType, { count: number; unitPrice: number; subtotal: number }>
+  tierPrices: Map<string, { tier_id: string; tier_type: TierType; tier_label: string; count: number; unitPrice: number; subtotal: number }>
 ) {
   // Find applicable seasonal pricing (highest priority)
   const applicableSeason = seasonalPricing
@@ -205,11 +260,12 @@ function calculateSeasonalAdjustment(
 
 /**
  * Calculate group discounts based on passenger count
+ * UPDATED: Now works with tier-ID-based Map structure
  */
 function calculateGroupDiscount(
   totalPassengers: number,
   groupPricing: PackageGroupPricing[],
-  tierPrices: Map<TierType, { count: number; unitPrice: number; subtotal: number }>
+  tierPrices: Map<string, { tier_id: string; tier_type: TierType; tier_label: string; count: number; unitPrice: number; subtotal: number }>
 ) {
   // Find applicable group pricing
   const applicableGroupPricing = groupPricing.find(
@@ -515,4 +571,67 @@ export async function checkBlockedDate(
     // Fail open - allow booking if we can't check blocked dates
     return { blocked: false };
   }
+}
+
+/**
+ * NEW: Validate tier selection against package rules
+ * This ensures business rules are enforced (adult accompaniment, group size, etc.)
+ */
+export function validateTierSelection(
+  selectedTiers: import('@/types/pricing').TierSelection[],
+  pricingTiers: PackagePricingTier[],
+  minGroupSize: number,
+  maxGroupSize: number | null
+): { valid: boolean; message?: string } {
+  // Calculate total passengers
+  const totalPax = selectedTiers.reduce((sum, s) => sum + s.quantity, 0);
+
+  // Validate group size
+  if (totalPax < minGroupSize) {
+    return {
+      valid: false,
+      message: `Minimum group size is ${minGroupSize} passengers. You have ${totalPax}.`,
+    };
+  }
+
+  if (maxGroupSize && totalPax > maxGroupSize) {
+    return {
+      valid: false,
+      message: `Maximum group size is ${maxGroupSize} passengers. You have ${totalPax}.`,
+    };
+  }
+
+  // Calculate adults count
+  const adultsCount = selectedTiers
+    .filter(s => {
+      const tier = pricingTiers.find(t => t.id === s.tier_id);
+      return tier?.tier_type === 'adult';
+    })
+    .reduce((sum, s) => sum + s.quantity, 0);
+
+  // Check adult accompaniment rules
+  const childrenRequiringAdults = selectedTiers.filter(s => {
+    const tier = pricingTiers.find(t => t.id === s.tier_id);
+    return tier?.requires_adult_accompaniment && s.quantity > 0;
+  });
+
+  if (childrenRequiringAdults.length > 0 && adultsCount === 0) {
+    return {
+      valid: false,
+      message: 'At least one adult is required when booking children.',
+    };
+  }
+
+  // Check max per booking limits
+  for (const selection of selectedTiers) {
+    const tier = pricingTiers.find(t => t.id === selection.tier_id);
+    if (tier?.max_per_booking && selection.quantity > tier.max_per_booking) {
+      return {
+        valid: false,
+        message: `${tier.tier_label}: Maximum ${tier.max_per_booking} per booking.`,
+      };
+    }
+  }
+
+  return { valid: true };
 }

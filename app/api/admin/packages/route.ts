@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create package
+    // Create package (including new use_custom_tiers flag)
     const { data: newPackage, error: packageError } = await supabase
       .from('experience_packages')
       .insert({
@@ -78,6 +78,7 @@ export async function POST(request: NextRequest) {
         display_order: body.display_order || 0,
         is_active: body.is_active !== false,
         requires_full_payment: body.requires_full_payment || false,
+        use_custom_tiers: body.use_custom_tiers || false, // NEW: Set custom tiers flag
       })
       .select()
       .single();

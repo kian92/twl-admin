@@ -63,7 +63,7 @@ export async function PUT(
       }
     }
 
-    // Update package
+    // Update package (including new use_custom_tiers flag)
     const { data: updatedPackage, error: packageError } = await supabase
       .from('experience_packages')
       .update({
@@ -79,6 +79,7 @@ export async function PUT(
         display_order: body.display_order,
         is_active: body.is_active,
         requires_full_payment: body.requires_full_payment || false,
+        use_custom_tiers: body.use_custom_tiers || false, // NEW: Set custom tiers flag
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
@@ -100,21 +101,27 @@ export async function PUT(
 
       // Check if using custom pricing tiers
       if (body.use_custom_tiers && body.custom_pricing_tiers && Array.isArray(body.custom_pricing_tiers)) {
-        // Use custom pricing tiers
-        const tiersToInsert = body.custom_pricing_tiers.map((tier: any) => ({
+        // Use custom pricing tiers (with new fields)
+        const tiersToInsert = body.custom_pricing_tiers.map((tier: any, index: number) => ({
           package_id: id,
           tier_type: tier.tier_type,
           tier_label: tier.tier_label,
+          tier_code: tier.tier_code || `${tier.tier_type.toUpperCase()}_${index + 1}`,
+          description: tier.description || null,
           min_age: tier.min_age || null,
           max_age: tier.max_age || null,
           base_price: tier.base_price || 0,
+          selling_price: tier.selling_price,
           supplier_currency: body.supplier_currency || 'USD',
           supplier_cost: tier.supplier_cost || 0,
           exchange_rate: body.exchange_rate || 1.0,
           markup_type: markupType,
           markup_value: markupValue,
-          selling_price: tier.selling_price,
           currency: 'USD',
+          display_order: tier.display_order !== undefined ? tier.display_order : index,
+          requires_adult_accompaniment: tier.requires_adult_accompaniment || (tier.tier_type === 'child' || tier.tier_type === 'infant'),
+          max_per_booking: tier.max_per_booking || null,
+          booking_notes: tier.booking_notes || null,
           is_active: true,
         }));
 

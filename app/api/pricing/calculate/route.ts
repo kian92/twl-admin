@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { calculatePackagePrice } from '@/lib/utils/pricing-calculator';
+import { calculatePackagePrice, validateTierSelection } from '@/lib/utils/pricing-calculator';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -15,10 +15,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'package_id is required' }, { status: 400 });
     }
 
-    // Fetch package
+    // Fetch package with use_custom_tiers flag
     const { data: packageData, error: pkgError } = await supabase
       .from('experience_packages')
-      .select('*')
+      .select('*, use_custom_tiers')
       .eq('id', input.package_id)
       .single();
 
@@ -26,12 +26,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Package not found' }, { status: 404 });
     }
 
-    // Fetch pricing tiers
+    // Fetch pricing tiers with all new fields
     const { data: pricingTiers } = await supabase
       .from('package_pricing_tiers')
       .select('*')
       .eq('package_id', input.package_id)
-      .eq('is_active', true);
+      .eq('is_active', true)
+      .order('display_order', { ascending: true });
 
     // Fetch group pricing
     const { data: groupPricing } = await supabase
@@ -66,6 +67,23 @@ export async function POST(request: NextRequest) {
       .from('package_promotions')
       .select('*')
       .eq('is_active', true);
+
+    // NEW: Validate tier selection if using custom tiers
+    if (packageData.use_custom_tiers && input.selected_tiers) {
+      const validation = validateTierSelection(
+        input.selected_tiers,
+        pricingTiers || [],
+        packageData.min_group_size,
+        packageData.max_group_size
+      );
+
+      if (!validation.valid) {
+        return NextResponse.json(
+          { error: validation.message },
+          { status: 400 }
+        );
+      }
+    }
 
     // Check if travel date is blocked
     if (input.travel_date) {

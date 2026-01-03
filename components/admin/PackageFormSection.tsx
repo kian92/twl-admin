@@ -14,6 +14,8 @@ import { useTranslations } from 'next-intl';
 import { CURRENCIES, formatCurrency } from '@/lib/constants/currencies';
 import { convertToUSD, roundCurrency } from '@/lib/utils/currency-converter';
 import { BlockedDatesManager } from './BlockedDatesManager';
+import { PriceCalculatorWidget } from './PriceCalculatorWidget';
+import type { PackagePricingTier } from '@/types/pricing';
 
 export interface AddOnItem {
   id?: string;
@@ -753,8 +755,8 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                       </div>
                     </div>
 
-                    {/* Base Prices - Hidden for suppliers */}
-                    {!isSupplier && (
+                    {/* Base Prices - Hidden for suppliers AND when using custom tiers */}
+                    {!isSupplier && !pkg.use_custom_tiers && (
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
                           <h4 className="font-medium">{t('basePrices')}</h4>
@@ -821,8 +823,8 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                       </div>
                     )}
 
-                    {/* Selling Prices - Hidden for suppliers */}
-                    {!isSupplier && (
+                    {/* Selling Prices - Hidden for suppliers AND when using custom tiers */}
+                    {!isSupplier && !pkg.use_custom_tiers && (
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
                           <h4 className="font-medium">{t('sellingPrices')}</h4>
@@ -1412,6 +1414,20 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                         <p className="text-sm text-muted-foreground text-center">
                           💡 Save this package first to manage blocked dates
                         </p>
+                      </div>
+                    )}
+
+                    {/* Price Calculator - Only show if package has an ID (saved) */}
+                    {pkg.id && (
+                      <div className="mt-4">
+                        <PriceCalculatorWidget
+                          packageId={pkg.id}
+                          packageName={pkg.package_name}
+                          useCustomTiers={pkg.use_custom_tiers || false}
+                          pricingTiers={pkg.pricing_tiers || []}
+                          minGroupSize={pkg.min_group_size}
+                          maxGroupSize={pkg.max_group_size}
+                        />
                       </div>
                     )}
                   </div>
