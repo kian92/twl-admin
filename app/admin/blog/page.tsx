@@ -33,6 +33,17 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Plus, Search, Edit, Trash2 } from "lucide-react"
 import { BlogPost, BlogCategory } from "@/types/blog"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
+import { getPagination } from "@/utils/pagination"
+
+const ITEMS_PER_PAGE = 10
 
 export default function BlogPage() {
   const router = useRouter()
@@ -45,6 +56,7 @@ export default function BlogPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all")
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [postToDelete, setPostToDelete] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
 
   useEffect(() => {
     fetchPosts()
@@ -79,6 +91,7 @@ export default function BlogPage() {
       setLoading(false)
     }
   }
+  
 
   const fetchCategories = async () => {
     try {
@@ -113,6 +126,11 @@ export default function BlogPage() {
   const filteredPosts = posts.filter((post) =>
     post.title.toLowerCase().includes(searchTerm.toLowerCase())
   )
+    // Pagination calculations
+  const totalPages = Math.ceil(filteredPosts.length / ITEMS_PER_PAGE)
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+  const endIndex = startIndex + ITEMS_PER_PAGE
+  const paginatedPosts = filteredPosts.slice(startIndex, endIndex)
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "outline"> = {
@@ -127,6 +145,7 @@ export default function BlogPage() {
       </Badge>
     )
   }
+  
 
   return (
     <div className="space-y-6">
@@ -198,14 +217,14 @@ export default function BlogPage() {
                   {t('loading')}
                 </TableCell>
               </TableRow>
-            ) : filteredPosts.length === 0 ? (
+            ) : paginatedPosts.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8">
                   {t('noPostsFound')}
                 </TableCell>
               </TableRow>
             ) : (
-              filteredPosts.map((post) => (
+              paginatedPosts.map((post) => (
                 <TableRow key={post.id}>
                   <TableCell className="font-medium">
                     {post.title}
@@ -267,6 +286,56 @@ export default function BlogPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+       {/* Pagination */}
+       {totalPages > 1 && (
+        <>
+          <Pagination className="mt-8">
+            <PaginationContent>
+              {/* Previous */}
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(1, prev - 1))
+                  }
+                  aria-disabled={currentPage === 1}
+                  className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                />
+              </PaginationItem>
+
+              {/* Page numbers */}
+              {getPagination(currentPage, totalPages).map((page, index) =>
+                page === "..." ? (
+                  <PaginationItem key={`dots-${index}`}>
+                    <span className="px-3 text-muted-foreground">...</span>
+                  </PaginationItem>
+                ) : (
+                  <PaginationItem key={page}>
+                    <PaginationLink
+                      isActive={currentPage === page}
+                      onClick={() => setCurrentPage(page)}
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                )
+              )}
+
+              {/* Next */}
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() =>
+                    setCurrentPage((prev) =>
+                      Math.min(totalPages, prev + 1)
+                    )
+                  }
+                  aria-disabled={currentPage === totalPages}
+                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </>
+      )}
     </div>
   )
 }
