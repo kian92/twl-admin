@@ -283,7 +283,10 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                     is_required: addon.is_required || false,
                     max_quantity: addon.max_quantity || 1,
                     pricing_type: addon.pricing_type || 'per_person',
-                    category: addon.category || 'Other'
+                    category: addon.category || 'Other',
+                    supplier_currency: addon.supplier_currency || 'USD',
+                    supplier_cost: addon.supplier_cost,
+                    addon_exchange_rate: addon.addon_exchange_rate || 1.0
                   })) || []
                 };
               })

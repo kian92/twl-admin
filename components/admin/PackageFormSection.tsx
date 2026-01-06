@@ -25,6 +25,9 @@ export interface AddOnItem {
   max_quantity: number;
   pricing_type?: 'per_person' | 'per_group' | 'per_unit';
   category?: string;
+  supplier_currency?: string;
+  supplier_cost?: number;
+  addon_exchange_rate?: number;
 }
 
 export interface CustomPricingTier {
@@ -329,7 +332,10 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
     if (!updated[packageIndex].addons) {
       updated[packageIndex].addons = [];
     }
-    updated[packageIndex].addons!.push({
+
+    // For suppliers, inherit package currency and exchange rate but don't auto-calculate price
+    // For admins, inherit both currency and exchange rate for auto-calculation
+    const newAddon: AddOnItem = {
       name: '',
       description: '',
       price: 0,
@@ -337,7 +343,12 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
       max_quantity: 1,
       pricing_type: 'per_person',
       category: 'Other',
-    });
+      supplier_currency: updated[packageIndex].supplier_currency || 'USD',
+      supplier_cost: undefined,
+      addon_exchange_rate: updated[packageIndex].exchange_rate || 1.0,
+    };
+
+    updated[packageIndex].addons!.push(newAddon);
     onChange(updated);
   };
 
@@ -348,6 +359,30 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
       ...updated[packageIndex].addons![addonIndex],
       [field]: value,
     };
+    onChange(updated);
+  };
+
+  const updateAddonWithCurrency = (packageIndex: number, addonIndex: number, field: keyof AddOnItem, value: any) => {
+    const updated = [...packages];
+    if (!updated[packageIndex].addons) return;
+
+    updated[packageIndex].addons![addonIndex] = {
+      ...updated[packageIndex].addons![addonIndex],
+      [field]: value,
+    };
+
+    const addon = updated[packageIndex].addons![addonIndex];
+
+    // Auto-convert supplier cost to price (USD) only for admin/manager when supplier cost or exchange rate changes
+    // Suppliers cannot trigger auto-conversion (they don't see/control exchange rate)
+    if (!isSupplier && (field === 'supplier_cost' || field === 'addon_exchange_rate' || field === 'supplier_currency')) {
+      if (addon.supplier_cost && addon.addon_exchange_rate) {
+        updated[packageIndex].addons![addonIndex].price = roundCurrency(
+          convertToUSD(addon.supplier_cost, addon.addon_exchange_rate)
+        );
+      }
+    }
+
     onChange(updated);
   };
 
@@ -1507,6 +1542,73 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                                 />
                               </div>
 
+                              {/* Supplier Currency Section for Add-ons */}
+                              <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                                <div className="space-y-3">
+                                  <h5 className="text-sm font-medium">{isSupplier ? t('yourCostPrice') : t('supplierCostPrice')}</h5>
+                                  <div className="grid gap-3 md:grid-cols-3">
+                                    <div className="space-y-2">
+                                      <Label>{t('currency')}</Label>
+                                      <Select
+                                        value={addon.supplier_currency || 'USD'}
+                                        onValueChange={(value) => updateAddonWithCurrency(index, addonIndex, 'supplier_currency', value)}
+                                      >
+                                        <SelectTrigger>
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {CURRENCIES.map((currency) => (
+                                            <SelectItem key={currency.code} value={currency.code}>
+                                              {currency.symbol} {currency.code}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    {!isSupplier && (
+                                      <div className="space-y-2">
+                                        <Label>{t('exchangeRate')}</Label>
+                                        <div className="flex items-center gap-1">
+                                          <span className="text-xs text-muted-foreground">1 {addon.supplier_currency || 'USD'} =</span>
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            step="0.0001"
+                                            value={addon.addon_exchange_rate ?? 1.0}
+                                            onChange={(e) => {
+                                              const value = parseFloat(e.target.value);
+                                              updateAddonWithCurrency(index, addonIndex, 'addon_exchange_rate', isNaN(value) ? 1.0 : value);
+                                            }}
+                                            placeholder="1.0"
+                                            className="text-sm"
+                                          />
+                                          <span className="text-xs text-muted-foreground">USD</span>
+                                        </div>
+                                      </div>
+                                    )}
+                                    <div className="space-y-2">
+                                      <Label>{isSupplier ? t('costPrice') : t('supplierCost')} ({addon.supplier_currency || 'USD'})</Label>
+                                      <Input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        value={addon.supplier_cost ?? ''}
+                                        onChange={(e) => {
+                                          const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
+                                          updateAddonWithCurrency(index, addonIndex, 'supplier_cost', value === undefined || isNaN(value) ? undefined : value);
+                                        }}
+                                        placeholder="0.00"
+                                      />
+                                      {addon.supplier_cost && addon.addon_exchange_rate && addon.supplier_currency !== 'USD' && (
+                                        <p className="text-xs text-muted-foreground">
+                                          ≈ {formatCurrency(convertToUSD(addon.supplier_cost, addon.addon_exchange_rate), 'USD')}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
                               <div className="grid gap-3 md:grid-cols-3">
                                 <div className="space-y-2">
                                   <Label>{t('pricingType')}</Label>
@@ -1532,9 +1634,20 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                                     step="0.01"
                                     value={addon.price}
                                     onChange={(e) => updateAddon(index, addonIndex, 'price', parseFloat(e.target.value) || 0)}
-                                    placeholder="0.00"
+                                    placeholder={isSupplier ? "Will be set by admin" : "0.00"}
                                     required
+                                    disabled={isSupplier || (addon.supplier_cost && addon.addon_exchange_rate)}
                                   />
+                                  {isSupplier && (
+                                    <p className="text-xs text-muted-foreground">
+                                      Admin will convert from your cost price
+                                    </p>
+                                  )}
+                                  {!isSupplier && addon.supplier_cost && addon.addon_exchange_rate && (
+                                    <p className="text-xs text-muted-foreground">
+                                      {t('autoCalculated')}
+                                    </p>
+                                  )}
                                 </div>
                                 <div className="space-y-2">
                                   <Label>{t('maxQuantity')}</Label>
