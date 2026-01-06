@@ -106,12 +106,32 @@ export async function getDashboardData(supabase: PublicClient): Promise<Dashboar
       })) ?? [],
   }))
 
-  const metrics = (metricsRes.data as DashboardMetricsRow | null) ?? {
+  // const metrics = (metricsRes.data as DashboardMetricsRow | null) ?? {
+  //   total_revenue: 0,
+  //   total_bookings: 0,
+  //   active_users: 0,
+  //   total_experiences: 0,
+  // }
+
+  // return {
+  //   metrics: {
+  //     totalRevenue: metrics.total_revenue ?? 0,
+  //     totalBookings: metrics.total_bookings ?? 0,
+  //     activeUsers: metrics.active_users ?? 0,
+  //     totalExperiences: metrics.total_experiences ?? 0,
+  //   },
+  //   bookingTrend,
+  //   revenueTrend,
+  //   topDestinations,
+  //   recentBookings,
+  // }
+  const metrics = (metricsRes.data as DashboardMetricsRow[] | null)?.[0] ?? {
     total_revenue: 0,
     total_bookings: 0,
     active_users: 0,
     total_experiences: 0,
   }
+  console.log('metrics',metrics);
 
   return {
     metrics: {

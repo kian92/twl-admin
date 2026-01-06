@@ -477,6 +477,7 @@ export default function ExperiencesPage() {
                     setCurrentPage((prev) => Math.max(1, prev - 1))
                   }
                   aria-disabled={currentPage === 1}
+                  className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
                 />
               </PaginationItem>
 
@@ -507,6 +508,7 @@ export default function ExperiencesPage() {
                     )
                   }
                   aria-disabled={currentPage === totalPages}
+                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
                 />
               </PaginationItem>
             </PaginationContent>
