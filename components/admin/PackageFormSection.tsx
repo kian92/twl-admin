@@ -452,12 +452,12 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                   </div>
                   <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground">
-                    Adult: ${pkg.adult_price}
+                    Adult: ${Math.floor(pkg.adult_price)}
                     {pkg.adult_min_age !== undefined && (
                       <> ({pkg.adult_min_age}{pkg.adult_max_age ? `–${pkg.adult_max_age}` : '+'})</>
                     )}
                     {" | "}
-                    Child: ${pkg.child_price}
+                    Child: ${Math.floor(pkg.child_price)}
                     {pkg.child_min_age !== undefined && pkg.child_max_age !== undefined && (
                       <> ({pkg.child_min_age}–{pkg.child_max_age})</>
                     )}
@@ -777,14 +777,20 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                             step="0.01"
                             value={pkg.supplier_cost_adult ?? ''}
                             onChange={(e) => {
-                              const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                              updateSupplierCost(index, 'supplier_cost_adult', isNaN(value) ? 0 : value);
+                              const rawValue = e.target.value;
+                              const parsedValue = rawValue === '' ? 0 : parseFloat(rawValue);
+                          
+                              const flooredValue = isNaN(parsedValue)
+                                ? 0
+                                : Math.floor(parsedValue);
+                          
+                              updatePricingWithMarkup(index, 'supplier_cost_adult', flooredValue); 
                             }}
                             placeholder="0.00"
                           />
                           {pkg.supplier_cost_adult && pkg.exchange_rate && (
                             <p className="text-xs text-muted-foreground">
-                              ≈ {formatCurrency(convertToUSD(pkg.supplier_cost_adult, pkg.exchange_rate), 'USD')}
+                              ≈ {formatCurrency(Math.floor(convertToUSD(pkg.supplier_cost_adult, pkg.exchange_rate)), 'USD')}
                             </p>
                           )}
                         </div>
@@ -796,14 +802,20 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                             step="0.01"
                             value={pkg.supplier_cost_child ?? ''}
                             onChange={(e) => {
-                              const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                              updateSupplierCost(index, 'supplier_cost_child', isNaN(value) ? 0 : value);
+                              const rawValue = e.target.value;
+                              const parsedValue = rawValue === '' ? 0 : parseFloat(rawValue);
+                          
+                              const flooredValue = isNaN(parsedValue)
+                                ? 0
+                                : Math.floor(parsedValue);
+                          
+                              updatePricingWithMarkup(index, 'supplier_cost_child', flooredValue);
                             }}
                             placeholder="0.00"
                           />
                           {pkg.supplier_cost_child && pkg.exchange_rate && (
                             <p className="text-xs text-muted-foreground">
-                              ≈ {formatCurrency(convertToUSD(pkg.supplier_cost_child, pkg.exchange_rate), 'USD')}
+                              ≈ {formatCurrency(Math.floor(convertToUSD(pkg.supplier_cost_child, pkg.exchange_rate)), 'USD')}
                             </p>
                           )}
                         </div>
@@ -815,14 +827,20 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                             step="0.01"
                             value={pkg.supplier_cost_infant ?? ''}
                             onChange={(e) => {
-                              const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                              updateSupplierCost(index, 'supplier_cost_infant', isNaN(value) ? 0 : value);
+                              const rawValue = e.target.value;
+                              const parsedValue = rawValue === '' ? 0 : parseFloat(rawValue);
+                          
+                              const flooredValue = isNaN(parsedValue)
+                                ? 0
+                                : Math.floor(parsedValue);
+                          
+                              updatePricingWithMarkup(index, 'supplier_cost_infant', flooredValue);
                             }}
                             placeholder={t('optional')}
                           />
                           {pkg.supplier_cost_infant && pkg.exchange_rate && (
                             <p className="text-xs text-muted-foreground">
-                              ≈ {formatCurrency(convertToUSD(pkg.supplier_cost_infant, pkg.exchange_rate), 'USD')}
+                              ≈ {formatCurrency(Math.floor(convertToUSD(pkg.supplier_cost_infant, pkg.exchange_rate)), 'USD')}
                             </p>
                           )}
                         </div>
@@ -834,14 +852,20 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                             step="0.01"
                             value={pkg.supplier_cost_senior ?? ''}
                             onChange={(e) => {
-                              const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                              updateSupplierCost(index, 'supplier_cost_senior', isNaN(value) ? 0 : value);
+                              const rawValue = e.target.value;
+                              const parsedValue = rawValue === '' ? 0 : parseFloat(rawValue);
+                          
+                              const flooredValue = isNaN(parsedValue)
+                                ? 0
+                                : Math.floor(parsedValue);
+                          
+                              updatePricingWithMarkup(index, 'supplier_cost_senior', flooredValue);
                             }}
                             placeholder={t('optional')}
                           />
                           {pkg.supplier_cost_senior && pkg.exchange_rate && (
                             <p className="text-xs text-muted-foreground">
-                              ≈ {formatCurrency(convertToUSD(pkg.supplier_cost_senior, pkg.exchange_rate), 'USD')}
+                              ≈ {formatCurrency(Math.floor(convertToUSD(pkg.supplier_cost_senior, pkg.exchange_rate)), 'USD')}
                             </p>
                           )}
                         </div>
@@ -864,8 +888,14 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                               step="0.01"
                               value={pkg.base_adult_price ?? ''}
                               onChange={(e) => {
-                                const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                                updatePricingWithMarkup(index, 'base_adult_price', isNaN(value) ? 0 : value);
+                                const rawValue = e.target.value;
+                                const parsedValue = rawValue === '' ? 0 : parseFloat(rawValue);
+                            
+                                const flooredValue = isNaN(parsedValue)
+                                  ? 0
+                                  : Math.floor(parsedValue);
+                            
+                                updatePricingWithMarkup(index, 'base_adult_price', flooredValue);
                               }}
                               placeholder="0.00"
                             />
@@ -878,8 +908,16 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                               step="0.01"
                               value={pkg.base_child_price ?? ''}
                               onChange={(e) => {
-                                const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                                updatePricingWithMarkup(index, 'base_child_price', isNaN(value) ? 0 : value);
+                                // const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                                // updatePricingWithMarkup(index, 'base_child_price', isNaN(value) ? 0 : value);
+                                const rawValue = e.target.value;
+                                const parsedValue = rawValue === '' ? 0 : parseFloat(rawValue);
+                            
+                                const flooredValue = isNaN(parsedValue)
+                                  ? 0
+                                  : Math.floor(parsedValue);
+                            
+                                updatePricingWithMarkup(index, 'base_child_price', flooredValue);
                               }}
                               placeholder="0.00"
                             />
@@ -892,8 +930,14 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                               step="0.01"
                               value={pkg.base_infant_price ?? ''}
                               onChange={(e) => {
-                                const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                                updatePricingWithMarkup(index, 'base_infant_price', isNaN(value) ? 0 : value);
+                                const rawValue = e.target.value;
+                                const parsedValue = rawValue === '' ? 0 : parseFloat(rawValue);
+                            
+                                const flooredValue = isNaN(parsedValue)
+                                  ? 0
+                                  : Math.floor(parsedValue);
+                            
+                                updatePricingWithMarkup(index, 'base_infant_price', flooredValue);
                               }}
                               placeholder="Optional"
                             />
@@ -906,8 +950,14 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                               step="0.01"
                               value={pkg.base_senior_price ?? ''}
                               onChange={(e) => {
-                                const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                                updatePricingWithMarkup(index, 'base_senior_price', isNaN(value) ? 0 : value);
+                                const rawValue = e.target.value;
+                                const parsedValue = rawValue === '' ? 0 : parseFloat(rawValue);
+                            
+                                const flooredValue = isNaN(parsedValue)
+                                  ? 0
+                                  : Math.floor(parsedValue);
+                            
+                                updatePricingWithMarkup(index, 'base_senior_price', flooredValue);                             
                               }}
                               placeholder="Optional"
                             />
@@ -1212,22 +1262,24 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                                           <Input
                                             type="number"
                                             min="0"
-                                            step="0.01"
+                                            step="1"
                                             value={tier.supplier_cost ?? ''}
                                             onChange={(e) => {
                                               const updated = [...(pkg.custom_pricing_tiers || [])];
-                                              const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                                              const value = Number(e.target.value);
+                                          
                                               updated[tierIndex] = {
                                                 ...updated[tierIndex],
-                                                supplier_cost: isNaN(value) ? 0 : value,
+                                                supplier_cost: isNaN(value) ? 0 : Math.floor(value),
                                               };
+                                          
                                               updatePackage(index, 'custom_pricing_tiers', updated);
                                             }}
                                             placeholder="0.00"
                                           />
                                           {tier.supplier_cost && tier.tier_exchange_rate && tier.supplier_currency !== 'USD' && (
                                             <p className="text-xs text-muted-foreground">
-                                              ≈ {formatCurrency(convertToUSD(tier.supplier_cost, tier.tier_exchange_rate), 'USD')}
+                                              ≈ {formatCurrency(Math.floor(convertToUSD(tier.supplier_cost, tier.tier_exchange_rate)), 'USD')}
                                             </p>
                                           )}
                                         </div>
@@ -1265,15 +1317,17 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                                         <Input
                                           type="number"
                                           min="0"
-                                          step="0.01"
-                                          value={tier.base_price ?? ''}
+                                          step="1"
+                                          value={Math.floor(tier.base_price) ?? ''}
                                           onChange={(e) => {
                                             const updated = [...(pkg.custom_pricing_tiers || [])];
-                                            const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                                            const value = parseFloat(e.target.value);
+                                        
                                             updated[tierIndex] = {
                                               ...updated[tierIndex],
                                               base_price: isNaN(value) ? 0 : value,
                                             };
+                                        
                                             updatePackage(index, 'custom_pricing_tiers', updated);
                                           }}
                                           placeholder="0.00"
@@ -1312,15 +1366,17 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                                         <Input
                                           type="number"
                                           min="0"
-                                          step="0.01"
-                                          value={tier.selling_price ?? ''}
+                                          step="1"
+                                          value={Math.floor(tier.selling_price) ?? ''}
                                           onChange={(e) => {
                                             const updated = [...(pkg.custom_pricing_tiers || [])];
-                                            const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                                            const value = Number(e.target.value);
+
                                             updated[tierIndex] = {
                                               ...updated[tierIndex],
-                                              selling_price: isNaN(value) ? 0 : value,
+                                              selling_price: isNaN(value) ? 0 : Math.floor(value),
                                             };
+
                                             updatePackage(index, 'custom_pricing_tiers', updated);
                                           }}
                                           placeholder="0.00"

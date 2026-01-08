@@ -219,9 +219,9 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                   tier_label: tier.tier_label,
                   min_age: tier.min_age,
                   max_age: tier.max_age,
-                  base_price: tier.base_price || 0,
-                  selling_price: tier.selling_price || tier.base_price || 0,
-                  supplier_cost: tier.supplier_cost || 0,
+                  base_price: Math.floor(tier.base_price) || 0,
+                  selling_price: Math.floor(tier.selling_price) || Math.floor(tier.base_price) || 0,
+                  supplier_cost: Math.floor(tier.supplier_cost) || 0,
                   description: tier.description || ''
                 })) : undefined;
 
@@ -240,24 +240,24 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                   markup_value: markupValue,
 
                   // Base prices (cost from supplier) - for simple mode
-                  base_adult_price: adultTier?.base_price || 0,
-                  base_child_price: childTier?.base_price || 0,
-                  base_infant_price: infantTier?.base_price || 0,
-                  base_senior_price: seniorTier?.base_price || 0,
+                  base_adult_price: Math.floor(adultTier?.base_price) || 0,
+                  base_child_price: Math.floor(childTier?.base_price) || 0,
+                  base_infant_price: Math.floor(infantTier?.base_price) || 0,
+                  base_senior_price: Math.floor(seniorTier?.base_price) || 0,
 
                   // Supplier currency fields
                   supplier_currency: supplierCurrency,
-                  supplier_cost_adult: adultTier?.supplier_cost,
-                  supplier_cost_child: childTier?.supplier_cost,
-                  supplier_cost_infant: infantTier?.supplier_cost,
-                  supplier_cost_senior: seniorTier?.supplier_cost,
+                  supplier_cost_adult: Math.floor(adultTier?.supplier_cost),
+                  supplier_cost_child: Math.floor(childTier?.supplier_cost),
+                  supplier_cost_infant: Math.floor(infantTier?.supplier_cost),
+                  supplier_cost_senior: Math.floor(seniorTier?.supplier_cost),
                   exchange_rate: exchangeRate,
 
                   // Selling prices (what customer pays) - for simple mode
-                  adult_price: adultTier?.selling_price || adultTier?.base_price || 0,
-                  child_price: childTier?.selling_price || childTier?.base_price || 0,
-                  infant_price: infantTier?.selling_price || infantTier?.base_price || 0,
-                  senior_price: seniorTier?.selling_price || seniorTier?.base_price || 0,
+                  adult_price: Math.floor(adultTier?.selling_price || adultTier?.base_price || 0),
+                  child_price: Math.floor(childTier?.selling_price || childTier?.base_price || 0),
+                  infant_price: Math.floor(infantTier?.selling_price || infantTier?.base_price || 0),
+                  senior_price: Math.floor(seniorTier?.selling_price || seniorTier?.base_price || 0),
 
                   // Age(child and adult) - for simple mode
                   adult_min_age: adultTier?.min_age || 0,
@@ -279,7 +279,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                     id: addon.id,
                     name: addon.addon_name,
                     description: addon.description || '',
-                    price: addon.price,
+                    price: Math.floor(addon.price),
                     is_required: addon.is_required || false,
                     max_quantity: addon.max_quantity || 1,
                     pricing_type: addon.pricing_type || 'per_person',
@@ -466,8 +466,8 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
     packages.forEach((pkg, idx) => {
       console.log(`Package ${idx}:`, {
         name: pkg.package_name,
-        adult_price: pkg.adult_price,
-        child_price: pkg.child_price,
+        adult_price: Math.floor(pkg.adult_price),
+        child_price: Math.floor(pkg.child_price),
         code: pkg.package_code
       });
     });
@@ -478,8 +478,8 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
     try {
       // Use first package pricing for experience base fields (backwards compatibility)
       const firstPackage = packages[0]
-      const adultPrice = Number.isFinite(firstPackage.adult_price) ? firstPackage.adult_price : 0
-      const childPrice = Number.isFinite(firstPackage.child_price) ? firstPackage.child_price : 0
+      const adultPrice = Number.isFinite(firstPackage.adult_price) ? Math.floor(firstPackage.adult_price) : 0
+      const childPrice = Number.isFinite(firstPackage.child_price) ? Math.floor(firstPackage.child_price) : 0
 
       const adultMinAge = typeof firstPackage.adult_min_age === "number"
         ? firstPackage.adult_min_age
@@ -528,9 +528,9 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
         country: form.country,
         description: form.description,
         duration: form.duration,
-        price: adultPrice,
-        adult_price: adultPrice,
-        child_price: childPrice,
+        price: Math.floor(adultPrice),
+        adult_price: Math.floor(adultPrice),
+        child_price: Math.floor(childPrice),
         adult_min_age: adultMinAge,
         adult_max_age: adultMaxAge,
         child_min_age: childMinAge,
