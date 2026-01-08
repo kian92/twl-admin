@@ -71,22 +71,20 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
 
       {/* Charts */}
       <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Booking Trend</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[320px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data.bookingTrend}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis allowDecimals={false} />
-                <Tooltip />
-                <Line type="monotone" dataKey="bookings" stroke="hsl(var(--primary))" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Total Users</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center justify-center h-[320px]">
+          <Users className="h-12 w-12 text-muted-foreground mb-4" />
+          <div className="text-4xl font-bold">
+            {numberFormatter.format(data.metrics.activeUsers)}
+          </div>
+          <p className="text-sm text-muted-foreground mt-2">
+            Registered users on platform
+          </p>
+        </CardContent>
+      </Card>
 
         <Card>
           <CardHeader>
