@@ -41,7 +41,7 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
     () => [
       { title: "Total Revenue", value: currencyFormatter.format(data.metrics.totalRevenue), icon: DollarSign },
       { title: "Total Bookings", value: numberFormatter.format(data.metrics.totalBookings), icon: Calendar },
-      { title: "Active Users", value: numberFormatter.format(data.metrics.activeUsers), icon: Users },
+      { title: "Total Users", value: numberFormatter.format(data.metrics.activeUsers), icon: Users },
       { title: "Total Experiences", value: numberFormatter.format(data.metrics.totalExperiences), icon: MapPin },
     ],
     [data]

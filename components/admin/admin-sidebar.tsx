@@ -4,7 +4,11 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, MapPin, Calendar, Users, Award, FileText, Settings, Compass, UserPlus, Link2, Receipt, MessageSquare, BookOpen, Image } from "lucide-react"
+import {
+  LayoutDashboard, MapPin, Calendar, Users, Award, FileText, Settings,
+  Compass, UserPlus, Link2, Receipt, MessageSquare, BookOpen, Image,
+  Menu, X
+} from "lucide-react"
 import { useTranslations } from 'next-intl'
 
 type UserRole = "admin" | "manager" | "support" | "sales" | "supplier";
@@ -35,6 +39,7 @@ export function AdminSidebar() {
   const t = useTranslations('navigation')
   const [userRole, setUserRole] = useState<UserRole | null>(null)
   const [navigation, setNavigation] = useState<MenuItem[]>([])
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
     // Fetch user role
@@ -62,51 +67,73 @@ export function AdminSidebar() {
   }, [])
 
   return (
-    <div className="w-64 bg-card border-r flex flex-col">
-      <div className="p-6 border-b">
-        <Link href="/admin" className="flex items-center gap-2">
-          {/* <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-coral-500 flex items-center justify-center">
-            <Compass className="w-5 h-5 text-white" />
-          </div> */}
-          <div>
-            <h1 className="font-bold text-lg">The Wandering Lens</h1>
-            <p className="text-xs text-muted-foreground">{t('adminPortal')}</p>
-          </div>
-        </Link>
+    <>
+      {/* Mobile menu button */}
+      <button
+        className="p-2 md:hidden fixed top-3.5 left-4 z-50 bg-white border rounded-lg shadow"
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+      >
+        {sidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+      </button>
+
+      {/* Sidebar */}
+      <div
+        className={cn(
+          "fixed inset-y-0 left-0 w-64 bg-card border-r flex flex-col transform transition-transform duration-300 z-40",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full",
+          "md:translate-x-0 md:static md:flex"
+        )}
+      >
+        <div className="mt-10 md:mt-0 p-6 border-b">
+          <Link href="/admin" className="flex items-center gap-2">
+            <div>
+              <h1 className="font-bold text-lg">The Wandering Lens</h1>
+              <p className="text-xs text-muted-foreground">{t('adminPortal')}</p>
+            </div>
+          </Link>
+        </div>
+
+        <nav className="flex-1 p-4 space-y-1">
+          {navigation.map((item) => {
+            const isActive = pathname === item.href
+            return (
+              <Link
+                key={item.nameKey}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                  isActive
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+              >
+                <item.icon className="w-5 h-5" />
+                {t(item.nameKey)}
+              </Link>
+            )
+          })}
+        </nav>
+
+        <div className="p-4 border-t">
+          <Link
+            href="https://www.twanderinglens.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          >
+            <Compass className="w-5 h-5" />
+            {t('viewSite')}
+          </Link>
+        </div>
       </div>
 
-      <nav className="flex-1 p-4 space-y-1">
-        {navigation.map((item) => {
-          const isActive = pathname === item.href
-          return (
-            <Link
-              key={item.nameKey}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                isActive
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
-              )}
-            >
-              <item.icon className="w-5 h-5" />
-              {t(item.nameKey)}
-            </Link>
-          )
-        })}
-      </nav>
-
-      <div className="p-4 border-t">
-        <Link
-          href="https://www.twanderinglens.com/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-        >
-          <Compass className="w-5 h-5" />
-          {t('viewSite')}
-        </Link>
-      </div>
-    </div>
+      {/* Overlay for mobile when sidebar is open */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+    </>
   )
 }
