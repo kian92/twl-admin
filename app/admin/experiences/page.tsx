@@ -27,8 +27,8 @@ import { getPagination } from "@/utils/pagination"
 type ExperienceRow = Database["public"]["Tables"]["experiences"]["Row"]
 
 interface ExperienceWithPackagePrices extends ExperienceRow {
-  package_adult_price?: number
-  package_child_price?: number
+  package_adult_price?: number | undefined
+  package_child_price?: number | undefined
   tour_types?: ('group' | 'private')[]
   creator_name?: string
 }
@@ -174,6 +174,7 @@ export default function ExperiencesPage() {
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
   const endIndex = startIndex + ITEMS_PER_PAGE
   const paginatedExperiences = filteredExperiences.slice(startIndex, endIndex)
+console.log('paginatedExperiences',paginatedExperiences);
 
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -417,8 +418,8 @@ export default function ExperiencesPage() {
                   </div>
                   <div className="flex items-center justify-between pt-2">
                     <div className="text-sm text-muted-foreground leading-tight">
-                      <div className="font-semibold text-foreground">${experience.package_adult_price ?? experience.adult_price} adult</div>
-                      <div>${experience.package_child_price ?? experience.child_price} child</div>
+                      <div className="font-semibold text-foreground">  ${Math.floor(experience.package_adult_price ?? experience.adult_price)} adult</div>
+                      <div>${Math.floor(experience.package_child_price ?? experience.child_price)} child</div>
                     </div>
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" asChild>

@@ -321,10 +321,10 @@ export default function NewExperiencePage() {
             markup_value: pkg.markup_value || 0,
 
             // Base prices (cost from supplier)
-            base_adult_price: pkg.base_adult_price || 0,
-            base_child_price: pkg.base_child_price || 0,
-            base_infant_price: pkg.base_infant_price,
-            base_senior_price: pkg.base_senior_price,
+            base_adult_price: Math.floor(pkg.base_adult_price || 0),
+            base_child_price: Math.floor(pkg.base_child_price || 0),
+            base_infant_price: Math.floor(pkg.base_infant_price),
+            base_senior_price: Math.floor(pkg.base_senior_price),
 
             // Supplier currency fields
             supplier_currency: pkg.supplier_currency || 'USD',
@@ -335,10 +335,10 @@ export default function NewExperiencePage() {
             exchange_rate: pkg.exchange_rate || 1.0,
 
             // Selling prices (what customer pays)
-            adult_price: pkg.adult_price,
-            child_price: pkg.child_price,
-            infant_price: pkg.infant_price,
-            senior_price: pkg.senior_price,
+            adult_price: Math.floor(pkg.adult_price),
+            child_price: Math.floor(pkg.child_price),
+            infant_price: Math.floor(pkg.infant_price),
+            senior_price: Math.floor(pkg.senior_price),
 
             // Age (child and adult)
             adult_min_age: pkg.adult_min_age,
