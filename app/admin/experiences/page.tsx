@@ -82,17 +82,36 @@ export default function ExperiencesPage() {
             if (packagesResponse.ok) {
               const packages = await packagesResponse.json()
               if (packages && packages.length > 0) {
-                const firstPackage = packages[0]
-                const adultTier = firstPackage.pricing_tiers?.find((t: any) => t.tier_type === 'adult')
-                const childTier = firstPackage.pricing_tiers?.find((t: any) => t.tier_type === 'child')
-
+                const adultPrices: number[] = []
+                const childPrices: number[] = []
+                
+                packages.forEach((pkg: any) => {
+                  pkg.pricing_tiers?.forEach((tier: any) => {
+                    const price = tier.selling_price ?? tier.base_price
+                
+                    if (tier.tier_type === 'adult' && typeof price === 'number') {
+                      adultPrices.push(price)
+                    }
+                
+                    if (tier.tier_type === 'child' && typeof price === 'number') {
+                      childPrices.push(price)
+                    }
+                  })
+                })
+                
+                const lowestAdultPrice =
+                  adultPrices.length > 0 ? Math.min(...adultPrices) : exp.adult_price
+                
+                const lowestChildPrice =
+                  childPrices.length > 0 ? Math.min(...childPrices) : exp.child_price
+                
                 // Collect unique tour types from all packages
                 const tourTypes = [...new Set(packages.map((pkg: any) => pkg.tour_type || 'group'))] as ('group' | 'private')[]
 
                 return {
                   ...exp,
-                  package_adult_price: adultTier?.selling_price || adultTier?.base_price || exp.adult_price,
-                  package_child_price: childTier?.selling_price || childTier?.base_price || exp.child_price,
+                  package_adult_price: lowestAdultPrice || exp.adult_price,
+                  package_child_price: lowestChildPrice || exp.child_price,
                   tour_types: tourTypes,
                   creator_name: creatorName,
                 }
@@ -419,7 +438,6 @@ console.log('paginatedExperiences',paginatedExperiences);
                   <div className="flex items-center justify-between pt-2">
                     <div className="text-sm text-muted-foreground leading-tight">
                       <div className="font-semibold text-foreground">  ${Math.floor(experience.package_adult_price ?? experience.adult_price)} adult</div>
-                      <div>${Math.floor(experience.package_child_price ?? experience.child_price)} child</div>
                     </div>
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" asChild>
