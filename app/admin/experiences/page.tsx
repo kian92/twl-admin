@@ -419,7 +419,6 @@ console.log('paginatedExperiences',paginatedExperiences);
                   <div className="flex items-center justify-between pt-2">
                     <div className="text-sm text-muted-foreground leading-tight">
                       <div className="font-semibold text-foreground">  ${Math.floor(experience.package_adult_price ?? experience.adult_price)} adult</div>
-                      <div>${Math.floor(experience.package_child_price ?? experience.child_price)} child</div>
                     </div>
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" asChild>
