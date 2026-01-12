@@ -10,7 +10,24 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CountryCombobox } from "@/components/ui/country-combobox"
-import { ArrowLeft, Upload, Plus, X, Loader2, FileText, Check } from "lucide-react"
+import { ArrowLeft, Upload, Plus, X, Loader2, FileText, Check, GripVertical } from "lucide-react"
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import Link from "next/link"
 import Image from "next/image"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -56,6 +73,78 @@ interface FormState {
 }
 
 const categories = ["Adventure", "Culture", "Relaxation", "Wellness", "Nature"]
+
+interface SortableImageItemProps {
+  id: string
+  url: string
+  index: number
+  onRemove: (index: number) => void
+}
+
+function SortableImageItem({ id, url, index, onRemove }: SortableImageItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="relative aspect-video rounded-lg overflow-hidden border group bg-white"
+    >
+      <img
+        src={url}
+        alt={`Image ${index + 1}`}
+        className="object-cover w-full h-full"
+      />
+
+      {/* Drag handle */}
+      <div
+        {...attributes}
+        {...listeners}
+        className="absolute top-2 left-2 bg-black/70 text-white p-1 rounded cursor-move hover:bg-black/90 transition-colors"
+      >
+        <GripVertical className="w-4 h-4" />
+      </div>
+
+      {/* Labels */}
+      {index === 0 ? (
+        <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+          Main
+        </div>
+      ) : (
+        <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+          Image {index + 1}
+        </div>
+      )}
+
+      <Button
+        type="button"
+        size="icon"
+        onClick={() => onRemove(index)}
+        className="absolute top-2 right-2
+        bg-red-500 text-white
+        w-8 h-8 rounded flex items-center justify-center
+        hover:bg-red-600
+        opacity-0 group-hover:opacity-100
+        transition-opacity duration-200"
+      >
+        <X className="w-6 h-6" />
+      </Button>
+    </div>
+  )
+}
 
 export default function EditExperiencePage({ params }: { params: Promise<{ slug: string; id: string }> }) {
 
@@ -105,6 +194,28 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
   const [existingGallery, setExistingGallery] = useState<string[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (over && active.id !== over.id) {
+      const oldIndex = galleryPreviewUrls.findIndex((_, i) => `image-${i}` === active.id)
+      const newIndex = galleryPreviewUrls.findIndex((_, i) => `image-${i}` === over.id)
+
+      // Reorder the preview URLs (which contains all images)
+      setGalleryPreviewUrls((items) => arrayMove(items, oldIndex, newIndex))
+
+      // Also update existingGallery since they should stay in sync
+      setExistingGallery((items) => arrayMove(items, oldIndex, newIndex))
+    }
+  }
 
   useEffect(() => {
     let isMounted = true
@@ -848,24 +959,28 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
 
               {/* Thumbnails */}
               {galleryPreviewUrls.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {galleryPreviewUrls.map((url, index) => (
-                    <div key={index} className="relative aspect-video rounded-lg overflow-hidden border group">
-                      <img src={url} alt={`Image ${index + 1}`} className="object-cover w-full h-full" />
-                      <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                        {index === 0 ? t('form.mainImage') : t('form.imageNumber', { number: index + 1 })}
-                      </div>
-                      <Button
-                        type="button"
-                        size="icon"
-                        onClick={() => removeImage(index)}
-                        className="absolute top-2 right-2 bg-red-500 text-white w-8 h-8 rounded flex items-center justify-center hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                      >
-                        <X className="w-6 h-6" />
-                      </Button>
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={galleryPreviewUrls.map((_, i) => `image-${i}`)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {galleryPreviewUrls.map((url, index) => (
+                        <SortableImageItem
+                          key={`image-${index}`}
+                          id={`image-${index}`}
+                          url={url}
+                          index={index}
+                          onRemove={removeImage}
+                        />
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </SortableContext>
+                </DndContext>
               )}
 
               {/* Upload Box */}
