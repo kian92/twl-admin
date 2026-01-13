@@ -1186,7 +1186,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
 
             <div className="space-y-2">
               <Label htmlFor="cancellation">{t('form.cancellationPolicy')}</Label>
-              <Input
+              <Textarea
                 id="cancellation"
                 placeholder={t('form.cancellationPolicyPlaceholder')}
                 value={form.cancellation_policy}
