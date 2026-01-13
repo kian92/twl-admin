@@ -853,11 +853,10 @@ export default function NewExperiencePage() {
 
             <div className="space-y-2">
               <Label htmlFor="cancellation">{t('experiences.form.cancellationPolicy')}</Label>
-               <Textarea
-                id="cancellation"
+              <RichTextEditor
+                content={form.cancellation_policy ?? ""}
+                onChange={(html) => setForm((prev) => ({ ...prev, cancellation_policy: html }))}
                 placeholder={t('experiences.form.cancellationPolicyPlaceholder')}
-                value={form.cancellation_policy ?? ""}
-                onChange={handleInputChange("cancellation_policy")}
               />
             </div>
           </CardContent>

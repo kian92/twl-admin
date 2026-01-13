@@ -1186,11 +1186,10 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
 
             <div className="space-y-2">
               <Label htmlFor="cancellation">{t('form.cancellationPolicy')}</Label>
-              <Textarea
-                id="cancellation"
+              <RichTextEditor
+                content={form.cancellation_policy}
+                onChange={(html) => setForm((prev) => (prev ? { ...prev, cancellation_policy: html } : prev))}
                 placeholder={t('form.cancellationPolicyPlaceholder')}
-                value={form.cancellation_policy}
-                onChange={handleChange("cancellation_policy")}
               />
             </div>
           </CardContent>
