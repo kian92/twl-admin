@@ -853,7 +853,7 @@ export default function NewExperiencePage() {
 
             <div className="space-y-2">
               <Label htmlFor="cancellation">{t('experiences.form.cancellationPolicy')}</Label>
-              <Input
+               <Textarea
                 id="cancellation"
                 placeholder={t('experiences.form.cancellationPolicyPlaceholder')}
                 value={form.cancellation_policy ?? ""}
