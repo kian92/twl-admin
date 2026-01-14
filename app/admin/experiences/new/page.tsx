@@ -71,9 +71,9 @@ const initialForm: ExperienceInsert = {
   category: "Adventure",
   description: "",
   // image_url: "",
-  highlights: [],
-  inclusions: [],
-  exclusions: [],
+  highlights: "",
+  inclusions: "",
+  exclusions: "",
   not_suitable_for: [],
   meeting_point: "",
   what_to_bring: [],
@@ -169,9 +169,9 @@ export default function NewExperiencePage() {
   const router = useRouter()
   const { profile } = useAdmin()
   const [form, setForm] = useState(initialForm)
-  const [highlightsText, setHighlightsText] = useState("")
-  const [inclusionsText, setInclusionsText] = useState("")
-  const [exclusionsText, setExclusionsText] = useState("")
+  const [highlights, setHighlights] = useState("")
+  const [inclusions, setInclusions] = useState("")
+  const [exclusions, setExclusions] = useState("")
   const [notSuitableForText, setNotSuitableForText] = useState("")
   const [whatToBringText, setWhatToBringText] = useState("")
   const [itinerary, setItinerary] = useState<ItineraryItem[]>([])
@@ -377,9 +377,9 @@ export default function NewExperiencePage() {
         max_group_size: Number.isFinite(firstPackage.max_group_size) ? firstPackage.max_group_size : null,
         available_from: firstPackage.available_from || null,
         available_to: firstPackage.available_to || null,
-        highlights: highlightsText.split("\n").filter(Boolean),
-        inclusions: inclusionsText.split("\n").filter(Boolean),
-        exclusions: exclusionsText.split("\n").filter(Boolean),
+        highlights: highlights || "",
+        inclusions: inclusions || "",
+        exclusions: exclusions || "",
         not_suitable_for: notSuitableForText.split("\n").filter(Boolean),
         what_to_bring: whatToBringText.split("\n").filter(Boolean),
         gallery: uploadedUrls,
@@ -696,34 +696,28 @@ export default function NewExperiencePage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="highlights">{t('experiences.form.highlights')}</Label>
-              <Textarea
-                id="highlights"
+              <RichTextEditor
+                content={highlights}
+                onChange={setHighlights}
                 placeholder={t('experiences.form.highlightsPlaceholder')}
-                rows={4}
-                value={highlightsText}
-                onChange={(event) => setHighlightsText(event.target.value)}
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="inclusions">{t('experiences.form.inclusions')}</Label>
-              <Textarea
-                id="inclusions"
+              <RichTextEditor
+                content={inclusions}
+                onChange={setInclusions}
                 placeholder={t('experiences.form.inclusionsPlaceholder')}
-                rows={4}
-                value={inclusionsText}
-                onChange={(event) => setInclusionsText(event.target.value)}
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="exclusions">{t('experiences.form.exclusions')}</Label>
-              <Textarea
-                id="exclusions"
+              <RichTextEditor
+                content={exclusions}
+                onChange={setExclusions}
                 placeholder={t('experiences.form.exclusionsPlaceholder')}
-                rows={3}
-                value={exclusionsText}
-                onChange={(event) => setExclusionsText(event.target.value)}
               />
             </div>
           </CardContent>

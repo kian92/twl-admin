@@ -63,9 +63,9 @@ export interface Database {
           rating: number | null
           review_count: number | null
           description: string | null
-          highlights: string[] | null
-          inclusions: string[] | null
-          exclusions: string[] | null
+          highlights: string | null
+          inclusions: string | null
+          exclusions: string | null
           not_suitable_for: string[] | null
           meeting_point: string | null
           what_to_bring: string[] | null
@@ -103,9 +103,9 @@ export interface Database {
           rating?: number | null
           review_count?: number | null
           description?: string | null
-          highlights?: string[] | null
-          inclusions?: string[] | null
-          exclusions?: string[] | null
+          highlights?: string | null
+          inclusions?: string | null
+          exclusions?: string | null
           not_suitable_for?: string[] | null
           meeting_point?: string | null
           what_to_bring?: string[] | null
@@ -142,9 +142,9 @@ export interface Database {
           rating?: number | null
           review_count?: number | null
           description?: string | null
-          highlights?: string[] | null
-          inclusions?: string[] | null
-          exclusions?: string[] | null
+          highlights?: string | null
+          inclusions?: string | null
+          exclusions?: string | null
           not_suitable_for?: string[] | null
           meeting_point?: string | null
           what_to_bring?: string[] | null

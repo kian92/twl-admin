@@ -249,9 +249,9 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
           duration: experienceData.duration,
           category: experienceData.category,
           // image_url: experienceData.image_url ?? "",
-          highlights: Array.isArray(experienceData.highlights) ? experienceData.highlights.join("\n") : "",
-          inclusions: Array.isArray(experienceData.inclusions) ? experienceData.inclusions.join("\n") : "",
-          exclusions: Array.isArray(experienceData.exclusions) ? experienceData.exclusions.join("\n") : "",
+          highlights: Array.isArray(experienceData.highlights) ? experienceData.highlights.join("\n") : (experienceData.highlights ?? ""),
+          inclusions: Array.isArray(experienceData.inclusions) ? experienceData.inclusions.join("\n") : (experienceData.inclusions ?? ""),
+          exclusions: Array.isArray(experienceData.exclusions) ? experienceData.exclusions.join("\n") : (experienceData.exclusions ?? ""),
           not_suitable_for: Array.isArray(experienceData.not_suitable_for) ? experienceData.not_suitable_for.join("\n") : "",
           meeting_point: experienceData.meeting_point ?? "",
           what_to_bring: Array.isArray(experienceData.what_to_bring) ? experienceData.what_to_bring.join("\n") : "",
@@ -556,9 +556,9 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
   
   
 
-  const highlightsList = useMemo(() => form?.highlights.split("\n").filter(Boolean) ?? [], [form])
-  const inclusionsList = useMemo(() => form?.inclusions.split("\n").filter(Boolean) ?? [], [form])
-  const exclusionsList = useMemo(() => form?.exclusions.split("\n").filter(Boolean) ?? [], [form])
+  const highlightsList = useMemo(() => form?.highlights ?? "", [form])
+  const inclusionsList = useMemo(() => form?.inclusions ?? "", [form])
+  const exclusionsList = useMemo(() => form?.exclusions ?? "", [form])
   const notSuitableForList = useMemo(() => form?.not_suitable_for.split("\n").filter(Boolean) ?? [], [form])
   const whatToBringList = useMemo(() => form?.what_to_bring.split("\n").filter(Boolean) ?? [], [form])
   const galleryList = useMemo(() => form?.gallery.split("\n").filter(Boolean) ?? [], [form])
@@ -1030,35 +1030,29 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="highlights">{t('form.highlightsOnePerLine')}</Label>
-              <Textarea
-                id="highlights"
+              <Label htmlFor="highlights">{t('form.highlights')}</Label>
+              <RichTextEditor
+                content={form.highlights}
+                onChange={(value) => setForm((prev) => (prev ? { ...prev, highlights: value } : prev))}
                 placeholder={t('form.highlightsPlaceholder')}
-                value={form.highlights}
-                onChange={handleChange("highlights")}
-                rows={4}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="inclusions">{t('form.inclusionsOnePerLine')}</Label>
-              <Textarea
-                id="inclusions"
+              <Label htmlFor="inclusions">{t('form.inclusions')}</Label>
+              <RichTextEditor
+                content={form.inclusions}
+                onChange={(value) => setForm((prev) => (prev ? { ...prev, inclusions: value } : prev))}
                 placeholder={t('form.inclusionsPlaceholder')}
-                value={form.inclusions}
-                onChange={handleChange("inclusions")}
-                rows={4}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="exclusions">{t('form.exclusionsOnePerLine')}</Label>
-              <Textarea
-                id="exclusions"
+              <Label htmlFor="exclusions">{t('form.exclusions')}</Label>
+              <RichTextEditor
+                content={form.exclusions}
+                onChange={(value) => setForm((prev) => (prev ? { ...prev, exclusions: value } : prev))}
                 placeholder={t('form.exclusionsPlaceholder')}
-                value={form.exclusions}
-                onChange={handleChange("exclusions")}
-                rows={3}
               />
             </div>
           </CardContent>

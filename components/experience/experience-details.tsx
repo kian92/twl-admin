@@ -5,9 +5,9 @@ import Link from "next/link"
 interface ExperienceDetailsProps {
   experience: {
     description: string
-    highlights: string[]
-    inclusions: string[]
-    exclusions?: string[]
+    highlights: string[] | string
+    inclusions: string[] | string
+    exclusions?: string[] | string
     itinerary: Array<{ time: string; activity: string }>
     whatToBring: string[]
     notSuitableFor?: string[]
@@ -24,14 +24,21 @@ export function ExperienceDetails({ experience }: ExperienceDetailsProps) {
           {/* Highlights */}
           <div className="grid md:grid-cols-[200px_1fr] gap-6 pb-12 border-b">
             <h2 className="text-xl font-bold">Highlights</h2>
-            <ul className="space-y-3">
-              {experience.highlights.map((highlight, index) => (
-                <li key={index} className="flex items-start gap-3">
-                  <span className="text-muted-foreground">•</span>
-                  <span className="text-muted-foreground leading-relaxed">{highlight}</span>
-                </li>
-              ))}
-            </ul>
+            {typeof experience.highlights === 'string' ? (
+              <div
+                className="prose prose-sm max-w-none text-muted-foreground [&_ul]:space-y-2 [&_li]:leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: experience.highlights }}
+              />
+            ) : (
+              <ul className="space-y-3">
+                {experience.highlights.map((highlight, index) => (
+                  <li key={index} className="flex items-start gap-3">
+                    <span className="text-muted-foreground">•</span>
+                    <span className="text-muted-foreground leading-relaxed">{highlight}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           {/* Full Description */}
@@ -45,18 +52,41 @@ export function ExperienceDetails({ experience }: ExperienceDetailsProps) {
           {/* Includes */}
           <div className="grid md:grid-cols-[200px_1fr] gap-6 pb-12 border-b">
             <h2 className="text-xl font-bold">Includes</h2>
-            <div className="space-y-3">
-              {experience.inclusions.map((inclusion, index) => (
-                <div key={index} className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                  <span className="text-muted-foreground">{inclusion}</span>
+            <div className="space-y-6">
+              {typeof experience.inclusions === 'string' ? (
+                <div
+                  className="prose prose-sm max-w-none text-muted-foreground [&_ul]:space-y-2 [&_li]:leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: experience.inclusions }}
+                />
+              ) : (
+                <div className="space-y-3">
+                  {experience.inclusions.map((inclusion, index) => (
+                    <div key={index} className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <span className="text-muted-foreground">{inclusion}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-              {experience.exclusions?.map((exclusion, index) => (
-                <div key={`ex-${index}`} className="flex items-start gap-3">
-                  <X className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-muted-foreground">{exclusion}</span>
+              )}
+              {experience.exclusions && (typeof experience.exclusions === 'string' ? (
+                <div>
+                  <h3 className="text-lg font-semibold mb-3">Excludes</h3>
+                  <div
+                    className="prose prose-sm max-w-none text-muted-foreground [&_ul]:space-y-2 [&_li]:leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: experience.exclusions }}
+                  />
                 </div>
+              ) : (
+                experience.exclusions.length > 0 && (
+                  <div className="space-y-3">
+                    {experience.exclusions.map((exclusion, index) => (
+                      <div key={`ex-${index}`} className="flex items-start gap-3">
+                        <X className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-muted-foreground">{exclusion}</span>
+                      </div>
+                    ))}
+                  </div>
+                )
               ))}
             </div>
           </div>
