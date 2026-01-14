@@ -61,15 +61,20 @@ export default function ExperiencesPage() {
       }
       const experiencesList = Array.isArray(payload) ? payload : []
 
-      // Fetch admin profiles for creator names
+      // Fetch admin profiles for creator names (only if user is admin)
       let profilesMap: Record<string, string> = {}
-      const profilesResponse = await fetch("/api/admin/staff")
-      if (profilesResponse.ok) {
-        const profiles = await profilesResponse.json()
-        profiles.forEach((profile: any) => {
-          profilesMap[profile.id] = profile.full_name || 'Unknown'
-        })
-        setAdminProfiles(profilesMap)
+      try {
+        const profilesResponse = await fetch("/api/admin/staff")
+        if (profilesResponse.ok) {
+          const profiles = await profilesResponse.json()
+          profiles.forEach((profile: any) => {
+            profilesMap[profile.id] = profile.full_name || 'Unknown'
+          })
+          setAdminProfiles(profilesMap)
+        }
+      } catch (err) {
+        console.error("Failed to load staff profiles", err)
+        // Continue without creator names if this fails
       }
 
       // Fetch package prices for each experience
