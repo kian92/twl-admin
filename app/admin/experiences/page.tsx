@@ -31,6 +31,7 @@ interface ExperienceWithPackagePrices extends ExperienceRow {
   package_child_price?: number | undefined
   tour_types?: ('group' | 'private')[]
   creator_name?: string
+  updater_name?: string
 }
 
 const ITEMS_PER_PAGE = 12
@@ -81,6 +82,7 @@ export default function ExperiencesPage() {
       const experiencesWithPrices: ExperienceWithPackagePrices[] = await Promise.all(
         experiencesList.map(async (exp) => {
           const creatorName = exp.created_by ? (profilesMap[exp.created_by] || 'Unknown') : undefined
+          const updaterName = exp.updated_by ? (profilesMap[exp.updated_by] || 'Unknown') : undefined
 
           try {
             const packagesResponse = await fetch(`/api/admin/packages?experience_id=${exp.id}`)
@@ -119,6 +121,7 @@ export default function ExperiencesPage() {
                   package_child_price: lowestChildPrice || exp.child_price,
                   tour_types: tourTypes,
                   creator_name: creatorName,
+                  updater_name: updaterName,
                 }
               }
             }
@@ -132,6 +135,7 @@ export default function ExperiencesPage() {
             package_child_price: exp.child_price,
             tour_types: ['group'], // Default to group if no packages found
             creator_name: creatorName,
+            updater_name: updaterName,
           }
         })
       )
@@ -425,10 +429,19 @@ console.log('paginatedExperiences',paginatedExperiences);
               <CardContent className="p-4">
                 <div className="space-y-2">
                   <h3 className="font-semibold line-clamp-1">{experience.title}</h3>
-                  {profile?.role === 'admin' && experience.creator_name && (
-                    <p className="text-xs text-muted-foreground">
-                      Created by: <span className="font-medium">{experience.creator_name}</span>
-                    </p>
+                  {profile?.role === 'admin' && (experience.creator_name || experience.updater_name) && (
+                    <div className="text-xs text-muted-foreground space-y-0.5">
+                      {experience.creator_name && (
+                        <p>
+                          Created by: <span className="font-medium">{experience.creator_name}</span>
+                        </p>
+                      )}
+                      {experience.updater_name && (
+                        <p>
+                          Updated by: <span className="font-medium">{experience.updater_name}</span>
+                        </p>
+                      )}
+                    </div>
                   )}
                   <p className="text-sm text-muted-foreground">
                     {experience.location} • {experience.duration}

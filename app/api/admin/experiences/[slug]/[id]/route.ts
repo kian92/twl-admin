@@ -140,8 +140,14 @@ export async function PUT(
     console.log("About to update experience with normalized payload keys:", Object.keys(normalized))
     console.log("pick_up_information value:", normalized.pick_up_information)
 
+    // Set updated_by to current user
+    const updateData = {
+      ...normalized,
+      updated_by: session.user.id,
+    }
+
     // @ts-expect-error - Supabase type inference issue
-    const { error } = await supabase.from("experiences").update(normalized).eq("id", id)
+    const { error } = await supabase.from("experiences").update(updateData).eq("id", id)
 
     if (error) {
       console.error("Failed to update experience", error)

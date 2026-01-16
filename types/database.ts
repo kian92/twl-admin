@@ -77,6 +77,7 @@ export interface Database {
           is_destination_featured: boolean
           status: "draft" | "review" | "active"
           created_by: string | null
+          updated_by: string | null
           created_at: string | null
           updated_at: string | null
         }
@@ -117,6 +118,7 @@ export interface Database {
           is_destination_featured?: boolean
           status?: "draft" | "review" | "active"
           created_by?: string | null
+          updated_by?: string | null
           created_at?: string | null
           updated_at?: string | null
         }
@@ -156,6 +158,7 @@ export interface Database {
           gallery?: string[] | null
           faqs?: Json | null
           created_by?: string | null
+          updated_by?: string | null
           updated_at?: string | null
         }
       }
