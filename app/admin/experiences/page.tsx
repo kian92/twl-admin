@@ -32,6 +32,7 @@ interface ExperienceWithPackagePrices extends ExperienceRow {
   tour_types?: ('group' | 'private')[]
   creator_name?: string
   updater_name?: string
+  min_pax?: number | undefined
 }
 
 const ITEMS_PER_PAGE = 12
@@ -91,27 +92,36 @@ export default function ExperiencesPage() {
               if (packages && packages.length > 0) {
                 const adultPrices: number[] = []
                 const childPrices: number[] = []
-                
+                const minGroupSizes: number[] = []
+
                 packages.forEach((pkg: any) => {
                   pkg.pricing_tiers?.forEach((tier: any) => {
                     const price = tier.selling_price ?? tier.base_price
-                
+
                     if (tier.tier_type === 'adult' && typeof price === 'number') {
                       adultPrices.push(price)
                     }
-                
+
                     if (tier.tier_type === 'child' && typeof price === 'number') {
                       childPrices.push(price)
                     }
                   })
+
+                  // Collect min_group_size from packages
+                  if (typeof pkg.min_group_size === 'number') {
+                    minGroupSizes.push(pkg.min_group_size)
+                  }
                 })
-                
+
                 const lowestAdultPrice =
                   adultPrices.length > 0 ? Math.min(...adultPrices) : exp.adult_price
-                
+
                 const lowestChildPrice =
                   childPrices.length > 0 ? Math.min(...childPrices) : exp.child_price
-                
+
+                // Get the minimum pax across all packages
+                const minPax = minGroupSizes.length > 0 ? Math.min(...minGroupSizes) : undefined
+
                 // Collect unique tour types from all packages
                 const tourTypes = [...new Set(packages.map((pkg: any) => pkg.tour_type || 'group'))] as ('group' | 'private')[]
 
@@ -122,6 +132,7 @@ export default function ExperiencesPage() {
                   tour_types: tourTypes,
                   creator_name: creatorName,
                   updater_name: updaterName,
+                  min_pax: minPax,
                 }
               }
             }
@@ -429,7 +440,7 @@ console.log('paginatedExperiences',paginatedExperiences);
               <CardContent className="p-4">
                 <div className="space-y-2">
                   <h3 className="font-semibold line-clamp-1">{experience.title}</h3>
-                  {profile?.role === 'admin' && (experience.creator_name || experience.updater_name) && (
+                  {profile?.role === 'admin' && (experience.creator_name || experience.updater_name || experience.min_pax) && (
                     <div className="text-xs text-muted-foreground space-y-0.5">
                       {experience.creator_name && (
                         <p>
@@ -439,6 +450,11 @@ console.log('paginatedExperiences',paginatedExperiences);
                       {experience.updater_name && (
                         <p>
                           Updated by: <span className="font-medium">{experience.updater_name}</span>
+                        </p>
+                      )}
+                      {experience.min_pax && (
+                        <p>
+                          Min pax: <span className="font-medium">{experience.min_pax}</span>
                         </p>
                       )}
                     </div>
