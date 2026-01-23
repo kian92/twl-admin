@@ -1460,7 +1460,14 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                       <div className="space-y-2">
                         {pkg.inclusions.map((item, itemIndex) => (
                           <div key={itemIndex} className="flex gap-2">
-                            <Input value={item} disabled />
+                            <Input
+                              value={item}
+                              onChange={(e) => {
+                                const updated = [...packages];
+                                updated[index].inclusions[itemIndex] = e.target.value;
+                                onChange(updated);
+                              }}
+                            />
                             <Button
                               type="button"
                               variant="ghost"
@@ -1493,7 +1500,14 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                       <div className="space-y-2">
                         {pkg.exclusions.map((item, itemIndex) => (
                           <div key={itemIndex} className="flex gap-2">
-                            <Input value={item} disabled />
+                            <Input
+                              value={item}
+                              onChange={(e) => {
+                                const updated = [...packages];
+                                updated[index].exclusions[itemIndex] = e.target.value;
+                                onChange(updated);
+                              }}
+                            />
                             <Button
                               type="button"
                               variant="ghost"
