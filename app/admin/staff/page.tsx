@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { ShieldCheck, Mail, UserPlus, Search } from "lucide-react"
+import { ShieldCheck, Mail, UserPlus, Search, KeyRound } from "lucide-react"
 
 import { useAdmin } from "@/components/admin-context"
 import { Button } from "@/components/ui/button"
@@ -18,6 +18,14 @@ import {
   PaginationPrevious,
   PaginationNext,
 } from "@/components/ui/pagination"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import type { Database } from "@/types/database"
 
 type StaffMember = Database["public"]["Tables"]["admin_profiles"]["Row"]
@@ -64,7 +72,7 @@ const roleBadgeStyles = (role: string) => {
 }
 
 export default function StaffPage() {
-  const { profile } = useAdmin()
+  const { profile, user } = useAdmin()
   const [staff, setStaff] = useState<StaffMember[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -82,6 +90,10 @@ export default function StaffPage() {
   const [submitting, setSubmitting] = useState(false)
   const [editingRoleId, setEditingRoleId] = useState<string | null>(null)
   const [updatingRole, setUpdatingRole] = useState(false)
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
+  const [selectedStaffForPassword, setSelectedStaffForPassword] = useState<StaffMember | null>(null)
+  const [newPassword, setNewPassword] = useState("")
+  const [updatingPassword, setUpdatingPassword] = useState(false)
 
   const loadStaff = useCallback(async () => {
     setLoading(true)
@@ -131,6 +143,7 @@ export default function StaffPage() {
   }
 
   const canInvite = profile?.role === "admin"
+  const canResetPassword = user?.email === "choo.developer@gmail.com"
 
   const handleInvite = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -239,6 +252,51 @@ export default function StaffPage() {
         type: "error",
         message: err instanceof Error ? err.message : "Failed to update staff member",
       })
+    }
+  }
+
+  const handleOpenPasswordDialog = (member: StaffMember) => {
+    setSelectedStaffForPassword(member)
+    setNewPassword("")
+    setPasswordDialogOpen(true)
+  }
+
+  const handleClosePasswordDialog = () => {
+    setPasswordDialogOpen(false)
+    setSelectedStaffForPassword(null)
+    setNewPassword("")
+  }
+
+  const handleUpdatePassword = async (event: React.FormEvent) => {
+    event.preventDefault()
+    if (!selectedStaffForPassword) return
+
+    setInviteStatus(null)
+    setUpdatingPassword(true)
+
+    try {
+      const response = await fetch(`/api/admin/staff/${selectedStaffForPassword.id}/password`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: newPassword }),
+      })
+
+      const payload = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Failed to update password")
+      }
+
+      setInviteStatus({ type: "success", message: `Password updated for ${selectedStaffForPassword.full_name ?? "staff member"}.` })
+      handleClosePasswordDialog()
+    } catch (err) {
+      console.error("Password update failed", err)
+      setInviteStatus({
+        type: "error",
+        message: err instanceof Error ? err.message : "Failed to update password",
+      })
+    } finally {
+      setUpdatingPassword(false)
     }
   }
 
@@ -493,6 +551,16 @@ export default function StaffPage() {
                       <p className="text-xs text-muted-foreground">Updated {formatDate(member.updated_at)}</p>
                       {canInvite && (
                         <div className="flex gap-2 justify-end">
+                          {canResetPassword && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleOpenPasswordDialog(member)}
+                            >
+                              <KeyRound className="h-3 w-3 mr-1" />
+                              Reset Password
+                            </Button>
+                          )}
                           <Button
                             size="sm"
                             variant={member.is_active ? "outline" : "secondary"}
@@ -542,6 +610,48 @@ export default function StaffPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Set a new password for {selectedStaffForPassword?.full_name ?? "this staff member"}.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleUpdatePassword}>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="new-password">New Password</Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  placeholder="Enter new password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  minLength={6}
+                  required
+                  autoFocus
+                />
+                <p className="text-xs text-muted-foreground">Minimum 6 characters</p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleClosePasswordDialog}
+                disabled={updatingPassword}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updatingPassword}>
+                {updatingPassword ? "Updating..." : "Update Password"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
