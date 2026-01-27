@@ -29,6 +29,7 @@ type ExperienceRow = Database["public"]["Tables"]["experiences"]["Row"]
 interface ExperienceWithPackagePrices extends ExperienceRow {
   package_adult_price?: number | undefined
   package_child_price?: number | undefined
+  package_vehicle_price?: number | undefined
   tour_types?: ('group' | 'private')[]
   creator_name?: string
   updater_name?: string
@@ -92,6 +93,7 @@ export default function ExperiencesPage() {
               if (packages && packages.length > 0) {
                 const adultPrices: number[] = []
                 const childPrices: number[] = []
+                const vehiclePrices: number[] = []
                 const minGroupSizes: number[] = []
 
                 packages.forEach((pkg: any) => {
@@ -105,6 +107,10 @@ export default function ExperiencesPage() {
                     if (tier.tier_type === 'child' && typeof price === 'number') {
                       childPrices.push(price)
                     }
+
+                    if (tier.tier_type === 'vehicle' && typeof price === 'number') {
+                      vehiclePrices.push(price)
+                    }
                   })
 
                   // Collect min_group_size from packages
@@ -114,10 +120,13 @@ export default function ExperiencesPage() {
                 })
 
                 const lowestAdultPrice =
-                  adultPrices.length > 0 ? Math.min(...adultPrices) : exp.adult_price
+                  adultPrices.length > 0 ? Math.min(...adultPrices) : (vehiclePrices.length > 0 ? 0 : exp.adult_price)
 
                 const lowestChildPrice =
-                  childPrices.length > 0 ? Math.min(...childPrices) : exp.child_price
+                  childPrices.length > 0 ? Math.min(...childPrices) : (vehiclePrices.length > 0 ? 0 : exp.child_price)
+
+                const lowestVehiclePrice =
+                  vehiclePrices.length > 0 ? Math.min(...vehiclePrices) : undefined
 
                 // Get the minimum pax across all packages
                 const minPax = minGroupSizes.length > 0 ? Math.min(...minGroupSizes) : undefined
@@ -129,6 +138,7 @@ export default function ExperiencesPage() {
                   ...exp,
                   package_adult_price: lowestAdultPrice || exp.adult_price,
                   package_child_price: lowestChildPrice || exp.child_price,
+                  package_vehicle_price: lowestVehiclePrice,
                   tour_types: tourTypes,
                   creator_name: creatorName,
                   updater_name: updaterName,
@@ -471,7 +481,17 @@ console.log('paginatedExperiences',paginatedExperiences);
                   </div>
                   <div className="flex items-center justify-between pt-2">
                     <div className="text-sm text-muted-foreground leading-tight">
-                      <div className="font-semibold text-foreground">  ${Math.floor(experience.package_adult_price ?? experience.adult_price)} adult</div>
+                      <div className="font-semibold text-foreground">
+                        {(experience.package_adult_price ?? experience.adult_price) > 0 && (
+                          <span>${Math.floor(experience.package_adult_price ?? experience.adult_price)} adult</span>
+                        )}
+                        {experience.package_vehicle_price && experience.package_vehicle_price > 0 && (
+                          <span className={experience.package_adult_price && experience.package_adult_price > 0 ? "ml-2" : ""}>
+                            {experience.package_adult_price && experience.package_adult_price > 0 ? "· " : ""}
+                            ${Math.floor(experience.package_vehicle_price)} vehicle
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" asChild>

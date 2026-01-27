@@ -32,7 +32,7 @@ export interface AddOnItem {
 
 export interface CustomPricingTier {
   id?: string;
-  tier_type: 'adult' | 'child' | 'infant' | 'senior';
+  tier_type: 'adult' | 'child' | 'infant' | 'senior' | 'vehicle';
   tier_label: string;
   min_age?: number;
   max_age?: number | null;
@@ -69,6 +69,7 @@ export interface PackageFormData {
   base_child_price?: number;
   base_infant_price?: number;
   base_senior_price?: number;
+  base_vehicle_price?: number;
 
   // Supplier currency fields
   supplier_currency?: string;
@@ -76,6 +77,7 @@ export interface PackageFormData {
   supplier_cost_child?: number;
   supplier_cost_infant?: number;
   supplier_cost_senior?: number;
+  supplier_cost_vehicle?: number;
   exchange_rate?: number;
 
   // Selling prices (calculated or manual)
@@ -83,6 +85,7 @@ export interface PackageFormData {
   child_price: number;
   infant_price?: number;
   senior_price?: number;
+  vehicle_price?: number;
 
   // Age(child and adult)
   adult_min_age?: number;
@@ -180,11 +183,13 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
       base_child_price: 0,
       base_infant_price: 0,
       base_senior_price: 0,
+      base_vehicle_price: 0,
       supplier_currency: 'USD',
       supplier_cost_adult: 0,
       supplier_cost_child: 0,
       supplier_cost_infant: 0,
       supplier_cost_senior: 0,
+      supplier_cost_vehicle: 0,
       exchange_rate: 1.0,
       adult_price: 0,
       child_price: 0,
@@ -194,6 +199,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
       child_max_age: 17,
       infant_price: 0,
       senior_price: 0,
+      vehicle_price: 0,
       use_custom_tiers: false,
       custom_pricing_tiers: [],
       addons: [],
@@ -295,6 +301,9 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
       if (pkg.supplier_cost_senior) {
         updated[index].base_senior_price = roundCurrency(convertToUSD(pkg.supplier_cost_senior, exchangeRate));
       }
+      if (pkg.supplier_cost_vehicle) {
+        updated[index].base_vehicle_price = roundCurrency(convertToUSD(pkg.supplier_cost_vehicle, exchangeRate));
+      }
 
       // Also recalculate selling prices with markup
       const markupType = pkg.markup_type || 'none';
@@ -303,6 +312,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
       updated[index].child_price = calculateSellingPrice(updated[index].base_child_price || 0, markupType, markupValue);
       updated[index].infant_price = calculateSellingPrice(updated[index].base_infant_price || 0, markupType, markupValue);
       updated[index].senior_price = calculateSellingPrice(updated[index].base_senior_price || 0, markupType, markupValue);
+      updated[index].vehicle_price = calculateSellingPrice(updated[index].base_vehicle_price || 0, markupType, markupValue);
     }
 
     onChange(updated);
@@ -322,6 +332,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
       updated[index].child_price = calculateSellingPrice(pkg.base_child_price || 0, markupType, markupValue);
       updated[index].infant_price = calculateSellingPrice(pkg.base_infant_price || 0, markupType, markupValue);
       updated[index].senior_price = calculateSellingPrice(pkg.base_senior_price || 0, markupType, markupValue);
+      updated[index].vehicle_price = calculateSellingPrice(pkg.base_vehicle_price || 0, markupType, markupValue);
     }
 
     onChange(updated);
@@ -869,6 +880,31 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                             </p>
                           )}
                         </div>
+                        <div className="space-y-2">
+                          <Label>Vehicle Cost ({pkg.supplier_currency || 'USD'})</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={pkg.supplier_cost_vehicle ?? ''}
+                            onChange={(e) => {
+                              const rawValue = e.target.value;
+                              const parsedValue = rawValue === '' ? 0 : parseFloat(rawValue);
+
+                              const flooredValue = isNaN(parsedValue)
+                                ? 0
+                                : Math.floor(parsedValue);
+
+                              updatePricingWithMarkup(index, 'supplier_cost_vehicle', flooredValue);
+                            }}
+                            placeholder={t('optional')}
+                          />
+                          {pkg.supplier_cost_vehicle && pkg.exchange_rate && (
+                            <p className="text-xs text-muted-foreground">
+                              ≈ {formatCurrency(Math.floor(convertToUSD(pkg.supplier_cost_vehicle, pkg.exchange_rate)), 'USD')}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -952,12 +988,32 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                               onChange={(e) => {
                                 const rawValue = e.target.value;
                                 const parsedValue = rawValue === '' ? 0 : parseFloat(rawValue);
-                            
+
                                 const flooredValue = isNaN(parsedValue)
                                   ? 0
                                   : Math.floor(parsedValue);
-                            
-                                updatePricingWithMarkup(index, 'base_senior_price', flooredValue);                             
+
+                                updatePricingWithMarkup(index, 'base_senior_price', flooredValue);
+                              }}
+                              placeholder="Optional"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Vehicle Base Price</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={pkg.base_vehicle_price ?? ''}
+                              onChange={(e) => {
+                                const rawValue = e.target.value;
+                                const parsedValue = rawValue === '' ? 0 : parseFloat(rawValue);
+
+                                const flooredValue = isNaN(parsedValue)
+                                  ? 0
+                                  : Math.floor(parsedValue);
+
+                                updatePricingWithMarkup(index, 'base_vehicle_price', flooredValue);
                               }}
                               placeholder="Optional"
                             />
@@ -1049,6 +1105,27 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                             className="font-semibold"
                             disabled={!isSupplier && pkg.markup_type !== 'none'}
                           />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Vehicle Price (per vehicle)</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={pkg.vehicle_price ?? ''}
+                            onChange={(e) => {
+                              const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
+                              updatePackage(index, 'vehicle_price', value === undefined || isNaN(value) ? undefined : value);
+                            }}
+                            placeholder="Optional"
+                            className="font-semibold"
+                            disabled={!isSupplier && pkg.markup_type !== 'none'}
+                          />
+                          {!isSupplier && pkg.markup_type && pkg.markup_type !== 'none' && pkg.base_vehicle_price && pkg.markup_value && (
+                            <span className="text-xs text-muted-foreground">
+                              ${pkg.base_vehicle_price} + {pkg.markup_type === 'percentage' ? `${pkg.markup_value}%` : `$${pkg.markup_value}`}
+                            </span>
+                          )}
                         </div>
                       </div>
                       </div>

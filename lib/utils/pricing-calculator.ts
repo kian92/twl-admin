@@ -38,7 +38,7 @@ export function calculatePackagePrice(
   const travelDate = new Date(input.travel_date);
   const daysBeforeTravel = Math.ceil((travelDate.getTime() - bookingDate.getTime()) / (1000 * 60 * 60 * 24));
 
-  // Calculate total passengers
+  // Calculate total passengers (note: vehicles are not counted as passengers)
   const totalPassengers =
     (input.adult_count || 0) +
     (input.child_count || 0) +
@@ -161,7 +161,7 @@ function calculateBasePrice(
   }
   // LEGACY: Handle generic type counts (backward compatibility with use_custom_tiers = false)
   else {
-    const tierTypes: TierType[] = ['adult', 'child', 'infant', 'senior', 'student'];
+    const tierTypes: TierType[] = ['adult', 'child', 'infant', 'senior', 'student', 'vehicle'];
 
     for (const tierType of tierTypes) {
       const count = input[`${tierType}_count` as keyof PriceCalculationInput] as number || 0;

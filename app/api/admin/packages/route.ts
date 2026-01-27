@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
       });
     } else {
       // Use standard adult/child/infant/senior pricing
-      if (body.adult_price !== undefined && body.adult_price !== null) {
+      if (body.adult_price !== undefined && body.adult_price !== null && body.adult_price > 0) {
         pricingTiers.push({
           package_id: newPackage.id,
           tier_type: 'adult',
@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      if (body.child_price !== undefined && body.child_price !== null) {
+      if (body.child_price !== undefined && body.child_price !== null && body.child_price > 0) {
         pricingTiers.push({
           package_id: newPackage.id,
           tier_type: 'child',
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      if (body.infant_price !== undefined && body.infant_price !== null) {
+      if (body.infant_price !== undefined && body.infant_price !== null && body.infant_price > 0) {
         pricingTiers.push({
           package_id: newPackage.id,
           tier_type: 'infant',
@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      if (body.senior_price !== undefined && body.senior_price !== null) {
+      if (body.senior_price !== undefined && body.senior_price !== null && body.senior_price > 0) {
         pricingTiers.push({
           package_id: newPackage.id,
           tier_type: 'senior',
@@ -188,6 +188,25 @@ export async function POST(request: NextRequest) {
           markup_type: markupType,
           markup_value: markupValue,
           selling_price: body.senior_price,
+          currency: 'USD',
+          is_active: true,
+        });
+      }
+
+      if (body.vehicle_price !== undefined && body.vehicle_price !== null && body.vehicle_price > 0) {
+        pricingTiers.push({
+          package_id: newPackage.id,
+          tier_type: 'vehicle',
+          tier_label: body.vehicle_tier_label || 'Vehicle Rental (per vehicle)',
+          min_age: null,
+          max_age: null,
+          base_price: body.base_vehicle_price || 0,
+          supplier_currency: body.supplier_currency || 'USD',
+          supplier_cost: body.supplier_cost_vehicle,
+          exchange_rate: body.exchange_rate || 1.0,
+          markup_type: markupType,
+          markup_value: markupValue,
+          selling_price: body.vehicle_price,
           currency: 'USD',
           is_active: true,
         });

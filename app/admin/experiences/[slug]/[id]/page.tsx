@@ -302,7 +302,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
 
                 const hasMultipleTiersOfSameType = Object.values(tierTypeCounts).some(count => count > 1);
                 const hasCustomLabels = pricingTiers.some((t: any) => {
-                  const defaultLabels = ['Adult (18+ years)', 'Child (3-17 years)', 'Infant (0-2 years)', 'Senior (65+ years)'];
+                  const defaultLabels = ['Adult (18+ years)', 'Child (3-17 years)', 'Infant (0-2 years)', 'Senior (65+ years)', 'Vehicle Rental (per vehicle)'];
                   return t.tier_label && !defaultLabels.includes(t.tier_label);
                 });
 
@@ -313,6 +313,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                 const childTier = pricingTiers.find((t: any) => t.tier_type === 'child');
                 const infantTier = pricingTiers.find((t: any) => t.tier_type === 'infant');
                 const seniorTier = pricingTiers.find((t: any) => t.tier_type === 'senior');
+                const vehicleTier = pricingTiers.find((t: any) => t.tier_type === 'vehicle');
 
                 // Get markup info from first tier (assuming all tiers have same markup settings)
                 const firstTier = pricingTiers[0] || {};
@@ -355,13 +356,15 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                   base_child_price: Math.floor(childTier?.base_price) || 0,
                   base_infant_price: Math.floor(infantTier?.base_price) || 0,
                   base_senior_price: Math.floor(seniorTier?.base_price) || 0,
+                  base_vehicle_price: Math.floor(vehicleTier?.base_price) || 0,
 
                   // Supplier currency fields
                   supplier_currency: supplierCurrency,
-                  supplier_cost_adult: Math.floor(adultTier?.supplier_cost),
-                  supplier_cost_child: Math.floor(childTier?.supplier_cost),
-                  supplier_cost_infant: Math.floor(infantTier?.supplier_cost),
-                  supplier_cost_senior: Math.floor(seniorTier?.supplier_cost),
+                  supplier_cost_adult: Math.floor(adultTier?.supplier_cost) || 0,
+                  supplier_cost_child: Math.floor(childTier?.supplier_cost) || 0,
+                  supplier_cost_infant: Math.floor(infantTier?.supplier_cost) || 0,
+                  supplier_cost_senior: Math.floor(seniorTier?.supplier_cost) || 0,
+                  supplier_cost_vehicle: Math.floor(vehicleTier?.supplier_cost) || 0,
                   exchange_rate: exchangeRate,
 
                   // Selling prices (what customer pays) - for simple mode
@@ -369,6 +372,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                   child_price: Math.floor(childTier?.selling_price || childTier?.base_price || 0),
                   infant_price: Math.floor(infantTier?.selling_price || infantTier?.base_price || 0),
                   senior_price: Math.floor(seniorTier?.selling_price || seniorTier?.base_price || 0),
+                  vehicle_price: Math.floor(vehicleTier?.selling_price || vehicleTier?.base_price || 0),
 
                   // Age(child and adult) - for simple mode
                   adult_min_age: adultTier?.min_age || 0,
@@ -724,12 +728,14 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
         const childMaxAge = Number(pkg.child_max_age) || 0;
         const infantPrice = pkg.infant_price ? Number(pkg.infant_price) : undefined;
         const seniorPrice = pkg.senior_price ? Number(pkg.senior_price) : undefined;
+        const vehiclePrice = pkg.vehicle_price ? Number(pkg.vehicle_price) : undefined;
 
         // Base prices
         const baseAdultPrice = Number(pkg.base_adult_price) || 0;
         const baseChildPrice = Number(pkg.base_child_price) || 0;
         const baseInfantPrice = pkg.base_infant_price ? Number(pkg.base_infant_price) : undefined;
         const baseSeniorPrice = pkg.base_senior_price ? Number(pkg.base_senior_price) : undefined;
+        const baseVehiclePrice = pkg.base_vehicle_price ? Number(pkg.base_vehicle_price) : undefined;
 
         const packagePayload: any = {
           experience_id: experience.id,
@@ -771,11 +777,13 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
           packagePayload.base_child_price = baseChildPrice;
           if (baseInfantPrice !== undefined) packagePayload.base_infant_price = baseInfantPrice;
           if (baseSeniorPrice !== undefined) packagePayload.base_senior_price = baseSeniorPrice;
+          if (baseVehiclePrice !== undefined) packagePayload.base_vehicle_price = baseVehiclePrice;
 
           packagePayload.supplier_cost_adult = pkg.supplier_cost_adult;
           packagePayload.supplier_cost_child = pkg.supplier_cost_child;
           packagePayload.supplier_cost_infant = pkg.supplier_cost_infant;
           packagePayload.supplier_cost_senior = pkg.supplier_cost_senior;
+          packagePayload.supplier_cost_vehicle = pkg.supplier_cost_vehicle;
 
           packagePayload.adult_price = adultPrice;
           packagePayload.child_price = childPrice;
@@ -785,6 +793,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
           packagePayload.child_max_age = childMaxAge;
           if (infantPrice !== undefined) packagePayload.infant_price = infantPrice;
           if (seniorPrice !== undefined) packagePayload.senior_price = seniorPrice;
+          if (vehiclePrice !== undefined) packagePayload.vehicle_price = vehiclePrice;
         }
 
         console.log('Creating package with payload:', packagePayload);

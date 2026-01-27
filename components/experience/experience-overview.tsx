@@ -35,6 +35,7 @@ interface ExperienceOverviewProps {
     duration: string
     adult_price: number
     child_price: number
+    vehicle_price?: number
     price?: number
     category: string
     rating: number
@@ -60,10 +61,12 @@ export function ExperienceOverview({ experience, addons = [] }: ExperienceOvervi
   const maxGroup = Math.max(minGroup, experience.max_group_size ?? minGroup)
   const [adults, setAdults] = useState(() => Math.max(1, minGroup))
   const [children, setChildren] = useState(0)
+  const [vehicles, setVehicles] = useState(0)
   const [selectedAddons, setSelectedAddons] = useState<Record<string, number>>({})
 
   const adultPrice = Number.isFinite(experience.adult_price) ? experience.adult_price : experience.price ?? 0
   const childPrice = Number.isFinite(experience.child_price) ? experience.child_price : adultPrice * 0.7
+  const vehiclePrice = Number.isFinite(experience.vehicle_price) ? experience.vehicle_price : 0
   const totalPeople = adults + children
 
   // Calculate add-ons price
@@ -80,7 +83,7 @@ export function ExperienceOverview({ experience, addons = [] }: ExperienceOvervi
     }
   }, 0)
 
-  const basePrice = adultPrice * adults + childPrice * children
+  const basePrice = adultPrice * adults + childPrice * children + vehiclePrice * vehicles
   const totalPrice = basePrice + addonsPrice
 
   const availableFrom = experience.available_from ? new Date(experience.available_from) : null
@@ -111,7 +114,7 @@ export function ExperienceOverview({ experience, addons = [] }: ExperienceOvervi
         category: addon.category
       }))
 
-    addToTrip(experience as any, format(selectedDate, "yyyy-MM-dd"), adults, children, addonsToAdd)
+    addToTrip(experience as any, format(selectedDate, "yyyy-MM-dd"), adults, children, addonsToAdd, vehicles)
     setJustAdded(true)
     setTimeout(() => setJustAdded(false), 2000)
   }
@@ -214,7 +217,10 @@ export function ExperienceOverview({ experience, addons = [] }: ExperienceOvervi
                 <div className="mb-6">
                   <div className="text-sm text-muted-foreground mb-1">From</div>
                   <div className="text-3xl font-bold">${adultPrice}</div>
-                  <div className="text-sm text-muted-foreground">Adult · Child ${childPrice}</div>
+                  <div className="text-sm text-muted-foreground">
+                    Adult · Child ${childPrice}
+                    {vehiclePrice > 0 && ` · Vehicle $${vehiclePrice}`}
+                  </div>
                 </div>
 
                 {/* Date Selection */}
@@ -327,6 +333,36 @@ export function ExperienceOverview({ experience, addons = [] }: ExperienceOvervi
                       </Button>
                     </div>
                   </div>
+
+                  {/* Vehicles - Only show if vehicle pricing is available */}
+                  {vehiclePrice > 0 && (
+                    <div className="flex items-center justify-between pt-2 border-t">
+                      <div>
+                        <div className="text-sm font-medium">Vehicles</div>
+                        <div className="text-xs text-muted-foreground">Private vehicle rental</div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8 bg-transparent"
+                          onClick={() => setVehicles(Math.max(0, vehicles - 1))}
+                          disabled={vehicles <= 0}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="w-8 text-center font-medium">{vehicles}</span>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8 bg-transparent"
+                          onClick={() => setVehicles((prev) => prev + 1)}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Add-ons */}
@@ -409,6 +445,7 @@ export function ExperienceOverview({ experience, addons = [] }: ExperienceOvervi
                     <div>
                       {adults} adult{adults > 1 ? "s" : ""} × ${adultPrice.toFixed(2)}
                       {children > 0 && ` + ${children} child${children > 1 ? "ren" : ""} × ${childPrice.toFixed(2)}`}
+                      {vehicles > 0 && ` + ${vehicles} vehicle${vehicles > 1 ? "s" : ""} × ${vehiclePrice.toFixed(2)}`}
                     </div>
                     {addonsPrice > 0 && (
                       <div className="text-primary">

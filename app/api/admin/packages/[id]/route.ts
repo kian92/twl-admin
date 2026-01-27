@@ -90,19 +90,21 @@ export async function PUT(
       return NextResponse.json({ error: packageError.message }, { status: 500 });
     }
 
-    // Update pricing tiers if provided
-    if (body.pricing_tiers) {
-      // Delete existing tiers
-      await supabase.from('package_pricing_tiers').delete().eq('package_id', id);
+    // Delete existing tiers
+    await supabase.from('package_pricing_tiers').delete().eq('package_id', id);
 
-      // Get markup settings
-      const markupType = body.markup_type || 'none';
-      const markupValue = body.markup_value || 0;
+    // Get markup settings
+    const markupType = body.markup_type || 'none';
+    const markupValue = body.markup_value || 0;
 
-      // Check if using custom pricing tiers
-      if (body.use_custom_tiers && body.custom_pricing_tiers && Array.isArray(body.custom_pricing_tiers)) {
-        // Use custom pricing tiers (with new fields)
-        const tiersToInsert = body.custom_pricing_tiers.map((tier: any, index: number) => ({
+    // Create pricing tiers array
+    const pricingTiers = [];
+
+    // Check if using custom pricing tiers
+    if (body.use_custom_tiers && body.custom_pricing_tiers && Array.isArray(body.custom_pricing_tiers)) {
+      // Use custom pricing tiers
+      body.custom_pricing_tiers.forEach((tier: any, index: number) => {
+        pricingTiers.push({
           package_id: id,
           tier_type: tier.tier_type,
           tier_label: tier.tier_label,
@@ -123,34 +125,113 @@ export async function PUT(
           max_per_booking: tier.max_per_booking || null,
           booking_notes: tier.booking_notes || null,
           is_active: true,
-        }));
-
-        if (tiersToInsert.length > 0) {
-          await supabase.from('package_pricing_tiers').insert(tiersToInsert);
-        }
-      } else {
-        // Use standard pricing_tiers array format
-        const tiersToInsert = body.pricing_tiers.map((tier: any) => ({
+        });
+      });
+    } else {
+      // Use standard adult/child/infant/senior/vehicle pricing
+      if (body.adult_price !== undefined && body.adult_price !== null && body.adult_price > 0) {
+        pricingTiers.push({
           package_id: id,
-          tier_type: tier.tier_type,
-          tier_label: tier.tier_label,
-          min_age: tier.min_age,
-          max_age: tier.max_age,
-          base_price: tier.base_price,
-          supplier_currency: tier.supplier_currency || body.supplier_currency || 'USD',
-          supplier_cost: tier.supplier_cost,
-          exchange_rate: tier.exchange_rate || body.exchange_rate || 1.0,
-          markup_type: tier.markup_type || body.markup_type || 'none',
-          markup_value: tier.markup_value || body.markup_value || 0,
-          selling_price: tier.selling_price,
-          currency: tier.currency || 'USD',
-          cost_price: tier.cost_price,
-          is_active: tier.is_active !== false,
-        }));
+          tier_type: 'adult',
+          tier_label: body.adult_tier_label || 'Adult (18+ years)',
+          min_age: body.adult_min_age || 18,
+          max_age: body.adult_max_age || null,
+          base_price: body.base_adult_price || 0,
+          supplier_currency: body.supplier_currency || 'USD',
+          supplier_cost: body.supplier_cost_adult,
+          exchange_rate: body.exchange_rate || 1.0,
+          markup_type: markupType,
+          markup_value: markupValue,
+          selling_price: body.adult_price,
+          currency: 'USD',
+          is_active: true,
+        });
+      }
 
-        if (tiersToInsert.length > 0) {
-          await supabase.from('package_pricing_tiers').insert(tiersToInsert);
-        }
+      if (body.child_price !== undefined && body.child_price !== null && body.child_price > 0) {
+        pricingTiers.push({
+          package_id: id,
+          tier_type: 'child',
+          tier_label: body.child_tier_label || 'Child (3-17 years)',
+          min_age: body.child_min_age || 3,
+          max_age: body.child_max_age || 17,
+          base_price: body.base_child_price || 0,
+          supplier_currency: body.supplier_currency || 'USD',
+          supplier_cost: body.supplier_cost_child,
+          exchange_rate: body.exchange_rate || 1.0,
+          markup_type: markupType,
+          markup_value: markupValue,
+          selling_price: body.child_price,
+          currency: 'USD',
+          is_active: true,
+        });
+      }
+
+      if (body.infant_price !== undefined && body.infant_price !== null && body.infant_price > 0) {
+        pricingTiers.push({
+          package_id: id,
+          tier_type: 'infant',
+          tier_label: body.infant_tier_label || 'Infant (0-2 years)',
+          min_age: 0,
+          max_age: 2,
+          base_price: body.base_infant_price || 0,
+          supplier_currency: body.supplier_currency || 'USD',
+          supplier_cost: body.supplier_cost_infant,
+          exchange_rate: body.exchange_rate || 1.0,
+          markup_type: markupType,
+          markup_value: markupValue,
+          selling_price: body.infant_price,
+          currency: 'USD',
+          is_active: true,
+        });
+      }
+
+      if (body.senior_price !== undefined && body.senior_price !== null && body.senior_price > 0) {
+        pricingTiers.push({
+          package_id: id,
+          tier_type: 'senior',
+          tier_label: body.senior_tier_label || 'Senior (65+ years)',
+          min_age: 65,
+          max_age: null,
+          base_price: body.base_senior_price || 0,
+          supplier_currency: body.supplier_currency || 'USD',
+          supplier_cost: body.supplier_cost_senior,
+          exchange_rate: body.exchange_rate || 1.0,
+          markup_type: markupType,
+          markup_value: markupValue,
+          selling_price: body.senior_price,
+          currency: 'USD',
+          is_active: true,
+        });
+      }
+
+      if (body.vehicle_price !== undefined && body.vehicle_price !== null && body.vehicle_price > 0) {
+        pricingTiers.push({
+          package_id: id,
+          tier_type: 'vehicle',
+          tier_label: body.vehicle_tier_label || 'Vehicle Rental (per vehicle)',
+          min_age: null,
+          max_age: null,
+          base_price: body.base_vehicle_price || 0,
+          supplier_currency: body.supplier_currency || 'USD',
+          supplier_cost: body.supplier_cost_vehicle,
+          exchange_rate: body.exchange_rate || 1.0,
+          markup_type: markupType,
+          markup_value: markupValue,
+          selling_price: body.vehicle_price,
+          currency: 'USD',
+          is_active: true,
+        });
+      }
+    }
+
+    if (pricingTiers.length > 0) {
+      const { error: tiersError } = await supabase
+        .from('package_pricing_tiers')
+        .insert(pricingTiers);
+
+      if (tiersError) {
+        console.error('Failed to update pricing tiers:', tiersError);
       }
     }
 

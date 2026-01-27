@@ -19,6 +19,7 @@ export interface Experience {
   duration: string
   adult_price: number
   child_price: number
+  vehicle_price?: number
   price?: number
   image: string
   category: string
@@ -36,13 +37,14 @@ export interface TripItem extends Experience {
   bookingDate: string
   adults: number
   children: number
+  vehicles?: number
   totalPrice: number
   selectedAddons?: AddOnSelection[]
 }
 
 interface TripContextType {
   tripItems: TripItem[]
-  addToTrip: (experience: Experience, bookingDate: string, adults: number, children: number, selectedAddons?: AddOnSelection[]) => void
+  addToTrip: (experience: Experience, bookingDate: string, adults: number, children: number, selectedAddons?: AddOnSelection[], vehicles?: number) => void
   removeFromTrip: (id: string) => void
   reorderTrip: (items: TripItem[]) => void
   clearTrip: () => void
@@ -76,7 +78,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
     }
   }, [tripItems])
 
-  const addToTrip = (experience: Experience, bookingDate: string, adults: number, children: number, selectedAddons?: AddOnSelection[]) => {
+  const addToTrip = (experience: Experience, bookingDate: string, adults: number, children: number, selectedAddons?: AddOnSelection[], vehicles?: number) => {
     setTripItems((prev) => {
       if (prev.find((item) => item.id === experience.id)) {
         return prev
@@ -87,9 +89,10 @@ export function TripProvider({ children }: { children: ReactNode }) {
         : Number.isFinite(experience.price)
           ? experience.price * 0.7
           : 0
+      const vehiclePrice = Number.isFinite(experience.vehicle_price) ? experience.vehicle_price : 0
 
       // Calculate base price
-      let totalPrice = adultPrice * adults + childPrice * children
+      let totalPrice = adultPrice * adults + childPrice * children + vehiclePrice * (vehicles || 0)
 
       // Calculate add-ons price
       if (selectedAddons && selectedAddons.length > 0) {
@@ -112,6 +115,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
           bookingDate,
           adults,
           children,
+          vehicles: vehicles || 0,
           totalPrice,
           selectedAddons: selectedAddons || [],
         },

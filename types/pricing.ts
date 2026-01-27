@@ -7,7 +7,7 @@
  */
 
 export type PricingType = 'per_person' | 'per_group' | 'discount_percentage' | 'discount_amount' | 'per_unit';
-export type TierType = 'adult' | 'child' | 'infant' | 'senior' | 'student';
+export type TierType = 'adult' | 'child' | 'infant' | 'senior' | 'student' | 'vehicle';
 export type AdjustmentType = 'percentage' | 'fixed_amount' | 'override_price';
 export type DiscountType = 'early_bird' | 'last_minute';
 export type ComparisonType = 'greater_than' | 'less_than' | 'equal_to';
@@ -363,6 +363,7 @@ export interface PriceCalculationInput {
   infant_count?: number;
   senior_count?: number;
   student_count?: number;
+  vehicle_count?: number;
 
   // Optional
   promo_code?: string;
@@ -487,6 +488,7 @@ export interface PackageFormData {
   infant_price?: number;
   senior_price?: number;
   student_price?: number;
+  vehicle_price?: number;
 }
 
 /**

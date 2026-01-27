@@ -435,6 +435,7 @@ export default function NewExperiencePage() {
             base_child_price: Math.floor(pkg.base_child_price || 0),
             base_infant_price: Math.floor(pkg.base_infant_price || 0),
             base_senior_price: Math.floor(pkg.base_senior_price || 0),
+            base_vehicle_price: Math.floor(pkg.base_vehicle_price || 0),
 
             // Supplier currency fields
             supplier_currency: pkg.supplier_currency || 'USD',
@@ -442,6 +443,7 @@ export default function NewExperiencePage() {
             supplier_cost_child: pkg.supplier_cost_child,
             supplier_cost_infant: pkg.supplier_cost_infant,
             supplier_cost_senior: pkg.supplier_cost_senior,
+            supplier_cost_vehicle: pkg.supplier_cost_vehicle,
             exchange_rate: pkg.exchange_rate || 1.0,
 
             // Selling prices (what customer pays)
@@ -449,6 +451,7 @@ export default function NewExperiencePage() {
             child_price: Math.floor(pkg.child_price),
             infant_price: Math.floor(pkg.infant_price || 0),
             senior_price: Math.floor(pkg.senior_price || 0),
+            vehicle_price: Math.floor(pkg.vehicle_price || 0),
 
             // Age (child and adult)
             adult_min_age: pkg.adult_min_age,
