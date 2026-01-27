@@ -6,9 +6,9 @@ const trimString = (value?: string | null) => {
   return trimmed ? trimmed : null
 }
 
-const normalizeStringArray = (values?: string[] | null) => {
+const normalizeStringArray = (values?: (string | null)[] | null) => {
   if (!values) return []
-  return values.map((value) => value.trim()).filter(Boolean)
+  return values.filter((value): value is string => value !== null).map((value) => value.trim()).filter(Boolean)
 }
 
 const itineraryItemSchema = z.object({
