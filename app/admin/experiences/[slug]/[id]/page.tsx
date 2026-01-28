@@ -375,10 +375,10 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                   vehicle_price: Math.floor(vehicleTier?.selling_price || vehicleTier?.base_price || 0),
 
                   // Age(child and adult) - for simple mode
-                  adult_min_age: adultTier?.min_age || 0,
-                  adult_max_age: adultTier?.max_age || 0,
-                  child_min_age: childTier?.min_age || 0,
-                  child_max_age: childTier?.max_age || 0,
+                  adult_min_age: adultTier?.min_age ?? 18,
+                  adult_max_age: adultTier?.max_age ?? null,
+                  child_min_age: childTier?.min_age ?? 3,
+                  child_max_age: childTier?.max_age ?? 17,
 
                   // Custom pricing tiers
                   use_custom_tiers: useCustomTiers,
@@ -596,21 +596,13 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
       const adultPrice = Number.isFinite(firstPackage.adult_price) ? Math.floor(firstPackage.adult_price) : 0
       const childPrice = Number.isFinite(firstPackage.child_price) ? Math.floor(firstPackage.child_price) : 0
 
-      const adultMinAge = typeof firstPackage.adult_min_age === "number"
-        ? firstPackage.adult_min_age
-        : 0
+      const adultMinAge = firstPackage.adult_min_age ?? 18
 
-      const adultMaxAge = typeof firstPackage.adult_max_age === "number"
-        ? firstPackage.adult_max_age
-        : null
+      const adultMaxAge = firstPackage.adult_max_age ?? null
 
-      const childMinAge = typeof firstPackage.child_min_age === "number"
-        ? firstPackage.child_min_age
-        : 0
+      const childMinAge = firstPackage.child_min_age ?? 3
 
-      const childMaxAge = typeof firstPackage.child_max_age === "number"
-        ? firstPackage.child_max_age
-        : 0
+      const childMaxAge = firstPackage.child_max_age ?? 17
 
 
 
@@ -722,10 +714,10 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
         // Ensure prices are numbers
         const adultPrice = Number(pkg.adult_price) || 0;
         const childPrice = Number(pkg.child_price) || 0;
-        const adultMinAge = Number(pkg.adult_min_age) || 0;
-        const adultMaxAge = Number(pkg.adult_max_age) || 0;
-        const childMinAge = Number(pkg.child_min_age) || 0;
-        const childMaxAge = Number(pkg.child_max_age) || 0;
+        const adultMinAge = pkg.adult_min_age !== undefined && pkg.adult_min_age !== null ? Number(pkg.adult_min_age) : 18;
+        const adultMaxAge = pkg.adult_max_age !== undefined && pkg.adult_max_age !== null ? Number(pkg.adult_max_age) : null;
+        const childMinAge = pkg.child_min_age !== undefined && pkg.child_min_age !== null ? Number(pkg.child_min_age) : 3;
+        const childMaxAge = pkg.child_max_age !== undefined && pkg.child_max_age !== null ? Number(pkg.child_max_age) : 17;
         const infantPrice = pkg.infant_price ? Number(pkg.infant_price) : undefined;
         const seniorPrice = pkg.senior_price ? Number(pkg.senior_price) : undefined;
         const vehiclePrice = pkg.vehicle_price ? Number(pkg.vehicle_price) : undefined;
@@ -796,6 +788,11 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
           if (vehiclePrice !== undefined) packagePayload.vehicle_price = vehiclePrice;
         }
 
+        console.log('Age values before sending:', {
+          fromPackage: { adult_min_age: pkg.adult_min_age, adult_max_age: pkg.adult_max_age, child_min_age: pkg.child_min_age, child_max_age: pkg.child_max_age },
+          computed: { adultMinAge, adultMaxAge, childMinAge, childMaxAge },
+          inPayload: { adult_min_age: packagePayload.adult_min_age, adult_max_age: packagePayload.adult_max_age, child_min_age: packagePayload.child_min_age, child_max_age: packagePayload.child_max_age }
+        });
         console.log('Creating package with payload:', packagePayload);
 
         const response = await fetch("/api/admin/packages", {
