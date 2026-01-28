@@ -129,7 +129,9 @@ export async function PUT(
       });
     } else {
       // Use standard adult/child/infant/senior/vehicle pricing
-      if (body.adult_price !== undefined && body.adult_price !== null && body.adult_price > 0) {
+      // Create adult tier if price is set OR if age ranges are specified
+      const hasAdultAgeRange = body.adult_min_age !== undefined || body.adult_max_age !== undefined;
+      if ((body.adult_price !== undefined && body.adult_price !== null && body.adult_price > 0) || hasAdultAgeRange) {
         pricingTiers.push({
           package_id: id,
           tier_type: 'adult',
@@ -138,17 +140,19 @@ export async function PUT(
           max_age: body.adult_max_age ?? null,
           base_price: body.base_adult_price || 0,
           supplier_currency: body.supplier_currency || 'USD',
-          supplier_cost: body.supplier_cost_adult,
+          supplier_cost: body.supplier_cost_adult || 0,
           exchange_rate: body.exchange_rate || 1.0,
           markup_type: markupType,
           markup_value: markupValue,
-          selling_price: body.adult_price,
+          selling_price: body.adult_price || 0,
           currency: 'USD',
           is_active: true,
         });
       }
 
-      if (body.child_price !== undefined && body.child_price !== null && body.child_price > 0) {
+      // Create child tier if price is set OR if age ranges are specified
+      const hasChildAgeRange = body.child_min_age !== undefined || body.child_max_age !== undefined;
+      if ((body.child_price !== undefined && body.child_price !== null && body.child_price > 0) || hasChildAgeRange) {
         pricingTiers.push({
           package_id: id,
           tier_type: 'child',
@@ -157,11 +161,11 @@ export async function PUT(
           max_age: body.child_max_age ?? 17,
           base_price: body.base_child_price || 0,
           supplier_currency: body.supplier_currency || 'USD',
-          supplier_cost: body.supplier_cost_child,
+          supplier_cost: body.supplier_cost_child || 0,
           exchange_rate: body.exchange_rate || 1.0,
           markup_type: markupType,
           markup_value: markupValue,
-          selling_price: body.child_price,
+          selling_price: body.child_price || 0,
           currency: 'USD',
           is_active: true,
         });

@@ -117,7 +117,9 @@ export async function POST(request: NextRequest) {
       });
     } else {
       // Use standard adult/child/infant/senior pricing
-      if (body.adult_price !== undefined && body.adult_price !== null && body.adult_price > 0) {
+      // Create adult tier if price is set OR if age ranges are specified
+      const hasAdultAgeRange = body.adult_min_age !== undefined || body.adult_max_age !== undefined;
+      if ((body.adult_price !== undefined && body.adult_price !== null && body.adult_price > 0) || hasAdultAgeRange) {
         pricingTiers.push({
           package_id: newPackage.id,
           tier_type: 'adult',
@@ -136,7 +138,9 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      if (body.child_price !== undefined && body.child_price !== null && body.child_price > 0) {
+      // Create child tier if price is set OR if age ranges are specified
+      const hasChildAgeRange = body.child_min_age !== undefined || body.child_max_age !== undefined;
+      if ((body.child_price !== undefined && body.child_price !== null && body.child_price > 0) || hasChildAgeRange) {
         pricingTiers.push({
           package_id: newPackage.id,
           tier_type: 'child',

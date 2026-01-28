@@ -714,10 +714,20 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
         // Ensure prices are numbers
         const adultPrice = Number(pkg.adult_price) || 0;
         const childPrice = Number(pkg.child_price) || 0;
-        const adultMinAge = pkg.adult_min_age !== undefined && pkg.adult_min_age !== null ? Number(pkg.adult_min_age) : 18;
-        const adultMaxAge = pkg.adult_max_age !== undefined && pkg.adult_max_age !== null ? Number(pkg.adult_max_age) : null;
-        const childMinAge = pkg.child_min_age !== undefined && pkg.child_min_age !== null ? Number(pkg.child_min_age) : 3;
-        const childMaxAge = pkg.child_max_age !== undefined && pkg.child_max_age !== null ? Number(pkg.child_max_age) : 17;
+
+        // Age handling - convert to number if valid, otherwise use defaults
+        const adultMinAge = pkg.adult_min_age !== undefined && pkg.adult_min_age !== null && pkg.adult_min_age !== ''
+          ? Number(pkg.adult_min_age)
+          : 18;
+        const adultMaxAge = pkg.adult_max_age !== undefined && pkg.adult_max_age !== null && pkg.adult_max_age !== ''
+          ? Number(pkg.adult_max_age)
+          : null;
+        const childMinAge = pkg.child_min_age !== undefined && pkg.child_min_age !== null && pkg.child_min_age !== ''
+          ? Number(pkg.child_min_age)
+          : 3;
+        const childMaxAge = pkg.child_max_age !== undefined && pkg.child_max_age !== null && pkg.child_max_age !== ''
+          ? Number(pkg.child_max_age)
+          : 17;
         const infantPrice = pkg.infant_price ? Number(pkg.infant_price) : undefined;
         const seniorPrice = pkg.senior_price ? Number(pkg.senior_price) : undefined;
         const vehiclePrice = pkg.vehicle_price ? Number(pkg.vehicle_price) : undefined;
@@ -787,13 +797,6 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
           if (seniorPrice !== undefined) packagePayload.senior_price = seniorPrice;
           if (vehiclePrice !== undefined) packagePayload.vehicle_price = vehiclePrice;
         }
-
-        console.log('Age values before sending:', {
-          fromPackage: { adult_min_age: pkg.adult_min_age, adult_max_age: pkg.adult_max_age, child_min_age: pkg.child_min_age, child_max_age: pkg.child_max_age },
-          computed: { adultMinAge, adultMaxAge, childMinAge, childMaxAge },
-          inPayload: { adult_min_age: packagePayload.adult_min_age, adult_max_age: packagePayload.adult_max_age, child_min_age: packagePayload.child_min_age, child_max_age: packagePayload.child_max_age }
-        });
-        console.log('Creating package with payload:', packagePayload);
 
         const response = await fetch("/api/admin/packages", {
           method: "POST",

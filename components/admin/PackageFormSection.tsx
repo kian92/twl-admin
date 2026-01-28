@@ -722,13 +722,10 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                                   type="number"
                                   min="0"
                                   value={pkg.child_max_age ?? ''}
-                                  onChange={(e) =>
-                                    updatePackage(
-                                      index,
-                                      'child_max_age',
-                                      e.target.value === '' ? undefined : Number(e.target.value)
-                                    )
-                                  }
+                                  onChange={(e) => {
+                                    const value = e.target.value === '' ? undefined : Number(e.target.value);
+                                    updatePackage(index, 'child_max_age', value);
+                                  }}
                                   placeholder="e.g. 17"
                                 />
                               </div>
@@ -745,13 +742,10 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                                   type="number"
                                   min="0"
                                   value={pkg.adult_min_age ?? ''}
-                                  onChange={(e) =>
-                                    updatePackage(
-                                      index,
-                                      'adult_min_age',
-                                      e.target.value === '' ? undefined : Number(e.target.value)
-                                    )
-                                  }
+                                  onChange={(e) => {
+                                    const value = e.target.value === '' ? undefined : Number(e.target.value);
+                                    updatePackage(index, 'adult_min_age', value);
+                                  }}
                                   placeholder="e.g. 18"
                                 />
                               </div>
