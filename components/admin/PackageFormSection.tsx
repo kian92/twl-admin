@@ -805,12 +805,12 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                             onChange={(e) => {
                               const rawValue = e.target.value;
                               const parsedValue = rawValue === '' ? 0 : parseFloat(rawValue);
-                          
+
                               const flooredValue = isNaN(parsedValue)
                                 ? 0
                                 : Math.floor(parsedValue);
-                          
-                              updatePricingWithMarkup(index, 'supplier_cost_adult', flooredValue); 
+
+                              updateSupplierCost(index, 'supplier_cost_adult', flooredValue); 
                             }}
                             placeholder="0.00"
                           />
@@ -830,12 +830,12 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                             onChange={(e) => {
                               const rawValue = e.target.value;
                               const parsedValue = rawValue === '' ? 0 : parseFloat(rawValue);
-                          
+
                               const flooredValue = isNaN(parsedValue)
                                 ? 0
                                 : Math.floor(parsedValue);
-                          
-                              updatePricingWithMarkup(index, 'supplier_cost_child', flooredValue);
+
+                              updateSupplierCost(index, 'supplier_cost_child', flooredValue);
                             }}
                             placeholder="0.00"
                           />
@@ -855,12 +855,12 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                             onChange={(e) => {
                               const rawValue = e.target.value;
                               const parsedValue = rawValue === '' ? 0 : parseFloat(rawValue);
-                          
+
                               const flooredValue = isNaN(parsedValue)
                                 ? 0
                                 : Math.floor(parsedValue);
-                          
-                              updatePricingWithMarkup(index, 'supplier_cost_infant', flooredValue);
+
+                              updateSupplierCost(index, 'supplier_cost_infant', flooredValue);
                             }}
                             placeholder={t('optional')}
                           />
@@ -880,12 +880,12 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                             onChange={(e) => {
                               const rawValue = e.target.value;
                               const parsedValue = rawValue === '' ? 0 : parseFloat(rawValue);
-                          
+
                               const flooredValue = isNaN(parsedValue)
                                 ? 0
                                 : Math.floor(parsedValue);
-                          
-                              updatePricingWithMarkup(index, 'supplier_cost_senior', flooredValue);
+
+                              updateSupplierCost(index, 'supplier_cost_senior', flooredValue);
                             }}
                             placeholder={t('optional')}
                           />
@@ -910,7 +910,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                                 ? 0
                                 : Math.floor(parsedValue);
 
-                              updatePricingWithMarkup(index, 'supplier_cost_vehicle', flooredValue);
+                              updateSupplierCost(index, 'supplier_cost_vehicle', flooredValue);
                             }}
                             placeholder={t('optional')}
                           />
