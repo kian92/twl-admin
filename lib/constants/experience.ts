@@ -33,4 +33,17 @@ export const EXPERIENCE_SELECT_FIELDS = `
   updated_by,
   created_at,
   updated_at,
-  slug`
+  slug,
+  title_zh,
+  location_zh,
+  description_zh,
+  highlights_zh,
+  inclusions_zh,
+  exclusions_zh,
+  not_suitable_for_zh,
+  meeting_point_zh,
+  what_to_bring_zh,
+  pick_up_information_zh,
+  cancellation_policy_zh,
+  itinerary_zh,
+  faqs_zh`

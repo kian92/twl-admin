@@ -61,6 +61,21 @@ export const experiencePayloadSchema = z.object({
   faqs: z.array(faqItemSchema).optional().nullable(),
   is_destination_featured: z.boolean().optional().nullable(),
   status: z.enum(["draft", "review", "active"]).optional().default("active"),
+
+  // Chinese language fields
+  title_zh: z.string().optional().nullable(),
+  location_zh: z.string().optional().nullable(),
+  description_zh: z.string().optional().nullable(),
+  highlights_zh: z.string().optional().nullable(),
+  inclusions_zh: z.string().optional().nullable(),
+  exclusions_zh: z.string().optional().nullable(),
+  not_suitable_for_zh: z.array(z.string()).optional().nullable(),
+  meeting_point_zh: z.string().optional().nullable(),
+  what_to_bring_zh: z.array(z.string()).optional().nullable(),
+  pick_up_information_zh: z.string().optional().nullable(),
+  cancellation_policy_zh: z.string().optional().nullable(),
+  itinerary_zh: z.array(itineraryItemSchema).optional().nullable(),
+  faqs_zh: z.array(faqItemSchema).optional().nullable(),
 })
   .refine(
     (data) => {
@@ -137,5 +152,20 @@ export function normalizeExperiencePayload(payload: ExperiencePayload): Omit<Exp
     faqs: normalizeFaqs(payload.faqs),
     is_destination_featured: payload.is_destination_featured ?? false,
     status: payload.status ?? "active",
+
+    // Chinese language fields
+    title_zh: trimString(payload.title_zh),
+    location_zh: trimString(payload.location_zh),
+    description_zh: trimString(payload.description_zh),
+    highlights_zh: trimString(payload.highlights_zh),
+    inclusions_zh: trimString(payload.inclusions_zh),
+    exclusions_zh: trimString(payload.exclusions_zh),
+    not_suitable_for_zh: normalizeStringArray(payload.not_suitable_for_zh),
+    meeting_point_zh: trimString(payload.meeting_point_zh),
+    what_to_bring_zh: normalizeStringArray(payload.what_to_bring_zh),
+    pick_up_information_zh: trimString(payload.pick_up_information_zh),
+    cancellation_policy_zh: trimString(payload.cancellation_policy_zh),
+    itinerary_zh: normalizeItinerary(payload.itinerary_zh),
+    faqs_zh: normalizeFaqs(payload.faqs_zh),
   }
 }

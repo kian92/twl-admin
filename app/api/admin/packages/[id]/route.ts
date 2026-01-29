@@ -80,6 +80,11 @@ export async function PUT(
         is_active: body.is_active,
         requires_full_payment: body.requires_full_payment || false,
         use_custom_tiers: body.use_custom_tiers || false, // NEW: Set custom tiers flag
+        // Chinese language fields
+        package_name_zh: body.package_name_zh || null,
+        description_zh: body.description_zh || null,
+        inclusions_zh: body.inclusions_zh || null,
+        exclusions_zh: body.exclusions_zh || null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
@@ -263,6 +268,9 @@ export async function PUT(
           category: addon.category || null,
           display_order: index,
           is_active: true,
+          // Chinese language fields
+          addon_name_zh: addon.name_zh || null,
+          description_zh: addon.description_zh || null,
         }));
 
         const { error: addonsError } = await supabase

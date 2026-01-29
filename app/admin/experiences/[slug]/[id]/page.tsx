@@ -35,6 +35,9 @@ import type { Database } from "@/types/database"
 import { toast } from "sonner"
 import { PackageFormSection, PackageFormData } from "@/components/admin/PackageFormSection"
 import { RichTextEditor } from "@/components/admin/RichTextEditor"
+import { DualLanguageInput } from "@/components/admin/DualLanguageInput"
+import { DualLanguageItinerary } from "@/components/admin/DualLanguageItinerary"
+import { DualLanguageFAQ } from "@/components/admin/DualLanguageFAQ"
 import { useAdmin } from "@/components/admin-context"
 import { useTranslations } from 'next-intl'
 
@@ -70,6 +73,18 @@ interface FormState {
   cancellation_policy: string
   is_destination_featured?: boolean
   status: "draft" | "review" | "active"
+  // Chinese language fields
+  title_zh?: string
+  location_zh?: string
+  description_zh?: string
+  highlights_zh?: string
+  inclusions_zh?: string
+  exclusions_zh?: string
+  not_suitable_for_zh?: string
+  meeting_point_zh?: string
+  what_to_bring_zh?: string
+  pick_up_information_zh?: string
+  cancellation_policy_zh?: string
 }
 
 const categories = ["Adventure", "Culture", "Relaxation", "Wellness", "Nature"]
@@ -151,11 +166,13 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
   const router = useRouter()
   const { profile } = useAdmin()
   const t = useTranslations('experiences')
+  const tForm = useTranslations('experiences.form')
   const [experience, setExperience] = useState<ExperienceRow | null>(null)
   const [form, setForm] = useState<FormState | null>(null)
   const [itinerary, setItinerary] = useState<ItineraryItem[]>([])
-
+  const [itineraryZh, setItineraryZh] = useState<ItineraryItem[]>([])
   const [faqs, setFaqs] = useState<FAQItem[]>([{ question: "", answer: "" }])
+  const [faqsZh, setFaqsZh] = useState<FAQItem[]>([{ question: "", answer: "" }])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -260,6 +277,18 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
           cancellation_policy: experienceData.cancellation_policy ?? "",
           is_destination_featured: (experienceData as any).is_destination_featured ?? false,
           status: experienceData.status ?? "active",
+          // Chinese language fields
+          title_zh: experienceData.title_zh ?? "",
+          location_zh: experienceData.location_zh ?? "",
+          description_zh: experienceData.description_zh ?? "",
+          highlights_zh: Array.isArray(experienceData.highlights_zh) ? experienceData.highlights_zh.join("\n") : (experienceData.highlights_zh ?? ""),
+          inclusions_zh: Array.isArray(experienceData.inclusions_zh) ? experienceData.inclusions_zh.join("\n") : (experienceData.inclusions_zh ?? ""),
+          exclusions_zh: Array.isArray(experienceData.exclusions_zh) ? experienceData.exclusions_zh.join("\n") : (experienceData.exclusions_zh ?? ""),
+          not_suitable_for_zh: Array.isArray(experienceData.not_suitable_for_zh) ? experienceData.not_suitable_for_zh.join("\n") : "",
+          meeting_point_zh: experienceData.meeting_point_zh ?? "",
+          what_to_bring_zh: Array.isArray(experienceData.what_to_bring_zh) ? experienceData.what_to_bring_zh.join("\n") : "",
+          pick_up_information_zh: experienceData.pick_up_information_zh ?? "",
+          cancellation_policy_zh: experienceData.cancellation_policy_zh ?? "",
         })
 
         // Load gallery (FULL URLs)
@@ -275,10 +304,22 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
           setItinerary(itineraryData.length > 0 ? itineraryData : [{ day: 1, time: "", activity: "" }])
         }
 
+        // Load Chinese itinerary if exists
+        if (experienceData.itinerary_zh && Array.isArray(experienceData.itinerary_zh)) {
+          const itineraryDataZh = experienceData.itinerary_zh as unknown as ItineraryItem[]
+          setItineraryZh(itineraryDataZh.length > 0 ? itineraryDataZh : [])
+        }
+
         // Load FAQs if exists
         if (experienceData.faqs && Array.isArray(experienceData.faqs)) {
           const faqsData = experienceData.faqs as unknown as FAQItem[]
           setFaqs(faqsData.length > 0 ? faqsData : [{ question: "", answer: "" }])
+        }
+
+        // Load Chinese FAQs if exists
+        if (experienceData.faqs_zh && Array.isArray(experienceData.faqs_zh)) {
+          const faqsDataZh = experienceData.faqs_zh as unknown as FAQItem[]
+          setFaqsZh(faqsDataZh.length > 0 ? faqsDataZh : [])
         }
 
         // Load packages with pricing tiers
@@ -342,6 +383,11 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                   package_name: pkg.package_name,
                   package_code: pkg.package_code || '',
                   description: pkg.description || '',
+
+                  // Chinese language fields
+                  package_name_zh: pkg.package_name_zh || '',
+                  description_zh: pkg.description_zh || '',
+
                   tour_type: pkg.tour_type || 'group',
                   min_group_size: pkg.min_group_size,
                   max_group_size: pkg.max_group_size,
@@ -386,6 +432,8 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
 
                   inclusions: Array.isArray(pkg.inclusions) ? pkg.inclusions : [],
                   exclusions: Array.isArray(pkg.exclusions) ? pkg.exclusions : [],
+                  inclusions_zh: Array.isArray(pkg.inclusions_zh) ? pkg.inclusions_zh : [],
+                  exclusions_zh: Array.isArray(pkg.exclusions_zh) ? pkg.exclusions_zh : [],
                   is_active: pkg.is_active ?? true,
                   display_order: pkg.display_order ?? index + 1,
                   available_from: pkg.available_from || '',
@@ -394,6 +442,8 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                     id: addon.id,
                     name: addon.addon_name,
                     description: addon.description || '',
+                    name_zh: addon.addon_name_zh || '',
+                    description_zh: addon.description_zh || '',
                     price: Math.floor(addon.price),
                     is_required: addon.is_required || false,
                     max_quantity: addon.max_quantity || 1,
@@ -665,6 +715,24 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
             : null,
         faqs:
           faqs.filter((item) => item.question && item.answer).length > 0 ? faqs.filter((item) => item.question && item.answer) : null,
+        // Chinese language fields
+        title_zh: form.title_zh || null,
+        location_zh: form.location_zh || null,
+        description_zh: form.description_zh || null,
+        highlights_zh: form.highlights_zh || null,
+        inclusions_zh: form.inclusions_zh || null,
+        exclusions_zh: form.exclusions_zh || null,
+        not_suitable_for_zh: form.not_suitable_for_zh ? form.not_suitable_for_zh.split("\n").filter(Boolean) : null,
+        meeting_point_zh: form.meeting_point_zh || null,
+        what_to_bring_zh: form.what_to_bring_zh ? form.what_to_bring_zh.split("\n").filter(Boolean) : null,
+        pick_up_information_zh: form.pick_up_information_zh || null,
+        cancellation_policy_zh: form.cancellation_policy_zh || null,
+        itinerary_zh:
+          itineraryZh.filter((item) => item.day && item.activity).length > 0
+            ? itineraryZh.filter((item) => item.day && item.activity)
+            : null,
+        faqs_zh:
+          faqsZh.filter((item) => item.question && item.answer).length > 0 ? faqsZh.filter((item) => item.question && item.answer) : null,
       }
 
       console.log('Payload being sent:', JSON.stringify(payload, null, 2))
@@ -754,6 +822,12 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
           display_order: pkg.display_order,
           available_from: pkg.available_from || null,
           available_to: pkg.available_to || null,
+
+          // Chinese language fields
+          package_name_zh: pkg.package_name_zh || null,
+          description_zh: pkg.description_zh || null,
+          inclusions_zh: pkg.inclusions_zh || null,
+          exclusions_zh: pkg.exclusions_zh || null,
 
           // Markup configuration
           markup_type: pkg.markup_type || 'none',
@@ -893,16 +967,32 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
             <CardTitle>{t('form.basicInformation')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">{t('form.title')}</Label>
-              <Input id="title" value={form.title} onChange={handleChange("title")} required />
-            </div>
+            <DualLanguageInput
+              label={t('form.title')}
+              id="title"
+              type="text"
+              valueEn={form.title}
+              valueZh={form.title_zh || ''}
+              onChangeEn={(value) => setForm((prev) => (prev ? { ...prev, title: value } : prev))}
+              onChangeZh={(value) => setForm((prev) => (prev ? { ...prev, title_zh: value } : prev))}
+              placeholder={t('form.titlePlaceholder')}
+              placeholderZh="例如：吴哥窟探险"
+              required
+            />
 
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="location">{t('form.location')}</Label>
-                <Input id="location" value={form.location} onChange={handleChange("location")} required />
-              </div>
+              <DualLanguageInput
+                label={t('form.location')}
+                id="location"
+                type="text"
+                valueEn={form.location}
+                valueZh={form.location_zh || ''}
+                onChangeEn={(value) => setForm((prev) => (prev ? { ...prev, location: value } : prev))}
+                onChangeZh={(value) => setForm((prev) => (prev ? { ...prev, location_zh: value } : prev))}
+                placeholder={t('form.locationPlaceholder')}
+                placeholderZh="例如：暹粒"
+                required
+              />
               <div className="space-y-2">
                 <Label htmlFor="country">{t('form.country')}</Label>
                 <CountryCombobox
@@ -914,14 +1004,17 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="description">{t('form.description')}</Label>
-              <RichTextEditor
-                content={form.description}
-                onChange={(html) => setForm((prev) => (prev ? { ...prev, description: html } : prev))}
-                placeholder={t('form.descriptionPlaceholder')}
-              />
-            </div>
+            <DualLanguageInput
+              label={t('form.description')}
+              id="description"
+              type="richtext"
+              valueEn={form.description}
+              valueZh={form.description_zh || ''}
+              onChangeEn={(value) => setForm((prev) => (prev ? { ...prev, description: value } : prev))}
+              onChangeZh={(value) => setForm((prev) => (prev ? { ...prev, description_zh: value } : prev))}
+              placeholder={t('form.descriptionPlaceholder')}
+              placeholderZh="输入体验描述..."
+            />
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
@@ -1038,215 +1131,128 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
             <CardTitle>{t('form.highlightsAndInclusions')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="highlights">{t('form.highlights')}</Label>
-              <RichTextEditor
-                content={form.highlights}
-                onChange={(value) => setForm((prev) => (prev ? { ...prev, highlights: value } : prev))}
-                placeholder={t('form.highlightsPlaceholder')}
-              />
-            </div>
+            <DualLanguageInput
+              label={t('form.highlights')}
+              id="highlights"
+              type="richtext"
+              valueEn={form.highlights}
+              valueZh={form.highlights_zh || ''}
+              onChangeEn={(value) => setForm((prev) => (prev ? { ...prev, highlights: value } : prev))}
+              onChangeZh={(value) => setForm((prev) => (prev ? { ...prev, highlights_zh: value } : prev))}
+              placeholder={t('form.highlightsPlaceholder')}
+              placeholderZh="输入亮点..."
+            />
 
-            <div className="space-y-2">
-              <Label htmlFor="inclusions">{t('form.inclusions')}</Label>
-              <RichTextEditor
-                content={form.inclusions}
-                onChange={(value) => setForm((prev) => (prev ? { ...prev, inclusions: value } : prev))}
-                placeholder={t('form.inclusionsPlaceholder')}
-              />
-            </div>
+            <DualLanguageInput
+              label={t('form.inclusions')}
+              id="inclusions"
+              type="richtext"
+              valueEn={form.inclusions}
+              valueZh={form.inclusions_zh || ''}
+              onChangeEn={(value) => setForm((prev) => (prev ? { ...prev, inclusions: value } : prev))}
+              onChangeZh={(value) => setForm((prev) => (prev ? { ...prev, inclusions_zh: value } : prev))}
+              placeholder={t('form.inclusionsPlaceholder')}
+              placeholderZh="输入包含内容..."
+            />
 
-            <div className="space-y-2">
-              <Label htmlFor="exclusions">{t('form.exclusions')}</Label>
-              <RichTextEditor
-                content={form.exclusions}
-                onChange={(value) => setForm((prev) => (prev ? { ...prev, exclusions: value } : prev))}
-                placeholder={t('form.exclusionsPlaceholder')}
-              />
-            </div>
+            <DualLanguageInput
+              label={t('form.exclusions')}
+              id="exclusions"
+              type="richtext"
+              valueEn={form.exclusions}
+              valueZh={form.exclusions_zh || ''}
+              onChangeEn={(value) => setForm((prev) => (prev ? { ...prev, exclusions: value } : prev))}
+              onChangeZh={(value) => setForm((prev) => (prev ? { ...prev, exclusions_zh: value } : prev))}
+              placeholder={t('form.exclusionsPlaceholder')}
+              placeholderZh="输入不包含内容..."
+            />
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>{t('form.itinerary')}</CardTitle>
-              <Button type="button" size="sm" onClick={addItineraryItem}>
-                <Plus className="w-4 h-4 mr-2" />
-                {t('form.addItem')}
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {
-              itinerary.length === 0 ?
-              (
-                <div className="flex items-center justify-center py-10">
-                  <p className="text-sm text-muted-foreground text-center">
-                    {t('form.noItineraryItems')}
-                  </p>
-                </div>
-              )
-              :
-              itinerary.map((item, index) => (
-                <div key={index} className="flex gap-4 items-start">
-                  <div className="flex-1 space-y-4">
-                    <div className="grid gap-4 md:grid-cols-3">
-                      {/* Day Field */}
-                      <div className="space-y-2">
-                        <Label htmlFor={`day-${index}`}>{t('form.day')}</Label>
-                        <Input
-                          id={`day-${index}`}
-                          type="number"
-                          min={1}
-                          value={item.day}
-                          onChange={(e) =>
-                            updateItineraryItem(index, "day", Number(e.target.value))
-                          }
-                        />
-                      </div>
-                      {/* Time Field */}
-                      <div className="space-y-2 md:col-span-2">
-                        <Label htmlFor={`time-${index}`}>{t('form.time')} <span className="text-muted-foreground text-xs">({t('form.optional')})</span></Label>
-                        <Input
-                          id={`time-${index}`}
-                          placeholder={t('form.durationPlaceholder')}
-                          value={item.time || ""}
-                          onChange={(e) => updateItineraryItem(index, "time", e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    {/* Activity Field */}
-                    <div className="space-y-2">
-                      <Label htmlFor={`activity-${index}`}>{t('form.activity')}</Label>
-                      <RichTextEditor
-                        content={item.activity}
-                        onChange={(html) => updateItineraryItem(index, "activity", html)}
-                        placeholder={t('form.descriptionPlaceholder')}
-                      />
-                    </div>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeItineraryItem(index)}
-                    className="mt-5"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              ))
-            }
-          </CardContent>
-        </Card>
+        <DualLanguageItinerary
+          itineraryEn={itinerary}
+          itineraryZh={itineraryZh}
+          onChangeEn={setItinerary}
+          onChangeZh={setItineraryZh}
+          t={tForm}
+        />
 
         <Card>
           <CardHeader>
             <CardTitle>{t('form.additionalDetails')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="what_to_bring">{t('form.whatToBringOnePerLine')}</Label>
-              <Textarea
-                id="what_to_bring"
-                placeholder={t('form.whatToBringPlaceholder')}
-                value={form.what_to_bring}
-                onChange={handleChange("what_to_bring")}
-                rows={4}
-              />
-            </div>
+            <DualLanguageInput
+              label={t('form.whatToBringOnePerLine')}
+              id="what_to_bring"
+              type="textarea"
+              valueEn={form.what_to_bring}
+              valueZh={form.what_to_bring_zh || ''}
+              onChangeEn={(value) => setForm((prev) => (prev ? { ...prev, what_to_bring: value } : prev))}
+              onChangeZh={(value) => setForm((prev) => (prev ? { ...prev, what_to_bring_zh: value } : prev))}
+              placeholder={t('form.whatToBringPlaceholder')}
+              placeholderZh="输入需携带物品（每行一项）..."
+              rows={4}
+            />
 
-            <div className="space-y-2">
-              <Label htmlFor="pick_up_information">Pick Up Information</Label>
-              <RichTextEditor
-                content={form.pick_up_information}
-                onChange={(html) => setForm((prev) => ({ ...prev, pick_up_information: html }))}
-                placeholder="Enter pick up details, instructions, and locations..."
-              />
-            </div>
+            <DualLanguageInput
+              label="Pick Up Information"
+              id="pick_up_information"
+              type="richtext"
+              valueEn={form.pick_up_information}
+              valueZh={form.pick_up_information_zh || ''}
+              onChangeEn={(value) => setForm((prev) => (prev ? { ...prev, pick_up_information: value } : prev))}
+              onChangeZh={(value) => setForm((prev) => (prev ? { ...prev, pick_up_information_zh: value } : prev))}
+              placeholder="Enter pick up details, instructions, and locations..."
+              placeholderZh="输入接送详情、说明和地点..."
+            />
 
-            <div className="space-y-2">
-              <Label htmlFor="not_suitable_for">{t('form.notSuitableForOnePerLine')}</Label>
-              <Textarea
-                id="not_suitable_for"
-                placeholder={t('form.notSuitableForPlaceholder')}
-                value={form.not_suitable_for}
-                onChange={handleChange("not_suitable_for")}
-                rows={3}
-              />
-            </div>
+            <DualLanguageInput
+              label={t('form.notSuitableForOnePerLine')}
+              id="not_suitable_for"
+              type="textarea"
+              valueEn={form.not_suitable_for}
+              valueZh={form.not_suitable_for_zh || ''}
+              onChangeEn={(value) => setForm((prev) => (prev ? { ...prev, not_suitable_for: value } : prev))}
+              onChangeZh={(value) => setForm((prev) => (prev ? { ...prev, not_suitable_for_zh: value } : prev))}
+              placeholder={t('form.notSuitableForPlaceholder')}
+              placeholderZh="输入不适合人群（每行一项）..."
+              rows={3}
+            />
 
-            <div className="space-y-2">
-              <Label htmlFor="meeting_point">{t('form.meetingPoint')}</Label>
-              <Input
-                id="meeting_point"
-                placeholder={t('form.meetingPointPlaceholder')}
-                value={form.meeting_point}
-                onChange={handleChange("meeting_point")}
-              />
-            </div>
+            <DualLanguageInput
+              label={t('form.meetingPoint')}
+              id="meeting_point"
+              type="text"
+              valueEn={form.meeting_point}
+              valueZh={form.meeting_point_zh || ''}
+              onChangeEn={(value) => setForm((prev) => (prev ? { ...prev, meeting_point: value } : prev))}
+              onChangeZh={(value) => setForm((prev) => (prev ? { ...prev, meeting_point_zh: value } : prev))}
+              placeholder={t('form.meetingPointPlaceholder')}
+              placeholderZh="例如：酒店大堂"
+            />
 
-            <div className="space-y-2">
-              <Label htmlFor="cancellation">{t('form.cancellationPolicy')}</Label>
-              <RichTextEditor
-                content={form.cancellation_policy}
-                onChange={(html) => setForm((prev) => (prev ? { ...prev, cancellation_policy: html } : prev))}
-                placeholder={t('form.cancellationPolicyPlaceholder')}
-              />
-            </div>
+            <DualLanguageInput
+              label={t('form.cancellationPolicy')}
+              id="cancellation"
+              type="richtext"
+              valueEn={form.cancellation_policy}
+              valueZh={form.cancellation_policy_zh || ''}
+              onChangeEn={(value) => setForm((prev) => (prev ? { ...prev, cancellation_policy: value } : prev))}
+              onChangeZh={(value) => setForm((prev) => (prev ? { ...prev, cancellation_policy_zh: value } : prev))}
+              placeholder={t('form.cancellationPolicyPlaceholder')}
+              placeholderZh="输入取消政策..."
+            />
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>{t('form.faqs')}</CardTitle>
-              <Button type="button" size="sm" onClick={addFAQItem}>
-                <Plus className="w-4 h-4 mr-2" />
-                {t('form.addFaq')}
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {faqs.map((item, index) => (
-              <div key={index} className="space-y-4 pb-4 border-b last:border-0">
-                <div className="flex justify-between items-start">
-                  <Label htmlFor={`faq-question-${index}`}>{t('form.faqNumber', { number: index + 1 })}</Label>
-                  {faqs.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeFAQItem(index)}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor={`faq-question-${index}`}>{t('form.question')}</Label>
-                  <Input
-                    id={`faq-question-${index}`}
-                    placeholder={t('form.faqQuestionPlaceholder')}
-                    value={item.question}
-                    onChange={(e) => updateFAQItem(index, "question", e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor={`faq-answer-${index}`}>{t('form.answer')}</Label>
-                  <Textarea
-                    id={`faq-answer-${index}`}
-                    placeholder={t('form.faqAnswerPlaceholder')}
-                    rows={3}
-                    value={item.answer}
-                    onChange={(e) => updateFAQItem(index, "answer", e.target.value)}
-                  />
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+        <DualLanguageFAQ
+          faqsEn={faqs}
+          faqsZh={faqsZh}
+          onChangeEn={setFaqs}
+          onChangeZh={setFaqsZh}
+          t={tForm}
+        />
 
         <div className="flex gap-4">
           <Button

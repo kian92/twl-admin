@@ -6,11 +6,10 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CountryCombobox } from "@/components/ui/country-combobox"
-import { ArrowLeft, Plus, X, Upload, Loader2, FileText, Check, GripVertical } from "lucide-react"
+import { ArrowLeft, X, Upload, Loader2, FileText, Check, GripVertical } from "lucide-react"
 import {
   DndContext,
   closestCenter,
@@ -33,6 +32,9 @@ import type { Database } from "@/types/database"
 import { toast } from "sonner"
 import { PackageFormSection, PackageFormData } from "@/components/admin/PackageFormSection"
 import { RichTextEditor } from "@/components/admin/RichTextEditor"
+import { DualLanguageInput } from "@/components/admin/DualLanguageInput"
+import { DualLanguageItinerary } from "@/components/admin/DualLanguageItinerary"
+import { DualLanguageFAQ } from "@/components/admin/DualLanguageFAQ"
 import { useAdmin } from "@/components/admin-context"
 import { useTranslations } from 'next-intl'
 
@@ -165,7 +167,9 @@ function SortableImageItem({ id, url, index, onRemove }: SortableImageItemProps)
 }
 
 export default function NewExperiencePage() {
-  const t = useTranslations()
+  const t = useTranslations('experiences')
+  const tForm = useTranslations('experiences.form')
+  const tCommon = useTranslations('common')
   const router = useRouter()
   const { profile } = useAdmin()
   const [form, setForm] = useState(initialForm)
@@ -177,12 +181,21 @@ export default function NewExperiencePage() {
   const [itinerary, setItinerary] = useState<ItineraryItem[]>([])
   const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
   const [galleryPreviewUrls, setGalleryPreviewUrls] = useState<string[]>([]);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [faqs, setFaqs] = useState<FAQItem[]>([{ question: "", answer: "" }])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Chinese language state
+  const [highlightsZh, setHighlightsZh] = useState("")
+  const [inclusionsZh, setInclusionsZh] = useState("")
+  const [exclusionsZh, setExclusionsZh] = useState("")
+  const [notSuitableForTextZh, setNotSuitableForTextZh] = useState("")
+  const [whatToBringTextZh, setWhatToBringTextZh] = useState("")
+  const [itineraryZh, setItineraryZh] = useState<ItineraryItem[]>([])
+  const [faqsZh, setFaqsZh] = useState<FAQItem[]>([{ question: "", answer: "" }])
 
   // Package management state
   const [packages, setPackages] = useState<PackageFormData[]>([])
@@ -253,20 +266,6 @@ export default function NewExperiencePage() {
     const updated = [...itinerary]
     updated[index][field] = value
     setItinerary(updated)
-  }
-  
-  const addFAQItem = () => {
-    setFaqs([...faqs, { question: "", answer: "" }])
-  }
-
-  const removeFAQItem = (index: number) => {
-    setFaqs(faqs.filter((_, i) => i !== index))
-  }
-
-  const updateFAQItem = (index: number, field: keyof FAQItem, value: string) => {
-    const updated = [...faqs]
-    updated[index][field] = value
-    setFaqs(updated)
   }
 
   const handleSelectFiles = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -392,6 +391,19 @@ export default function NewExperiencePage() {
           ? (faqs.filter(item => item.question && item.answer) as any)
           : null,
         status: finalStatus,
+
+        // Chinese language fields
+        highlights_zh: highlightsZh || null,
+        inclusions_zh: inclusionsZh || null,
+        exclusions_zh: exclusionsZh || null,
+        not_suitable_for_zh: notSuitableForTextZh ? notSuitableForTextZh.split("\n").filter(Boolean) : null,
+        what_to_bring_zh: whatToBringTextZh ? whatToBringTextZh.split("\n").filter(Boolean) : null,
+        itinerary_zh: itineraryZh.filter(item => item.day && item.activity).length > 0
+          ? (itineraryZh.filter(item => item.day && item.activity) as any)
+          : null,
+        faqs_zh: faqsZh.filter(item => item.question && item.answer).length > 0
+          ? (faqsZh.filter(item => item.question && item.answer) as any)
+          : null,
       }
 
       const response = await fetch("/api/admin/experiences", {
@@ -425,6 +437,12 @@ export default function NewExperiencePage() {
             display_order: pkg.display_order,
             is_active: pkg.is_active,
             requires_full_payment: pkg.requires_full_payment || false,
+
+            // Chinese language fields
+            package_name_zh: pkg.package_name_zh || null,
+            description_zh: pkg.description_zh || null,
+            inclusions_zh: pkg.inclusions_zh || null,
+            exclusions_zh: pkg.exclusions_zh || null,
 
             // Markup configuration
             markup_type: pkg.markup_type || 'none',
@@ -475,15 +493,15 @@ export default function NewExperiencePage() {
       }
 
       const statusMessage = finalStatus === "draft"
-        ? t('experiences.form.experienceSavedDraft')
+        ? tForm('experienceSavedDraft')
         : finalStatus === "review"
-        ? t('experiences.form.experienceSubmittedReview')
-        : t('experiences.form.experiencePublished')
+        ? tForm('experienceSubmittedReview')
+        : tForm('experiencePublished')
       toast.success(statusMessage)
       router.push("/admin/experiences")
     } catch (err: any) {
       console.error("Failed to create experience - Full error:", err)
-      const errorMessage = err?.message || err?.toString() || t('experiences.form.failedToCreate')
+      const errorMessage = err?.message || err?.toString() || tForm('failedToCreate')
       setError(errorMessage)
       toast.error(errorMessage)
     } finally {
@@ -500,8 +518,8 @@ export default function NewExperiencePage() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-3xl font-bold">{t('experiences.form.addNewExperience')}</h1>
-          <p className="text-muted-foreground">{t('experiences.form.createNewExperience')}</p>
+          <h1 className="text-3xl font-bold">{tForm('addNewExperience')}</h1>
+          <p className="text-muted-foreground">{tForm('createNewExperience')}</p>
         </div>
       </div>
 
@@ -515,57 +533,64 @@ export default function NewExperiencePage() {
         {/* Basic Information */}
         <Card>
           <CardHeader>
-            <CardTitle>{t('experiences.form.basicInformation')}</CardTitle>
+            <CardTitle>{tForm('basicInformation')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">{t('experiences.form.title')}</Label>
-              <Input
-                id="title"
-                placeholder={t('experiences.form.titlePlaceholder')}
-                value={form.title}
-                onChange={handleInputChange("title")}
-                required
-              />
-            </div>
+            <DualLanguageInput
+              label={tForm('title')}
+              id="title"
+              type="text"
+              valueEn={form.title}
+              valueZh={(form as any).title_zh || ""}
+              onChangeEn={(value) => setForm((prev) => ({ ...prev, title: value }))}
+              onChangeZh={(value) => setForm((prev) => ({ ...prev, title_zh: value } as any))}
+              placeholder={tForm('titlePlaceholder')}
+              placeholderZh="例如：巴厘岛冒险之旅"
+              required
+            />
 
             <div className="grid gap-4 md:grid-cols-2">
+              <DualLanguageInput
+                label={tForm('location')}
+                id="location"
+                type="text"
+                valueEn={form.location}
+                valueZh={(form as any).location_zh || ""}
+                onChangeEn={(value) => setForm((prev) => ({ ...prev, location: value }))}
+                onChangeZh={(value) => setForm((prev) => ({ ...prev, location_zh: value } as any))}
+                placeholder={tForm('locationPlaceholder')}
+                placeholderZh="例如：巴厘岛"
+                required
+              />
               <div className="space-y-2">
-                <Label htmlFor="location">{t('experiences.form.location')}</Label>
-                <Input
-                  id="location"
-                  placeholder={t('experiences.form.locationPlaceholder')}
-                  value={form.location}
-                  onChange={handleInputChange("location")}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="country">{t('experiences.form.country')}</Label>
+                <Label htmlFor="country">{tForm('country')}</Label>
                 <CountryCombobox
                   value={form.country ?? ""}
                   onValueChange={handleSelectChange("country")}
-                  placeholder={t('experiences.form.countryPlaceholder')}
+                  placeholder={tForm('countryPlaceholder')}
                   required
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="description">{t('experiences.form.description')}</Label>
-              <RichTextEditor
-                content={form.description ?? ""}
-                onChange={(html) => setForm((prev) => ({ ...prev, description: html }))}
-                placeholder={t('experiences.form.descriptionPlaceholder')}
-              />
-            </div>
+            <DualLanguageInput
+              label={tForm('description')}
+              id="description"
+              type="richtext"
+              valueEn={form.description ?? ""}
+              valueZh={(form as any).description_zh || ""}
+              onChangeEn={(html) => setForm((prev) => ({ ...prev, description: html }))}
+              onChangeZh={(html) => setForm((prev) => ({ ...prev, description_zh: html } as any))}
+              placeholder={tForm('descriptionPlaceholder')}
+              placeholderZh="输入体验的详细描述..."
+            />
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="category">{t('experiences.form.category')}</Label>
+                <Label htmlFor="category">{tForm('category')}</Label>
                 <Select value={form.category ?? ""} onValueChange={handleSelectChange("category")} required>
                   <SelectTrigger>
-                    <SelectValue placeholder={t('experiences.form.categoryPlaceholder')} />
+                    <SelectValue placeholder={tForm('categoryPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((category) => (
@@ -577,10 +602,10 @@ export default function NewExperiencePage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="duration">{t('experiences.form.duration')}</Label>
+                <Label htmlFor="duration">{tForm('duration')}</Label>
                 <Input
                   id="duration"
-                  placeholder={t('experiences.form.durationPlaceholder')}
+                  placeholder={tForm('durationPlaceholder')}
                   value={form.duration}
                   onChange={handleInputChange("duration")}
                   required
@@ -600,16 +625,16 @@ export default function NewExperiencePage() {
         {/* Images */}
         <Card>
           <CardHeader>
-            <CardTitle>{t('experiences.form.images')}</CardTitle>
+            <CardTitle>{tForm('images')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-4">
 
               {/* Section Header */}
               <div>
-                <Label>{t('experiences.form.uploadImages')}</Label>
+                <Label>{tForm('uploadImages')}</Label>
                 <p className="text-sm text-muted-foreground">
-                  {t('experiences.form.gallery')}
+                  {tForm('gallery')}
                 </p>
               </div>
 
@@ -646,10 +671,10 @@ export default function NewExperiencePage() {
               >
                 <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground mb-2">
-                  {t('experiences.form.clickToUpload')}
+                  {tForm('clickToUpload')}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {t('experiences.form.imageFormat')}
+                  {tForm('imageFormat')}
                 </p>
 
                 <input
@@ -665,7 +690,7 @@ export default function NewExperiencePage() {
               {/* No images message */}
               {galleryPreviewUrls.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-4">
-                  {t('experiences.form.noImagesUploaded')}
+                  {tForm('noImagesUploaded')}
                 </p>
               )}
 
@@ -680,9 +705,9 @@ export default function NewExperiencePage() {
                     className="h-4 w-4 rounded border-gray-300"
                   />
                   <label htmlFor="is_destination_featured" className="text-sm">
-                    <span className="font-medium">{t('experiences.form.useAsDestination')}</span>
+                    <span className="font-medium">{tForm('useAsDestination')}</span>
                     <span className="text-muted-foreground ml-2">
-                      {t('experiences.form.destinationImageDesc', { country: form.country })}
+                      {tForm('destinationImageDesc', { country: form.country })}
                     </span>
                   </label>
                 </div>
@@ -694,221 +719,134 @@ export default function NewExperiencePage() {
         {/* Highlights & Inclusions */}
         <Card>
           <CardHeader>
-            <CardTitle>{t('experiences.form.highlightsAndInclusions')}</CardTitle>
+            <CardTitle>{tForm('highlightsAndInclusions')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="highlights">{t('experiences.form.highlights')}</Label>
-              <RichTextEditor
-                content={highlights}
-                onChange={setHighlights}
-                placeholder={t('experiences.form.highlightsPlaceholder')}
-              />
-            </div>
+            <DualLanguageInput
+              label={tForm('highlights')}
+              id="highlights"
+              type="richtext"
+              valueEn={highlights}
+              valueZh={highlightsZh}
+              onChangeEn={setHighlights}
+              onChangeZh={setHighlightsZh}
+              placeholder={tForm('highlightsPlaceholder')}
+              placeholderZh="输入体验亮点..."
+            />
 
-            <div className="space-y-2">
-              <Label htmlFor="inclusions">{t('experiences.form.inclusions')}</Label>
-              <RichTextEditor
-                content={inclusions}
-                onChange={setInclusions}
-                placeholder={t('experiences.form.inclusionsPlaceholder')}
-              />
-            </div>
+            <DualLanguageInput
+              label={tForm('inclusions')}
+              id="inclusions"
+              type="richtext"
+              valueEn={inclusions}
+              valueZh={inclusionsZh}
+              onChangeEn={setInclusions}
+              onChangeZh={setInclusionsZh}
+              placeholder={tForm('inclusionsPlaceholder')}
+              placeholderZh="输入包含的项目..."
+            />
 
-            <div className="space-y-2">
-              <Label htmlFor="exclusions">{t('experiences.form.exclusions')}</Label>
-              <RichTextEditor
-                content={exclusions}
-                onChange={setExclusions}
-                placeholder={t('experiences.form.exclusionsPlaceholder')}
-              />
-            </div>
+            <DualLanguageInput
+              label={tForm('exclusions')}
+              id="exclusions"
+              type="richtext"
+              valueEn={exclusions}
+              valueZh={exclusionsZh}
+              onChangeEn={setExclusions}
+              onChangeZh={setExclusionsZh}
+              placeholder={tForm('exclusionsPlaceholder')}
+              placeholderZh="输入不包含的项目..."
+            />
           </CardContent>
         </Card>
 
         {/* Itinerary */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>{t('experiences.form.itinerary')}</CardTitle>
-              <Button type="button" size="sm" onClick={addItineraryItem}>
-                <Plus className="w-4 h-4 mr-2" />
-                {t('experiences.form.addItineraryItem')}
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {
-              itinerary.length === 0 ?
-                (
-                  <div className="flex items-center justify-center py-10">
-                    <p className="text-sm text-muted-foreground text-center">
-                      {t('experiences.form.noItineraryItems')}
-                    </p>
-                  </div>
-                )
-              :
-                itinerary.map((item, index) => (
-                  <div key={index} className="flex gap-4 items-start">
-                    <div className="flex-1 space-y-4">
-                      <div className="grid gap-4 md:grid-cols-3">
-                        {/* Day Field */}
-                        <div className="space-y-2">
-                          <Label htmlFor={`day-${index}`}>{t('experiences.form.day')}</Label>
-                          <Input
-                            id={`day-${index}`}
-                            type="number"
-                            min={1}
-                            value={item.day.toString()} // Convert number -> string
-                            onChange={(e) =>
-                              updateItineraryItem(index, "day", Number(e.target.value))
-                            }
-                          />
-                        </div>
-                        {/* Time Field */}
-                        <div className="space-y-2 md:col-span-2">
-                          <Label htmlFor={`time-${index}`}>{t('experiences.form.time')} <span className="text-muted-foreground text-xs">(optional)</span></Label>
-                          <Input
-                            id={`time-${index}`}
-                            placeholder="e.g., 02:00 AM or leave empty"
-                            value={item.time || ""}
-                            onChange={(e) => updateItineraryItem(index, "time", e.target.value)}
-                          />
-                        </div>
-                      </div>
-                      {/* Activity Field */}
-                      <div className="space-y-2">
-                        <Label htmlFor={`activity-${index}`}>{t('experiences.form.activity')}</Label>
-                        <RichTextEditor
-                          content={item.activity}
-                          onChange={(html) => updateItineraryItem(index, "activity", html)}
-                          placeholder="e.g., Hotel pickup, breakfast at the lodge, guided tour..."
-                        />
-                      </div>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeItineraryItem(index)}
-                      className="mt-5"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ))
-            }
-          </CardContent>
-        </Card>
+        <DualLanguageItinerary
+          itineraryEn={itinerary}
+          itineraryZh={itineraryZh}
+          onChangeEn={setItinerary}
+          onChangeZh={setItineraryZh}
+          t={tForm}
+        />
 
         {/* Additional Details */}
         <Card>
           <CardHeader>
-            <CardTitle>{t('experiences.form.additionalDetails')}</CardTitle>
+            <CardTitle>{tForm('additionalDetails')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="what_to_bring">{t('experiences.form.whatToBring')}</Label>
-              <Textarea
-                id="what_to_bring"
-                placeholder={t('experiences.form.whatToBringPlaceholder')}
-                rows={4}
-                value={whatToBringText}
-                onChange={(event) => setWhatToBringText(event.target.value)}
-              />
-            </div>
+            <DualLanguageInput
+              label={tForm('whatToBring')}
+              id="what_to_bring"
+              type="textarea"
+              valueEn={whatToBringText}
+              valueZh={whatToBringTextZh}
+              onChangeEn={setWhatToBringText}
+              onChangeZh={setWhatToBringTextZh}
+              placeholder={tForm('whatToBringPlaceholder')}
+              placeholderZh="每行输入一项（例如：防晒霜）"
+              rows={4}
+            />
 
-            <div className="space-y-2">
-              <Label htmlFor="pick_up_information">Pick Up Information</Label>
-              <RichTextEditor
-                content={form.pick_up_information ?? ""}
-                onChange={(html) => setForm((prev) => ({ ...prev, pick_up_information: html }))}
-                placeholder="Enter pick up details, instructions, and locations..."
-              />
-            </div>
+            <DualLanguageInput
+              label="Pick Up Information"
+              id="pick_up_information"
+              type="richtext"
+              valueEn={form.pick_up_information ?? ""}
+              valueZh={(form as any).pick_up_information_zh || ""}
+              onChangeEn={(html) => setForm((prev) => ({ ...prev, pick_up_information: html }))}
+              onChangeZh={(html) => setForm((prev) => ({ ...prev, pick_up_information_zh: html } as any))}
+              placeholder="Enter pick up details, instructions, and locations..."
+              placeholderZh="输入接送信息、说明和地点..."
+            />
 
-            <div className="space-y-2">
-              <Label htmlFor="not_suitable_for">{t('experiences.form.notSuitableFor')}</Label>
-              <Textarea
-                id="not_suitable_for"
-                placeholder={t('experiences.form.notSuitableForPlaceholder')}
-                rows={3}
-                value={notSuitableForText}
-                onChange={(event) => setNotSuitableForText(event.target.value)}
-              />
-            </div>
+            <DualLanguageInput
+              label={tForm('notSuitableFor')}
+              id="not_suitable_for"
+              type="textarea"
+              valueEn={notSuitableForText}
+              valueZh={notSuitableForTextZh}
+              onChangeEn={setNotSuitableForText}
+              onChangeZh={setNotSuitableForTextZh}
+              placeholder={tForm('notSuitableForPlaceholder')}
+              placeholderZh="每行输入一项（例如：孕妇）"
+              rows={3}
+            />
 
-            <div className="space-y-2">
-              <Label htmlFor="meeting_point">{t('experiences.form.meetingPoint')}</Label>
-              <Input
-                id="meeting_point"
-                placeholder={t('experiences.form.meetingPointPlaceholder')}
-                value={form.meeting_point ?? ""}
-                onChange={handleInputChange("meeting_point")}
-              />
-            </div>
+            <DualLanguageInput
+              label={tForm('meetingPoint')}
+              id="meeting_point"
+              type="text"
+              valueEn={form.meeting_point ?? ""}
+              valueZh={(form as any).meeting_point_zh || ""}
+              onChangeEn={(value) => setForm((prev) => ({ ...prev, meeting_point: value }))}
+              onChangeZh={(value) => setForm((prev) => ({ ...prev, meeting_point_zh: value } as any))}
+              placeholder={tForm('meetingPointPlaceholder')}
+              placeholderZh="例如：酒店大堂"
+            />
 
-            <div className="space-y-2">
-              <Label htmlFor="cancellation">{t('experiences.form.cancellationPolicy')}</Label>
-              <RichTextEditor
-                content={form.cancellation_policy ?? ""}
-                onChange={(html) => setForm((prev) => ({ ...prev, cancellation_policy: html }))}
-                placeholder={t('experiences.form.cancellationPolicyPlaceholder')}
-              />
-            </div>
+            <DualLanguageInput
+              label={tForm('cancellationPolicy')}
+              id="cancellation"
+              type="richtext"
+              valueEn={form.cancellation_policy ?? ""}
+              valueZh={(form as any).cancellation_policy_zh || ""}
+              onChangeEn={(html) => setForm((prev) => ({ ...prev, cancellation_policy: html }))}
+              onChangeZh={(html) => setForm((prev) => ({ ...prev, cancellation_policy_zh: html } as any))}
+              placeholder={tForm('cancellationPolicyPlaceholder')}
+              placeholderZh="输入取消政策..."
+            />
           </CardContent>
         </Card>
 
         {/* FAQs */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>{t('experiences.form.faqs')}</CardTitle>
-              <Button type="button" size="sm" onClick={addFAQItem}>
-                <Plus className="w-4 h-4 mr-2" />
-                {t('experiences.form.addFaq')}
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {faqs.map((item, index) => (
-              <div key={index} className="space-y-4 pb-4 border-b last:border-0">
-                <div className="flex justify-between items-start">
-                  <Label htmlFor={`faq-question-${index}`}>{t('experiences.form.faqNumber', { number: index + 1 })}</Label>
-                  {faqs.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeFAQItem(index)}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor={`faq-question-${index}`}>{t('experiences.form.question')}</Label>
-                  <Input
-                    id={`faq-question-${index}`}
-                    placeholder={t('experiences.form.faqQuestionPlaceholder')}
-                    value={item.question}
-                    onChange={(e) => updateFAQItem(index, "question", e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor={`faq-answer-${index}`}>{t('experiences.form.answer')}</Label>
-                  <Textarea
-                    id={`faq-answer-${index}`}
-                    placeholder={t('experiences.form.faqAnswerPlaceholder')}
-                    rows={3}
-                    value={item.answer}
-                    onChange={(e) => updateFAQItem(index, "answer", e.target.value)}
-                  />
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+        <DualLanguageFAQ
+          faqsEn={faqs}
+          faqsZh={faqsZh}
+          onChangeEn={setFaqs}
+          onChangeZh={setFaqsZh}
+          t={tForm}
+        />
 
         <div className="flex gap-4">
           <Button
@@ -924,7 +862,7 @@ export default function NewExperiencePage() {
             ) : (
               <>
                 <Check className="mr-2 h-4 w-4" />
-                {profile?.role === 'supplier' ? t('experiences.form.submitForReview') : t('experiences.form.publish')}
+                {profile?.role === 'supplier' ? tForm('submitForReview') : tForm('publish')}
               </>
             )}
           </Button>
@@ -935,10 +873,10 @@ export default function NewExperiencePage() {
             disabled={loading}
           >
             <FileText className="mr-2 h-4 w-4" />
-            {t('experiences.form.saveAsDraft')}
+            {tForm('saveAsDraft')}
           </Button>
           <Button type="button" variant="outline" asChild>
-            <Link href="/admin/experiences">{t('common.cancel')}</Link>
+            <Link href="/admin/experiences">{tCommon('cancel')}</Link>
           </Button>
         </div>
       </form>

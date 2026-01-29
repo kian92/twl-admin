@@ -80,6 +80,20 @@ export interface Database {
           updated_by: string | null
           created_at: string | null
           updated_at: string | null
+          // Chinese language fields
+          title_zh: string | null
+          location_zh: string | null
+          description_zh: string | null
+          highlights_zh: string | null
+          inclusions_zh: string | null
+          exclusions_zh: string | null
+          not_suitable_for_zh: string[] | null
+          meeting_point_zh: string | null
+          what_to_bring_zh: string[] | null
+          cancellation_policy_zh: string | null
+          pick_up_information_zh: string | null
+          itinerary_zh: Json | null
+          faqs_zh: Json | null
         }
         Insert: {
           slug: string
@@ -121,6 +135,20 @@ export interface Database {
           updated_by?: string | null
           created_at?: string | null
           updated_at?: string | null
+          // Chinese language fields
+          title_zh?: string | null
+          location_zh?: string | null
+          description_zh?: string | null
+          highlights_zh?: string | null
+          inclusions_zh?: string | null
+          exclusions_zh?: string | null
+          not_suitable_for_zh?: string[] | null
+          meeting_point_zh?: string | null
+          what_to_bring_zh?: string[] | null
+          cancellation_policy_zh?: string | null
+          pick_up_information_zh?: string | null
+          itinerary_zh?: Json | null
+          faqs_zh?: Json | null
         }
         Update: {
           slug?: string
@@ -160,6 +188,20 @@ export interface Database {
           created_by?: string | null
           updated_by?: string | null
           updated_at?: string | null
+          // Chinese language fields
+          title_zh?: string | null
+          location_zh?: string | null
+          description_zh?: string | null
+          highlights_zh?: string | null
+          inclusions_zh?: string | null
+          exclusions_zh?: string | null
+          not_suitable_for_zh?: string[] | null
+          meeting_point_zh?: string | null
+          what_to_bring_zh?: string[] | null
+          cancellation_policy_zh?: string | null
+          pick_up_information_zh?: string | null
+          itinerary_zh?: Json | null
+          faqs_zh?: Json | null
         }
       }
       bookings: {

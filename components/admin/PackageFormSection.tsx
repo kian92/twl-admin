@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { useTranslations } from 'next-intl';
 import { CURRENCIES, formatCurrency } from '@/lib/constants/currencies';
+import { DualLanguageInput } from './DualLanguageInput';
+import { DualLanguageArrayInput } from './DualLanguageArrayInput';
 import { convertToUSD, roundCurrency } from '@/lib/utils/currency-converter';
 import { BlockedDatesManager } from './BlockedDatesManager';
 import type { PackagePricingTier } from '@/types/pricing';
@@ -28,6 +30,9 @@ export interface AddOnItem {
   supplier_currency?: string;
   supplier_cost?: number;
   addon_exchange_rate?: number;
+  // Chinese language fields
+  name_zh?: string;
+  description_zh?: string;
 }
 
 export interface CustomPricingTier {
@@ -59,6 +64,12 @@ export interface PackageFormData {
   display_order: number;
   is_active: boolean;
   requires_full_payment?: boolean;
+
+  // Chinese language fields
+  package_name_zh?: string;
+  description_zh?: string;
+  inclusions_zh?: string[];
+  exclusions_zh?: string[];
 
   // Markup settings
   markup_type?: 'percentage' | 'fixed' | 'none';
@@ -174,6 +185,8 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
       available_to: '',
       inclusions: [],
       exclusions: [],
+      inclusions_zh: [],
+      exclusions_zh: [],
       display_order: packages.length,
       is_active: true,
       requires_full_payment: false,
@@ -221,6 +234,8 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
       // Deep clone arrays
       inclusions: [...(pkgToDuplicate.inclusions || [])],
       exclusions: [...(pkgToDuplicate.exclusions || [])],
+      inclusions_zh: [...(pkgToDuplicate.inclusions_zh || [])],
+      exclusions_zh: [...(pkgToDuplicate.exclusions_zh || [])],
       custom_pricing_tiers: pkgToDuplicate.custom_pricing_tiers?.map(tier => ({
         ...tier,
         id: undefined, // Remove tier IDs so they create new records
@@ -509,15 +524,18 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                   <div className="p-4 border-t space-y-4">
                     {/* Basic Info */}
                     <div className="grid gap-4 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label>{t('packageName')} *</Label>
-                        <Input
-                          value={pkg.package_name}
-                          onChange={(e) => updatePackage(index, 'package_name', e.target.value)}
-                          placeholder={t('packageNamePlaceholder')}
-                          required
-                        />
-                      </div>
+                      <DualLanguageInput
+                        label={t('packageName')}
+                        id={`package_name_${index}`}
+                        type="text"
+                        valueEn={pkg.package_name}
+                        valueZh={pkg.package_name_zh || ''}
+                        onChangeEn={(value) => updatePackage(index, 'package_name', value)}
+                        onChangeZh={(value) => updatePackage(index, 'package_name_zh', value)}
+                        placeholder={t('packageNamePlaceholder')}
+                        placeholderZh="例如：标准套餐"
+                        required
+                      />
                       <div className="space-y-2">
                         <Label>{t('packageCode')}</Label>
                         <Input
@@ -528,15 +546,18 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label>{t('description')}</Label>
-                      <Textarea
-                        value={pkg.description}
-                        onChange={(e) => updatePackage(index, 'description', e.target.value)}
-                        placeholder={t('packageDescriptionPlaceholder')}
-                        rows={3}
-                      />
-                    </div>
+                    <DualLanguageInput
+                      label={t('description')}
+                      id={`package_description_${index}`}
+                      type="textarea"
+                      valueEn={pkg.description}
+                      valueZh={pkg.description_zh || ''}
+                      onChangeEn={(value) => updatePackage(index, 'description', value)}
+                      onChangeZh={(value) => updatePackage(index, 'description_zh', value)}
+                      placeholder={t('packageDescriptionPlaceholder')}
+                      placeholderZh="输入套餐描述..."
+                      rows={3}
+                    />
 
                     {/* Tour Type */}
                     <div className="space-y-2">
@@ -1526,84 +1547,28 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                     </div>
 
                     {/* Inclusions */}
-                    <div className="space-y-2">
-                      <Label>{t('inclusions')}</Label>
-                      <div className="space-y-2">
-                        {pkg.inclusions.map((item, itemIndex) => (
-                          <div key={itemIndex} className="flex gap-2">
-                            <Input
-                              value={item}
-                              onChange={(e) => {
-                                const updated = [...packages];
-                                updated[index].inclusions[itemIndex] = e.target.value;
-                                onChange(updated);
-                              }}
-                            />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => removeArrayItem(index, 'inclusions', itemIndex)}
-                            >
-                              <X className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        ))}
-                        <div className="flex gap-2">
-                          <Input
-                            placeholder={t('addInclusion')}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                const value = e.currentTarget.value;
-                                addArrayItem(index, 'inclusions', value);
-                                e.currentTarget.value = '';
-                              }
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </div>
+                    <DualLanguageArrayInput
+                      label={t('inclusions')}
+                      id={`package-${index}-inclusions`}
+                      valuesEn={pkg.inclusions}
+                      valuesZh={pkg.inclusions_zh || []}
+                      onChangeEn={(values) => updatePackage(index, 'inclusions', values)}
+                      onChangeZh={(values) => updatePackage(index, 'inclusions_zh', values)}
+                      placeholderEn={t('addInclusion')}
+                      placeholderZh="添加包含项目"
+                    />
 
                     {/* Exclusions */}
-                    <div className="space-y-2">
-                      <Label>{t('exclusions')}</Label>
-                      <div className="space-y-2">
-                        {pkg.exclusions.map((item, itemIndex) => (
-                          <div key={itemIndex} className="flex gap-2">
-                            <Input
-                              value={item}
-                              onChange={(e) => {
-                                const updated = [...packages];
-                                updated[index].exclusions[itemIndex] = e.target.value;
-                                onChange(updated);
-                              }}
-                            />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => removeArrayItem(index, 'exclusions', itemIndex)}
-                            >
-                              <X className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        ))}
-                        <div className="flex gap-2">
-                          <Input
-                            placeholder={t('addExclusion')}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                const value = e.currentTarget.value;
-                                addArrayItem(index, 'exclusions', value);
-                                e.currentTarget.value = '';
-                              }
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </div>
+                    <DualLanguageArrayInput
+                      label={t('exclusions')}
+                      id={`package-${index}-exclusions`}
+                      valuesEn={pkg.exclusions}
+                      valuesZh={pkg.exclusions_zh || []}
+                      onChangeEn={(values) => updatePackage(index, 'exclusions', values)}
+                      onChangeZh={(values) => updatePackage(index, 'exclusions_zh', values)}
+                      placeholderEn={t('addExclusion')}
+                      placeholderZh="添加不包含项目"
+                    />
 
                     {/* Add-ons / Optional Extras */}
                     <div className="space-y-3 pt-4 border-t">
@@ -1642,15 +1607,18 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                               </div>
 
                               <div className="grid gap-3 md:grid-cols-2">
-                                <div className="space-y-2">
-                                  <Label>{t('addonName')} *</Label>
-                                  <Input
-                                    value={addon.name}
-                                    onChange={(e) => updateAddon(index, addonIndex, 'name', e.target.value)}
-                                    placeholder={t('addonNamePlaceholder')}
-                                    required
-                                  />
-                                </div>
+                                <DualLanguageInput
+                                  label={t('addonName')}
+                                  id={`addon_name_${index}_${addonIndex}`}
+                                  type="text"
+                                  valueEn={addon.name}
+                                  valueZh={addon.name_zh || ''}
+                                  onChangeEn={(value) => updateAddon(index, addonIndex, 'name', value)}
+                                  onChangeZh={(value) => updateAddon(index, addonIndex, 'name_zh', value)}
+                                  placeholder={t('addonNamePlaceholder')}
+                                  placeholderZh="例如：私人接送"
+                                  required
+                                />
                                 <div className="space-y-2">
                                   <Label>{t('addonCategory')}</Label>
                                   <Select
@@ -1673,15 +1641,18 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                                 </div>
                               </div>
 
-                              <div className="space-y-2">
-                                <Label>{t('description')}</Label>
-                                <Textarea
-                                  value={addon.description}
-                                  onChange={(e) => updateAddon(index, addonIndex, 'description', e.target.value)}
-                                  placeholder={t('addonDescriptionPlaceholder')}
-                                  rows={2}
-                                />
-                              </div>
+                              <DualLanguageInput
+                                label={t('description')}
+                                id={`addon_description_${index}_${addonIndex}`}
+                                type="textarea"
+                                valueEn={addon.description}
+                                valueZh={addon.description_zh || ''}
+                                onChangeEn={(value) => updateAddon(index, addonIndex, 'description', value)}
+                                onChangeZh={(value) => updateAddon(index, addonIndex, 'description_zh', value)}
+                                placeholder={t('addonDescriptionPlaceholder')}
+                                placeholderZh="输入附加项描述..."
+                                rows={2}
+                              />
 
                               {/* Supplier Currency Section for Add-ons */}
                               <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEditor, EditorContent } from '@tiptap/react'
+import { useEffect } from 'react'
 import StarterKit from '@tiptap/starter-kit'
 import Link from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -54,6 +55,13 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start typing.
     },
     immediatelyRender: false,
   })
+
+  // Update editor content when the content prop changes
+  useEffect(() => {
+    if (editor && content !== editor.getHTML()) {
+      editor.commands.setContent(content)
+    }
+  }, [content, editor])
 
   if (!editor) {
     return null
