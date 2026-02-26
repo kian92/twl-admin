@@ -62,10 +62,30 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const payload = (await request.json().catch(() => null)) as
       | { action: "disable" | "enable" }
       | { action: "update_role"; role: string }
+      | { action: "update_name"; full_name: string }
       | null
 
     if (!payload) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 })
+    }
+
+    // Handle name update
+    if (payload.action === "update_name") {
+      if (!("full_name" in payload) || typeof payload.full_name !== "string" || !payload.full_name.trim()) {
+        return NextResponse.json({ error: "Invalid name" }, { status: 400 })
+      }
+
+      const { error: updateError } = await (supabase as any)
+        .from("admin_profiles")
+        .update({ full_name: payload.full_name.trim() })
+        .eq("id", id)
+
+      if (updateError) {
+        console.error("Failed to update staff name", updateError)
+        return NextResponse.json({ error: "Failed to update name" }, { status: 500 })
+      }
+
+      return NextResponse.json({ success: true })
     }
 
     // Handle role update

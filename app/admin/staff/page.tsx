@@ -90,6 +90,9 @@ export default function StaffPage() {
   const [submitting, setSubmitting] = useState(false)
   const [editingRoleId, setEditingRoleId] = useState<string | null>(null)
   const [updatingRole, setUpdatingRole] = useState(false)
+  const [editingNameId, setEditingNameId] = useState<string | null>(null)
+  const [editingNameValue, setEditingNameValue] = useState("")
+  const [updatingName, setUpdatingName] = useState(false)
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
   const [selectedStaffForPassword, setSelectedStaffForPassword] = useState<StaffMember | null>(null)
   const [newPassword, setNewPassword] = useState("")
@@ -215,6 +218,38 @@ export default function StaffPage() {
       })
     } finally {
       setUpdatingRole(false)
+    }
+  }
+
+  const handleNameChange = async (memberId: string) => {
+    setInviteStatus(null)
+    setUpdatingName(true)
+
+    try {
+      const response = await fetch(`/api/admin/staff/${memberId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "update_name", full_name: editingNameValue }),
+      })
+
+      const payload = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Failed to update name")
+      }
+
+      setInviteStatus({ type: "success", message: "Name updated successfully." })
+      setEditingNameId(null)
+      setEditingNameValue("")
+      await loadStaff()
+    } catch (err) {
+      console.error("Name update failed", err)
+      setInviteStatus({
+        type: "error",
+        message: err instanceof Error ? err.message : "Failed to update name",
+      })
+    } finally {
+      setUpdatingName(false)
     }
   }
 
@@ -489,7 +524,52 @@ export default function StaffPage() {
                         <AvatarFallback>{initials}</AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-medium">{member.full_name ?? "Pending invite"}</p>
+                        {canInvite && editingNameId === member.id ? (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              value={editingNameValue}
+                              onChange={(e) => setEditingNameValue(e.target.value)}
+                              className="h-7 text-sm w-40"
+                              disabled={updatingName}
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") void handleNameChange(member.id)
+                                if (e.key === "Escape") { setEditingNameId(null); setEditingNameValue("") }
+                              }}
+                            />
+                            <Button
+                              size="sm"
+                              className="h-7 px-2 text-xs"
+                              onClick={() => void handleNameChange(member.id)}
+                              disabled={updatingName || !editingNameValue.trim()}
+                            >
+                              Save
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 px-2 text-xs"
+                              onClick={() => { setEditingNameId(null); setEditingNameValue("") }}
+                              disabled={updatingName}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{member.full_name ?? "Pending invite"}</p>
+                            {canInvite && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-5 px-1 text-xs text-muted-foreground"
+                                onClick={() => { setEditingNameId(member.id); setEditingNameValue(member.full_name ?? "") }}
+                              >
+                                Edit
+                              </Button>
+                            )}
+                          </div>
+                        )}
                         {member.role === 'supplier' && member.company_name && (
                           <p className="text-sm text-muted-foreground">{member.company_name}</p>
                         )}
