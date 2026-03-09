@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Search, Edit, Trash2, Star, DollarSign } from "lucide-react"
+import { Plus, Search, Edit, Trash2, Star, DollarSign, Download } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -278,6 +278,49 @@ console.log('paginatedExperiences',paginatedExperiences);
     }
   }
 
+  const handleExportCsv = () => {
+    const rows = experiences.map((exp) => ({
+      ID: exp.id,
+      Title: exp.title,
+      Status: exp.status ?? "",
+      Category: exp.category ?? "",
+      Country: exp.country ?? "",
+      Location: exp.location ?? "",
+      Duration: exp.duration ?? "",
+      "Adult Price": exp.package_adult_price ?? exp.adult_price ?? "",
+      "Child Price": exp.package_child_price ?? exp.child_price ?? "",
+      "Vehicle Price": exp.package_vehicle_price ?? "",
+      "Min Pax": exp.min_pax ?? "",
+      "Tour Types": exp.tour_types?.join(", ") ?? "",
+      Rating: exp.rating ?? "",
+      "Review Count": exp.review_count ?? "",
+      "Created By": exp.creator_name ?? "",
+      "Updated By": exp.updater_name ?? "",
+      "Created At": exp.created_at ?? "",
+      "Updated At": exp.updated_at ?? "",
+      Slug: exp.slug ?? "",
+    }))
+
+    const headers = Object.keys(rows[0] ?? {})
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) =>
+        headers.map((h) => {
+          const val = String((row as Record<string, unknown>)[h] ?? "")
+          return `"${val.replace(/"/g, '""')}"`
+        }).join(",")
+      ),
+    ].join("\n")
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `experiences-${new Date().toISOString().slice(0, 10)}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -292,6 +335,12 @@ console.log('paginatedExperiences',paginatedExperiences);
           </p>
         </div>
         <div className="flex gap-2">
+          {profile?.role === 'admin' && (
+            <Button variant="outline" onClick={handleExportCsv} disabled={loading || experiences.length === 0}>
+              <Download className="w-4 h-4 mr-2" />
+              Export CSV
+            </Button>
+          )}
           <Button variant="outline" asChild>
             <Link href="/admin/experiences/bulk-pricing">
               <DollarSign className="w-4 h-4 mr-2" />
