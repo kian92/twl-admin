@@ -302,17 +302,23 @@ console.log('paginatedExperiences',paginatedExperiences);
     }))
 
     const headers = Object.keys(rows[0] ?? {})
-    const csvContent = [
-      headers.join(","),
+    // Use tab delimiter with UTF-16 LE so Excel on Mac correctly splits columns and renders Chinese
+    const tsvContent = [
+      headers.join("\t"),
       ...rows.map((row) =>
         headers.map((h) => {
           const val = String((row as Record<string, unknown>)[h] ?? "")
-          return `"${val.replace(/"/g, '""')}"`
-        }).join(",")
+          return val.replace(/\t/g, " ") // tabs inside values would break columns
+        }).join("\t")
       ),
     ].join("\n")
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+    const utf16 = new Uint16Array(tsvContent.length + 1)
+    utf16[0] = 0xFEFF // UTF-16 LE BOM
+    for (let i = 0; i < tsvContent.length; i++) {
+      utf16[i + 1] = tsvContent.charCodeAt(i)
+    }
+    const blob = new Blob([utf16.buffer], { type: "text/tab-separated-values;charset=utf-16le;" })
     const url = URL.createObjectURL(blob)
     const link = document.createElement("a")
     link.href = url
