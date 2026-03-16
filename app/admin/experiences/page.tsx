@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Search, Edit, Trash2, Star, DollarSign, Download } from "lucide-react"
+import { Plus, Search, Edit, Trash2, Star, DollarSign, Download, Copy } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -51,6 +51,7 @@ export default function ExperiencesPage() {
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [adminProfiles, setAdminProfiles] = useState<Record<string, string>>({})
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null)
 
   const loadExperiences = useCallback(async () => {
     setLoading(true)
@@ -275,6 +276,26 @@ console.log('paginatedExperiences',paginatedExperiences);
     } catch (err) {
       console.error("Failed to delete experience", err)
       toast.error(err instanceof Error ? err.message : t('experiences.failedToDelete'))
+    }
+  }
+
+  const handleDuplicate = async (experience: ExperienceRow) => {
+    setDuplicatingId(experience.id)
+    try {
+      const response = await fetch(`/api/admin/experiences/${experience.slug}/${experience.id}/duplicate`, {
+        method: "POST",
+      })
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => ({}))) as { error?: string }
+        throw new Error(payload.error ?? "Unable to duplicate experience.")
+      }
+      toast.success(`"${experience.title}" duplicated as draft`)
+      void loadExperiences()
+    } catch (err) {
+      console.error("Failed to duplicate experience", err)
+      toast.error(err instanceof Error ? err.message : "Failed to duplicate experience")
+    } finally {
+      setDuplicatingId(null)
     }
   }
 
@@ -553,6 +574,17 @@ console.log('paginatedExperiences',paginatedExperiences);
                         <Link href={`/admin/experiences/${experience.slug}/${experience.id}`}>
                           <Edit className="w-4 h-4" />
                         </Link>
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        title="Duplicate as draft"
+                        disabled={duplicatingId === experience.id}
+                        onClick={() => {
+                          void handleDuplicate(experience)
+                        }}
+                      >
+                        <Copy className="w-4 h-4" />
                       </Button>
                       <Button
                         size="sm"
