@@ -300,27 +300,36 @@ console.log('paginatedExperiences',paginatedExperiences);
   }
 
   const handleExportCsv = () => {
-    const rows = experiences.map((exp) => ({
-      ID: exp.id,
-      Title: exp.title,
-      Status: exp.status ?? "",
-      Category: exp.category ?? "",
-      Country: exp.country ?? "",
-      Location: exp.location ?? "",
-      Duration: exp.duration ?? "",
-      "Adult Price": exp.package_adult_price ?? exp.adult_price ?? "",
-      "Child Price": exp.package_child_price ?? exp.child_price ?? "",
-      "Vehicle Price": exp.package_vehicle_price ?? "",
-      "Min Pax": exp.min_pax ?? "",
-      "Tour Types": exp.tour_types?.join(", ") ?? "",
-      Rating: exp.rating ?? "",
-      "Review Count": exp.review_count ?? "",
-      "Created By": exp.creator_name ?? "",
-      "Updated By": exp.updater_name ?? "",
-      "Created At": exp.created_at ?? "",
-      "Updated At": exp.updated_at ?? "",
-      Slug: exp.slug ?? "",
-    }))
+    const rows = experiences.map((exp) => {
+      const itineraryItems = Array.isArray(exp.itinerary)
+        ? (exp.itinerary as { day?: number; time?: string; activity?: string }[])
+            .map((item) => `Day ${item.day ?? ""}${item.time ? ` ${item.time}` : ""}: ${item.activity ?? ""}`)
+            .join(" | ")
+        : ""
+
+      return {
+        ID: exp.id,
+        Title: exp.title,
+        Status: exp.status ?? "",
+        Category: exp.category ?? "",
+        Country: exp.country ?? "",
+        Location: exp.location ?? "",
+        Duration: exp.duration ?? "",
+        "Adult Price": exp.package_adult_price ?? exp.adult_price ?? "",
+        "Child Price": exp.package_child_price ?? exp.child_price ?? "",
+        "Vehicle Price": exp.package_vehicle_price ?? "",
+        "Min Pax": exp.min_pax ?? "",
+        "Tour Types": exp.tour_types?.join(", ") ?? "",
+        Itinerary: itineraryItems,
+        Rating: exp.rating ?? "",
+        "Review Count": exp.review_count ?? "",
+        "Created By": exp.creator_name ?? "",
+        "Updated By": exp.updater_name ?? "",
+        "Created At": exp.created_at ?? "",
+        "Updated At": exp.updated_at ?? "",
+        Slug: exp.slug ?? "",
+      }
+    })
 
     const headers = Object.keys(rows[0] ?? {})
     // Use tab delimiter with UTF-16 LE so Excel on Mac correctly splits columns and renders Chinese
