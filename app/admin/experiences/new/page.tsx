@@ -463,6 +463,12 @@ export default function NewExperiencePage() {
             supplier_cost_senior: pkg.supplier_cost_senior,
             supplier_cost_vehicle: pkg.supplier_cost_vehicle,
             exchange_rate: pkg.exchange_rate || 1.0,
+            selling_currency: pkg.selling_currency || 'USD',
+            adult_selling_prices: pkg.adult_selling_prices || { USD: 0, SGD: 0, MYR: 0 },
+            child_selling_prices: pkg.child_selling_prices || { USD: 0, SGD: 0, MYR: 0 },
+            infant_selling_prices: pkg.infant_selling_prices || { USD: 0, SGD: 0, MYR: 0 },
+            senior_selling_prices: pkg.senior_selling_prices || { USD: 0, SGD: 0, MYR: 0 },
+            vehicle_selling_prices: pkg.vehicle_selling_prices || { USD: 0, SGD: 0, MYR: 0 },
 
             // Selling prices (what customer pays)
             adult_price: Math.floor(pkg.adult_price),

@@ -46,6 +46,12 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
+    const sellingCurrency = ['USD', 'SGD', 'MYR'].includes(body.selling_currency) ? body.selling_currency : 'USD';
+    const normalizeSellingPrices = (prices: any, fallbackPrice: number) => ({
+      USD: Number(prices?.USD) || (sellingCurrency === 'USD' ? Number(fallbackPrice) || 0 : 0),
+      SGD: Number(prices?.SGD) || (sellingCurrency === 'SGD' ? Number(fallbackPrice) || 0 : 0),
+      MYR: Number(prices?.MYR) || (sellingCurrency === 'MYR' ? Number(fallbackPrice) || 0 : 0),
+    });
 
     // Validate that experience_id is not being changed, or if it is, that it exists
     if (body.experience_id) {
@@ -109,6 +115,7 @@ export async function PUT(
     if (body.use_custom_tiers && body.custom_pricing_tiers && Array.isArray(body.custom_pricing_tiers)) {
       // Use custom pricing tiers
       body.custom_pricing_tiers.forEach((tier: any, index: number) => {
+        const sellingPrices = normalizeSellingPrices(tier.selling_prices, tier.selling_price);
         pricingTiers.push({
           package_id: id,
           tier_type: tier.tier_type,
@@ -118,13 +125,14 @@ export async function PUT(
           min_age: tier.min_age || null,
           max_age: tier.max_age || null,
           base_price: tier.base_price || 0,
-          selling_price: tier.selling_price,
+          selling_price: sellingPrices[sellingCurrency as 'USD' | 'SGD' | 'MYR'],
           supplier_currency: body.supplier_currency || 'USD',
           supplier_cost: tier.supplier_cost || 0,
           exchange_rate: body.exchange_rate || 1.0,
           markup_type: markupType,
           markup_value: markupValue,
-          currency: 'USD',
+          currency: sellingCurrency,
+          selling_prices: sellingPrices,
           display_order: tier.display_order !== undefined ? tier.display_order : index,
           requires_adult_accompaniment: tier.requires_adult_accompaniment || (tier.tier_type === 'child' || tier.tier_type === 'infant'),
           max_per_booking: tier.max_per_booking || null,
@@ -137,6 +145,7 @@ export async function PUT(
       // Create adult tier if price is set OR if age ranges are specified
       const hasAdultAgeRange = body.adult_min_age !== undefined || body.adult_max_age !== undefined;
       if ((body.adult_price !== undefined && body.adult_price !== null && body.adult_price > 0) || hasAdultAgeRange) {
+        const sellingPrices = normalizeSellingPrices(body.adult_selling_prices, body.adult_price);
         pricingTiers.push({
           package_id: id,
           tier_type: 'adult',
@@ -149,8 +158,9 @@ export async function PUT(
           exchange_rate: body.exchange_rate || 1.0,
           markup_type: markupType,
           markup_value: markupValue,
-          selling_price: body.adult_price || 0,
-          currency: 'USD',
+          selling_price: sellingPrices[sellingCurrency as 'USD' | 'SGD' | 'MYR'],
+          currency: sellingCurrency,
+          selling_prices: sellingPrices,
           is_active: true,
         });
       }
@@ -158,6 +168,7 @@ export async function PUT(
       // Create child tier if price is set OR if age ranges are specified
       const hasChildAgeRange = body.child_min_age !== undefined || body.child_max_age !== undefined;
       if ((body.child_price !== undefined && body.child_price !== null && body.child_price > 0) || hasChildAgeRange) {
+        const sellingPrices = normalizeSellingPrices(body.child_selling_prices, body.child_price);
         pricingTiers.push({
           package_id: id,
           tier_type: 'child',
@@ -170,13 +181,15 @@ export async function PUT(
           exchange_rate: body.exchange_rate || 1.0,
           markup_type: markupType,
           markup_value: markupValue,
-          selling_price: body.child_price || 0,
-          currency: 'USD',
+          selling_price: sellingPrices[sellingCurrency as 'USD' | 'SGD' | 'MYR'],
+          currency: sellingCurrency,
+          selling_prices: sellingPrices,
           is_active: true,
         });
       }
 
       if (body.infant_price !== undefined && body.infant_price !== null && body.infant_price > 0) {
+        const sellingPrices = normalizeSellingPrices(body.infant_selling_prices, body.infant_price);
         pricingTiers.push({
           package_id: id,
           tier_type: 'infant',
@@ -189,13 +202,15 @@ export async function PUT(
           exchange_rate: body.exchange_rate || 1.0,
           markup_type: markupType,
           markup_value: markupValue,
-          selling_price: body.infant_price,
-          currency: 'USD',
+          selling_price: sellingPrices[sellingCurrency as 'USD' | 'SGD' | 'MYR'],
+          currency: sellingCurrency,
+          selling_prices: sellingPrices,
           is_active: true,
         });
       }
 
       if (body.senior_price !== undefined && body.senior_price !== null && body.senior_price > 0) {
+        const sellingPrices = normalizeSellingPrices(body.senior_selling_prices, body.senior_price);
         pricingTiers.push({
           package_id: id,
           tier_type: 'senior',
@@ -208,13 +223,15 @@ export async function PUT(
           exchange_rate: body.exchange_rate || 1.0,
           markup_type: markupType,
           markup_value: markupValue,
-          selling_price: body.senior_price,
-          currency: 'USD',
+          selling_price: sellingPrices[sellingCurrency as 'USD' | 'SGD' | 'MYR'],
+          currency: sellingCurrency,
+          selling_prices: sellingPrices,
           is_active: true,
         });
       }
 
       if (body.vehicle_price !== undefined && body.vehicle_price !== null && body.vehicle_price > 0) {
+        const sellingPrices = normalizeSellingPrices(body.vehicle_selling_prices, body.vehicle_price);
         pricingTiers.push({
           package_id: id,
           tier_type: 'vehicle',
@@ -227,8 +244,9 @@ export async function PUT(
           exchange_rate: body.exchange_rate || 1.0,
           markup_type: markupType,
           markup_value: markupValue,
-          selling_price: body.vehicle_price,
-          currency: 'USD',
+          selling_price: sellingPrices[sellingCurrency as 'USD' | 'SGD' | 'MYR'],
+          currency: sellingCurrency,
+          selling_prices: sellingPrices,
           is_active: true,
         });
       }
@@ -258,7 +276,7 @@ export async function PUT(
           description: addon.description || null,
           pricing_type: addon.pricing_type || 'per_person',
           price: addon.price,
-          currency: 'USD',
+          currency: sellingCurrency,
           supplier_currency: addon.supplier_currency || 'USD',
           supplier_cost: addon.supplier_cost || null,
           addon_exchange_rate: addon.addon_exchange_rate || 1.0,

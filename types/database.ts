@@ -217,6 +217,7 @@ export interface Database {
           payment_status: string
           payment_method: string
           total_cost: number
+          currency: string
           notes: string | null
           payment_reference: string | null
           payment_date: string | null
@@ -239,6 +240,7 @@ export interface Database {
           payment_status: string
           payment_method: string
           total_cost: number
+          currency?: string
           notes?: string | null
           payment_reference?: string | null
           payment_date?: string | null
@@ -260,6 +262,7 @@ export interface Database {
           payment_status?: string
           payment_method?: string
           total_cost?: number
+          currency?: string
           notes?: string | null
           payment_reference?: string | null
           payment_date?: string | null

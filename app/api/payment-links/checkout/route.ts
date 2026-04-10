@@ -55,6 +55,7 @@ export async function POST(request: Request) {
         payment_status: paymentMethod === "pay-later" ? "pending" : "paid",
         payment_method: paymentMethod,
         total_cost: totalAmount,
+        currency: paymentLink.currency || "USD",
         notes: notes || null,
       } as any)
       .select()

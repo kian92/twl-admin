@@ -18,6 +18,9 @@ import { convertToUSD, roundCurrency } from '@/lib/utils/currency-converter';
 import { BlockedDatesManager } from './BlockedDatesManager';
 import type { PackagePricingTier } from '@/types/pricing';
 
+type SupportedSellingCurrency = 'USD' | 'SGD' | 'MYR';
+type CurrencyPriceMap = Partial<Record<SupportedSellingCurrency, number>>;
+
 export interface AddOnItem {
   id?: string;
   name: string;
@@ -30,6 +33,7 @@ export interface AddOnItem {
   supplier_currency?: string;
   supplier_cost?: number;
   addon_exchange_rate?: number;
+  price_by_currency?: CurrencyPriceMap;
   // Chinese language fields
   name_zh?: string;
   description_zh?: string;
@@ -46,6 +50,7 @@ export interface CustomPricingTier {
   supplier_cost?: number;
   supplier_currency?: string;
   tier_exchange_rate?: number;
+  selling_prices?: CurrencyPriceMap;
   description?: string;
 }
 
@@ -90,6 +95,12 @@ export interface PackageFormData {
   supplier_cost_senior?: number;
   supplier_cost_vehicle?: number;
   exchange_rate?: number;
+  selling_currency?: string;
+  adult_selling_prices?: CurrencyPriceMap;
+  child_selling_prices?: CurrencyPriceMap;
+  infant_selling_prices?: CurrencyPriceMap;
+  senior_selling_prices?: CurrencyPriceMap;
+  vehicle_selling_prices?: CurrencyPriceMap;
 
   // Selling prices (calculated or manual)
   adult_price: number;
@@ -122,6 +133,72 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
   const t = useTranslations('experiences.form');
   const [expandedPackage, setExpandedPackage] = useState<number>(0);
   const isSupplier = userRole === 'supplier';
+  const supportedSellingCurrencies: SupportedSellingCurrency[] = ['USD', 'SGD', 'MYR'];
+  const sellingCurrencies = CURRENCIES.filter((currency) => supportedSellingCurrencies.includes(currency.code as SupportedSellingCurrency));
+
+  const normalizeCurrencyPriceMap = (prices?: CurrencyPriceMap): Record<SupportedSellingCurrency, number> => ({
+    USD: Number(prices?.USD) || 0,
+    SGD: Number(prices?.SGD) || 0,
+    MYR: Number(prices?.MYR) || 0,
+  });
+
+  const getSelectedSellingCurrency = (pkg: PackageFormData): SupportedSellingCurrency =>
+    supportedSellingCurrencies.includes((pkg.selling_currency || 'USD') as SupportedSellingCurrency)
+      ? (pkg.selling_currency as SupportedSellingCurrency)
+      : 'USD';
+
+  const syncCurrentCurrencyPriceMaps = (pkg: PackageFormData): PackageFormData => {
+    const currency = getSelectedSellingCurrency(pkg);
+
+    return {
+      ...pkg,
+      adult_selling_prices: { ...normalizeCurrencyPriceMap(pkg.adult_selling_prices), [currency]: Number(pkg.adult_price) || 0 },
+      child_selling_prices: { ...normalizeCurrencyPriceMap(pkg.child_selling_prices), [currency]: Number(pkg.child_price) || 0 },
+      infant_selling_prices: { ...normalizeCurrencyPriceMap(pkg.infant_selling_prices), [currency]: Number(pkg.infant_price) || 0 },
+      senior_selling_prices: { ...normalizeCurrencyPriceMap(pkg.senior_selling_prices), [currency]: Number(pkg.senior_price) || 0 },
+      vehicle_selling_prices: { ...normalizeCurrencyPriceMap(pkg.vehicle_selling_prices), [currency]: Number(pkg.vehicle_price) || 0 },
+    };
+  };
+
+  const updateSellingCurrency = (index: number, currency: SupportedSellingCurrency) => {
+    const updated = [...packages];
+    const pkg = syncCurrentCurrencyPriceMaps(updated[index]);
+
+    updated[index] = {
+      ...pkg,
+      selling_currency: currency,
+      adult_price: normalizeCurrencyPriceMap(pkg.adult_selling_prices)[currency],
+      child_price: normalizeCurrencyPriceMap(pkg.child_selling_prices)[currency],
+      infant_price: normalizeCurrencyPriceMap(pkg.infant_selling_prices)[currency],
+      senior_price: normalizeCurrencyPriceMap(pkg.senior_selling_prices)[currency],
+      vehicle_price: normalizeCurrencyPriceMap(pkg.vehicle_selling_prices)[currency],
+    };
+
+    onChange(updated);
+  };
+
+  const updateSellingPriceForCurrentCurrency = (
+    index: number,
+    field: 'adult_price' | 'child_price' | 'infant_price' | 'senior_price' | 'vehicle_price',
+    mapField: 'adult_selling_prices' | 'child_selling_prices' | 'infant_selling_prices' | 'senior_selling_prices' | 'vehicle_selling_prices',
+    value: number | undefined
+  ) => {
+    const updated = [...packages];
+    const pkg = updated[index];
+    const currency = getSelectedSellingCurrency(pkg);
+    const normalizedMap = normalizeCurrencyPriceMap(pkg[mapField]);
+
+    updated[index] = {
+      ...pkg,
+      [field]: value,
+      [mapField]: {
+        ...normalizedMap,
+        [currency]: Number(value) || 0,
+      },
+    };
+
+    onChange(updated);
+  };
 
   // Generate package code from package name with random unique number
   const generatePackageCode = (name: string): string => {
@@ -204,6 +281,12 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
       supplier_cost_senior: 0,
       supplier_cost_vehicle: 0,
       exchange_rate: 1.0,
+      selling_currency: 'USD',
+      adult_selling_prices: { USD: 0, SGD: 0, MYR: 0 },
+      child_selling_prices: { USD: 0, SGD: 0, MYR: 0 },
+      infant_selling_prices: { USD: 0, SGD: 0, MYR: 0 },
+      senior_selling_prices: { USD: 0, SGD: 0, MYR: 0 },
+      vehicle_selling_prices: { USD: 0, SGD: 0, MYR: 0 },
       adult_price: 0,
       child_price: 0,
       adult_min_age: 18,
@@ -328,6 +411,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
       updated[index].infant_price = calculateSellingPrice(updated[index].base_infant_price || 0, markupType, markupValue);
       updated[index].senior_price = calculateSellingPrice(updated[index].base_senior_price || 0, markupType, markupValue);
       updated[index].vehicle_price = calculateSellingPrice(updated[index].base_vehicle_price || 0, markupType, markupValue);
+      updated[index] = syncCurrentCurrencyPriceMaps(updated[index]);
     }
 
     onChange(updated);
@@ -348,6 +432,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
       updated[index].infant_price = calculateSellingPrice(pkg.base_infant_price || 0, markupType, markupValue);
       updated[index].senior_price = calculateSellingPrice(pkg.base_senior_price || 0, markupType, markupValue);
       updated[index].vehicle_price = calculateSellingPrice(pkg.base_vehicle_price || 0, markupType, markupValue);
+      updated[index] = syncCurrentCurrencyPriceMaps(updated[index]);
     }
 
     onChange(updated);
@@ -475,15 +560,18 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                     <Badge variant={pkg.is_active ? 'default' : 'secondary'}>
                       {pkg.is_active ? t('packageActive') : t('packageInactive')}
                     </Badge>
+                    {!isSupplier && (
+                      <Badge variant="outline">{pkg.selling_currency || 'USD'}</Badge>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground">
-                    Adult: ${Math.floor(pkg.adult_price)}
+                    Adult: {formatCurrency(Math.floor(pkg.adult_price), pkg.selling_currency || 'USD')}
                     {pkg.adult_min_age !== undefined && (
                       <> ({pkg.adult_min_age}{pkg.adult_max_age ? `–${pkg.adult_max_age}` : '+'})</>
                     )}
                     {" | "}
-                    Child: ${Math.floor(pkg.child_price)}
+                    Child: {formatCurrency(Math.floor(pkg.child_price), pkg.selling_currency || 'USD')}
                     {pkg.child_min_age !== undefined && pkg.child_max_age !== undefined && (
                       <> ({pkg.child_min_age}–{pkg.child_max_age})</>
                     )}
@@ -631,7 +719,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                           {pkg.markup_type && pkg.markup_type !== 'none' && (
                             <div className="space-y-2">
                               <Label>
-                                {t('markupValue')} {pkg.markup_type === 'percentage' ? '(%)' : '($)'}
+                                {t('markupValue')} {pkg.markup_type === 'percentage' ? '(%)' : `(${pkg.selling_currency || 'USD'})`}
                               </Label>
                               <Input
                                 type="number"
@@ -1046,6 +1134,24 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                             {pkg.markup_type && pkg.markup_type !== 'none' ? t('autoCalculated') : t('manualEntry')}
                           </span>
                         </div>
+                        <div className="space-y-2">
+                          <Label>Selling Currency</Label>
+                          <Select
+                            value={pkg.selling_currency || 'USD'}
+                            onValueChange={(value) => updateSellingCurrency(index, value as SupportedSellingCurrency)}
+                          >
+                            <SelectTrigger className="max-w-xs">
+                              <SelectValue placeholder="Select selling currency" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {sellingCurrencies.map((currency) => (
+                                <SelectItem key={currency.code} value={currency.code}>
+                                  {currency.symbol} {currency.code} - {currency.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       <div className="grid gap-4 md:grid-cols-4">
                         <div className="space-y-2">
                           <Label>{t('packageAdultPrice')}</Label>
@@ -1056,15 +1162,14 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                             value={pkg.adult_price ?? ''}
                             onChange={(e) => {
                               const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                              updatePackage(index, 'adult_price', isNaN(value) ? 0 : value);
+                              updateSellingPriceForCurrentCurrency(index, 'adult_price', 'adult_selling_prices', isNaN(value) ? 0 : value);
                             }}
                             placeholder="0.00"
                             className="font-semibold"
-                            disabled={!isSupplier && pkg.markup_type !== 'none'}
                           />
                           {!isSupplier && pkg.markup_type && pkg.markup_type !== 'none' && pkg.base_adult_price && pkg.markup_value && (
                             <span className="text-xs text-muted-foreground">
-                              ${pkg.base_adult_price} + {pkg.markup_type === 'percentage' ? `${pkg.markup_value}%` : `$${pkg.markup_value}`}
+                              {formatCurrency(pkg.base_adult_price, pkg.selling_currency || 'USD')} + {pkg.markup_type === 'percentage' ? `${pkg.markup_value}%` : formatCurrency(pkg.markup_value || 0, pkg.selling_currency || 'USD')}
                             </span>
                           )}
                         </div>
@@ -1077,15 +1182,14 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                             value={pkg.child_price ?? ''}
                             onChange={(e) => {
                               const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                              updatePackage(index, 'child_price', isNaN(value) ? 0 : value);
+                              updateSellingPriceForCurrentCurrency(index, 'child_price', 'child_selling_prices', isNaN(value) ? 0 : value);
                             }}
                             placeholder="0.00"
                             className="font-semibold"
-                            disabled={!isSupplier && pkg.markup_type !== 'none'}
                           />
                           {!isSupplier && pkg.markup_type && pkg.markup_type !== 'none' && pkg.base_child_price && pkg.markup_value && (
                             <span className="text-xs text-muted-foreground">
-                              ${pkg.base_child_price} + {pkg.markup_type === 'percentage' ? `${pkg.markup_value}%` : `$${pkg.markup_value}`}
+                              {formatCurrency(pkg.base_child_price, pkg.selling_currency || 'USD')} + {pkg.markup_type === 'percentage' ? `${pkg.markup_value}%` : formatCurrency(pkg.markup_value || 0, pkg.selling_currency || 'USD')}
                             </span>
                           )}
                         </div>
@@ -1098,11 +1202,10 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                             value={pkg.infant_price ?? ''}
                             onChange={(e) => {
                               const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
-                              updatePackage(index, 'infant_price', value === undefined || isNaN(value) ? undefined : value);
+                              updateSellingPriceForCurrentCurrency(index, 'infant_price', 'infant_selling_prices', value === undefined || isNaN(value) ? undefined : value);
                             }}
                             placeholder="Optional"
                             className="font-semibold"
-                            disabled={!isSupplier && pkg.markup_type !== 'none'}
                           />
                         </div>
                         <div className="space-y-2">
@@ -1114,11 +1217,10 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                             value={pkg.senior_price ?? ''}
                             onChange={(e) => {
                               const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
-                              updatePackage(index, 'senior_price', value === undefined || isNaN(value) ? undefined : value);
+                              updateSellingPriceForCurrentCurrency(index, 'senior_price', 'senior_selling_prices', value === undefined || isNaN(value) ? undefined : value);
                             }}
                             placeholder="Optional"
                             className="font-semibold"
-                            disabled={!isSupplier && pkg.markup_type !== 'none'}
                           />
                         </div>
                         <div className="space-y-2">
@@ -1130,15 +1232,14 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                             value={pkg.vehicle_price ?? ''}
                             onChange={(e) => {
                               const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
-                              updatePackage(index, 'vehicle_price', value === undefined || isNaN(value) ? undefined : value);
+                              updateSellingPriceForCurrentCurrency(index, 'vehicle_price', 'vehicle_selling_prices', value === undefined || isNaN(value) ? undefined : value);
                             }}
                             placeholder="Optional"
                             className="font-semibold"
-                            disabled={!isSupplier && pkg.markup_type !== 'none'}
                           />
                           {!isSupplier && pkg.markup_type && pkg.markup_type !== 'none' && pkg.base_vehicle_price && pkg.markup_value && (
                             <span className="text-xs text-muted-foreground">
-                              ${pkg.base_vehicle_price} + {pkg.markup_type === 'percentage' ? `${pkg.markup_value}%` : `$${pkg.markup_value}`}
+                              {formatCurrency(pkg.base_vehicle_price, pkg.selling_currency || 'USD')} + {pkg.markup_type === 'percentage' ? `${pkg.markup_value}%` : formatCurrency(pkg.markup_value || 0, pkg.selling_currency || 'USD')}
                             </span>
                           )}
                         </div>
@@ -1428,7 +1529,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                                       </div>
                                       <div className="space-y-2">
                                         <div className="flex items-center justify-between">
-                                          <Label>{t('sellingPrice')} (USD) *</Label>
+                                          <Label>{t('sellingPrice')} ({pkg.selling_currency || 'USD'}) *</Label>
                                           {tier.base_price > 0 && pkg.markup_type && pkg.markup_type !== 'none' && pkg.markup_value && (
                                             <Button
                                               type="button"
@@ -1739,7 +1840,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                                   </Select>
                                 </div>
                                 <div className="space-y-2">
-                                  <Label>{t('priceUsd')} *</Label>
+                                  <Label>Price ({pkg.selling_currency || 'USD'}) *</Label>
                                   <Input
                                     type="number"
                                     min="0"
@@ -1748,7 +1849,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                                     onChange={(e) => updateAddon(index, addonIndex, 'price', parseFloat(e.target.value) || 0)}
                                     placeholder={isSupplier ? "Will be set by admin" : "0.00"}
                                     required
-                                    disabled={isSupplier || (addon.supplier_cost && addon.addon_exchange_rate)}
+                                    disabled={isSupplier || Boolean(addon.supplier_cost && addon.addon_exchange_rate)}
                                   />
                                   {isSupplier && (
                                     <p className="text-xs text-muted-foreground">

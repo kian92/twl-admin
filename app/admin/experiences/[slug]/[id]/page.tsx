@@ -202,7 +202,8 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
     available_from: '',
     available_to: '',
     use_custom_tiers: false,
-    custom_pricing_tiers: []
+    custom_pricing_tiers: [],
+    selling_currency: 'USD',
   }]) 
 
   // Gallery
@@ -361,9 +362,27 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                 const markupType = firstTier.markup_type || 'none';
                 const markupValue = firstTier.markup_value || 0;
 
-                // Get supplier currency info from first tier (assuming all tiers use same currency)
+                // Get supplier and selling currency info from first tier (assuming all tiers use same currency)
                 const supplierCurrency = firstTier.supplier_currency || 'USD';
+                const sellingCurrency = firstTier.currency || 'USD';
                 const exchangeRate = firstTier.exchange_rate || 1.0;
+                const getSellingPrices = (tier: any) => {
+                  const tierCurrency = tier?.currency || sellingCurrency;
+                  const tierSellingPrice = Math.floor(tier?.selling_price || tier?.base_price || 0);
+                  const savedPrices = tier?.selling_prices && typeof tier.selling_prices === 'object' ? tier.selling_prices : {};
+
+                  return {
+                    USD: Number(savedPrices.USD) || (tierCurrency === 'USD' ? tierSellingPrice : 0),
+                    SGD: Number(savedPrices.SGD) || (tierCurrency === 'SGD' ? tierSellingPrice : 0),
+                    MYR: Number(savedPrices.MYR) || (tierCurrency === 'MYR' ? tierSellingPrice : 0),
+                  };
+                };
+
+                const adultSellingPrices = getSellingPrices(adultTier);
+                const childSellingPrices = getSellingPrices(childTier);
+                const infantSellingPrices = getSellingPrices(infantTier);
+                const seniorSellingPrices = getSellingPrices(seniorTier);
+                const vehicleSellingPrices = getSellingPrices(vehicleTier);
 
                 // Build custom pricing tiers array if applicable
                 const customPricingTiers = useCustomTiers ? pricingTiers.map((tier: any) => ({
@@ -412,13 +431,19 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                   supplier_cost_senior: Math.floor(seniorTier?.supplier_cost) || 0,
                   supplier_cost_vehicle: Math.floor(vehicleTier?.supplier_cost) || 0,
                   exchange_rate: exchangeRate,
+                  selling_currency: sellingCurrency,
+                  adult_selling_prices: adultSellingPrices,
+                  child_selling_prices: childSellingPrices,
+                  infant_selling_prices: infantSellingPrices,
+                  senior_selling_prices: seniorSellingPrices,
+                  vehicle_selling_prices: vehicleSellingPrices,
 
                   // Selling prices (what customer pays) - for simple mode
-                  adult_price: Math.floor(adultTier?.selling_price || adultTier?.base_price || 0),
-                  child_price: Math.floor(childTier?.selling_price || childTier?.base_price || 0),
-                  infant_price: Math.floor(infantTier?.selling_price || infantTier?.base_price || 0),
-                  senior_price: Math.floor(seniorTier?.selling_price || seniorTier?.base_price || 0),
-                  vehicle_price: Math.floor(vehicleTier?.selling_price || vehicleTier?.base_price || 0),
+                  adult_price: adultSellingPrices[sellingCurrency as 'USD' | 'SGD' | 'MYR'] || 0,
+                  child_price: childSellingPrices[sellingCurrency as 'USD' | 'SGD' | 'MYR'] || 0,
+                  infant_price: infantSellingPrices[sellingCurrency as 'USD' | 'SGD' | 'MYR'] || 0,
+                  senior_price: seniorSellingPrices[sellingCurrency as 'USD' | 'SGD' | 'MYR'] || 0,
+                  vehicle_price: vehicleSellingPrices[sellingCurrency as 'USD' | 'SGD' | 'MYR'] || 0,
 
                   // Age(child and adult) - for simple mode
                   adult_min_age: adultTier?.min_age ?? 18,
@@ -836,6 +861,12 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
           // Supplier currency fields
           supplier_currency: pkg.supplier_currency || 'USD',
           exchange_rate: pkg.exchange_rate || 1.0,
+          selling_currency: pkg.selling_currency || 'USD',
+          adult_selling_prices: pkg.adult_selling_prices || { USD: 0, SGD: 0, MYR: 0 },
+          child_selling_prices: pkg.child_selling_prices || { USD: 0, SGD: 0, MYR: 0 },
+          infant_selling_prices: pkg.infant_selling_prices || { USD: 0, SGD: 0, MYR: 0 },
+          senior_selling_prices: pkg.senior_selling_prices || { USD: 0, SGD: 0, MYR: 0 },
+          vehicle_selling_prices: pkg.vehicle_selling_prices || { USD: 0, SGD: 0, MYR: 0 },
 
           // Custom pricing tiers
           use_custom_tiers: pkg.use_custom_tiers || false,

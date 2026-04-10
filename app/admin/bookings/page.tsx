@@ -21,6 +21,21 @@ type BookingRow = Database["public"]["Tables"]["bookings"]["Row"] & {
   experience_items?: { experience_title: string; price: number; quantity: number }[] | null;
 };
 
+function formatBookingCurrency(amount: number, currencyCode?: string) {
+  const currency = currencyCode || "USD";
+
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    return `${currency} ${amount}`;
+  }
+}
+
 export default function BookingsPage() {
   const router = useRouter();
   const [bookings, setBookings] = useState<BookingRow[]>([]);
@@ -34,15 +49,6 @@ export default function BookingsPage() {
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-
-  const currency = useMemo(() => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    });
-  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -277,7 +283,7 @@ export default function BookingsPage() {
                       <td className="p-4">{formatDate(booking.travel_date)}</td>
                       <td className="p-4 capitalize">{booking.payment_method}</td>
 
-                      <td className="p-4 font-semibold">{currency.format(booking.total_cost)}</td>
+                      <td className="p-4 font-semibold">{formatBookingCurrency(booking.total_cost, booking.currency)}</td>
 
                       <td className="p-4">
                         <Badge className={getStatusColor(booking.booking_status)}>{booking.booking_status}</Badge>

@@ -56,6 +56,21 @@ interface BookingDetails extends BookingRow {
   booking_items: BookingItemRow[];
 }
 
+function formatBookingCurrency(amount: number, currencyCode?: string) {
+  const currency = currencyCode || "USD";
+
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    return `${currency} ${amount}`;
+  }
+}
+
 export default function BookingDetailsPage() {
   const params = useParams();
   const router = useRouter();
@@ -174,15 +189,6 @@ export default function BookingDetailsPage() {
       default:
         return "bg-gray-100 text-gray-700 border-gray-200";
     }
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
   };
 
   const formatDate = (dateString: string | null | undefined) => {
@@ -501,10 +507,10 @@ export default function BookingDetailsPage() {
                                 {item.pax_count || item.quantity}
                               </td>
                               <td className="p-3 text-right">
-                                {formatCurrency(item.unit_price || item.price)}
+                                {formatBookingCurrency(item.unit_price || item.price, booking.currency)}
                               </td>
                               <td className="p-3 text-right font-semibold">
-                                {formatCurrency(item.subtotal || (item.price * (item.pax_count || item.quantity)))}
+                                {formatBookingCurrency(item.subtotal || (item.price * (item.pax_count || item.quantity)), booking.currency)}
                               </td>
                             </tr>
                           ))}
@@ -523,7 +529,7 @@ export default function BookingDetailsPage() {
               <Separator />
               <div className="flex justify-between items-center text-lg font-bold bg-muted/30 p-4 rounded-lg">
                 <span>Total Amount</span>
-                <span className="text-2xl">{formatCurrency(booking.total_cost)}</span>
+                <span className="text-2xl">{formatBookingCurrency(booking.total_cost, booking.currency)}</span>
               </div>
             </CardContent>
           </Card>
@@ -607,7 +613,7 @@ export default function BookingDetailsPage() {
               <Separator />
               <div>
                 <p className="text-sm text-muted-foreground">Total Amount</p>
-                <p className="text-2xl font-bold">{formatCurrency(booking.total_cost)}</p>
+                <p className="text-2xl font-bold">{formatBookingCurrency(booking.total_cost, booking.currency)}</p>
               </div>
             </CardContent>
           </Card>

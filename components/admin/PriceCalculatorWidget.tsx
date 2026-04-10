@@ -175,6 +175,7 @@ export function PriceCalculatorWidget({
               pricingTiers={pricingTiers}
               minGroupSize={minGroupSize}
               maxGroupSize={maxGroupSize}
+              currency={pricingTiers.find((tier) => Boolean(tier.currency))?.currency || 'USD'}
               onChange={setSelectedTiers}
               showValidation={false}
             />

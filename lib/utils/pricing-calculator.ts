@@ -34,6 +34,10 @@ export function calculatePackagePrice(
     promotions?: PackagePromotion[];
   }
 ): PriceCalculationResult {
+  const pricingCurrency =
+    pricingData.pricing_tiers.find((tier) => Boolean(tier.currency))?.currency ||
+    pricingData.addons.find((addon) => Boolean(addon.currency))?.currency ||
+    'USD';
   const bookingDate = input.booking_date ? new Date(input.booking_date) : new Date();
   const travelDate = new Date(input.travel_date);
   const daysBeforeTravel = Math.ceil((travelDate.getTime() - bookingDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -90,7 +94,7 @@ export function calculatePackagePrice(
   return {
     total_price: totalPrice,
     base_price: basePriceResult.basePrice,
-    currency: 'USD',
+    currency: pricingCurrency,
     seasonal_adjustment: seasonalAdjustment.total,
     group_discount: groupDiscount.total,
     time_based_discount: timeBasedDiscount.total,

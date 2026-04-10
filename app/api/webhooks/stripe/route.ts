@@ -94,6 +94,7 @@ export async function POST(request: Request) {
               payment_reference: paymentIntent.id,
               payment_date: new Date().toISOString(),
               total_cost: submission.amount,
+              currency: submission.currency || paymentLink?.currency || "USD",
               special_requests: submission.notes,
               number_of_adults: submission.travelers, // Assuming all are adults for now
               number_of_children: 0,
