@@ -16,12 +16,6 @@ import {
 } from "recharts"
 import type { DashboardData } from "@/lib/supabase/admin-data"
 
-const currencyFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 0,
-})
-
 const numberFormatter = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0,
 })
@@ -36,10 +30,25 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
 const normalizeDate = (value: string | null) =>
   value ? new Date(`${value}T12:00:00.000Z`) : null
 
+const formatCurrencyAmount = (amount: number, currencyCode?: string) => {
+  const currency = currencyCode || "USD"
+
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 0,
+    }).format(amount)
+  } catch {
+    return `${currency} ${amount}`
+  }
+}
+
 export default function DashboardClient({ data }: { data: DashboardData }) {
+  const revenueStats = data.metrics.revenueByCurrency
+
   const stats = useMemo(
     () => [
-      { title: "Total Revenue", value: currencyFormatter.format(data.metrics.totalRevenue), icon: DollarSign },
       { title: "Total Bookings", value: numberFormatter.format(data.metrics.totalBookings), icon: Calendar },
       { title: "Total Users", value: numberFormatter.format(data.metrics.activeUsers), icon: Users },
       { title: "Total Experiences", value: numberFormatter.format(data.metrics.totalExperiences), icon: MapPin },
@@ -56,6 +65,26 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
 
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm text-muted-foreground">Total Revenue</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-1">
+              {revenueStats.length > 0 ? (
+                revenueStats.map((entry) => (
+                  <div key={entry.currency} className="text-2xl font-bold">
+                    {formatCurrencyAmount(entry.amount, entry.currency)}
+                  </div>
+                ))
+              ) : (
+                <div className="text-2xl font-bold">No revenue</div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         {stats.map((stat) => (
           <Card key={stat.title}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -89,6 +118,7 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
         <Card>
           <CardHeader>
             <CardTitle>Revenue Trend</CardTitle>
+            <p className="text-sm text-muted-foreground">Mixed-currency trend until revenue analytics are split by currency.</p>
           </CardHeader>
           <CardContent className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -110,6 +140,7 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
         <Card>
           <CardHeader>
             <CardTitle>Top Destinations</CardTitle>
+            <p className="text-sm text-muted-foreground">Revenue shown here is mixed across currencies.</p>
           </CardHeader>
           <CardContent>
             {data.topDestinations.length === 0 ? (
@@ -129,7 +160,7 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
                         </p>
                       </div>
                     </div>
-                    <p className="font-semibold">{currencyFormatter.format(dest.revenue)}</p>
+                    <p className="font-semibold">{numberFormatter.format(dest.revenue)}</p>
                   </div>
                 ))}
               </div>
@@ -162,7 +193,7 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
                     </div>
                     <div className="text-right">
                       <p className="font-semibold">
-                        {currencyFormatter.format(booking.total_cost)}
+                        {formatCurrencyAmount(booking.total_cost, booking.currency)}
                       </p>
                       <p className="text-xs text-muted-foreground capitalize">
                         {booking.status}

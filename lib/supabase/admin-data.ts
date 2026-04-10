@@ -5,7 +5,7 @@ type PublicClient = SupabaseClient<Database>
 
 export interface DashboardData {
   metrics: {
-    totalRevenue: number
+    revenueByCurrency: { currency: string; amount: number }[]
     totalBookings: number
     activeUsers: number
     totalExperiences: number
@@ -17,6 +17,7 @@ export interface DashboardData {
     customer_name: string
     travel_date: string
     total_cost: number
+    currency: string
     status: string
     experiences: { title: string }[]
   }[]
@@ -47,6 +48,7 @@ export async function getDashboardData(
     metricsRes,
     revenueTrendRes,
     topDestinationsRes,
+    revenueByCurrencyRes,
     recentBookingsRes,
   ] = await Promise.all([
     supabase.rpc("admin_dashboard_metrics"),
@@ -54,8 +56,12 @@ export async function getDashboardData(
     supabase.rpc("top_destinations", { limit_val: 4 } as never),
     supabase
       .from("bookings")
+      .select("currency, total_cost")
+      .neq("booking_status", "cancelled"),
+    supabase
+      .from("bookings")
       .select(
-        "id, customer_name, travel_date, total_cost, booking_status, booking_items:booking_items(experience_title)"
+        "id, customer_name, travel_date, total_cost, currency, booking_status, booking_items:booking_items(experience_title)"
       )
       .order("booking_date", { ascending: false })
       .limit(6),
@@ -69,9 +75,18 @@ export async function getDashboardData(
       total_experiences: 0,
     }
 
+  const revenueByCurrencyMap = new Map<string, number>()
+
+  ;(revenueByCurrencyRes.data as Pick<Database["public"]["Tables"]["bookings"]["Row"], "currency" | "total_cost">[] | null)?.forEach((booking) => {
+    const currency = booking.currency || "USD"
+    revenueByCurrencyMap.set(currency, (revenueByCurrencyMap.get(currency) || 0) + (booking.total_cost || 0))
+  })
+
   return {
     metrics: {
-      totalRevenue: metrics.total_revenue ?? 0,
+      revenueByCurrency: Array.from(revenueByCurrencyMap.entries())
+        .map(([currency, amount]) => ({ currency, amount }))
+        .sort((a, b) => a.currency.localeCompare(b.currency)),
       totalBookings: metrics.total_bookings ?? 0,
       activeUsers: metrics.active_users ?? 0, 
       totalExperiences: metrics.total_experiences ?? 0,
@@ -93,6 +108,7 @@ export async function getDashboardData(
         customer_name: b.customer_name,
         travel_date: b.travel_date,
         total_cost: b.total_cost,
+        currency: b.currency || "USD",
         status: b.booking_status,
         experiences:
           b.booking_items?.map((i) => ({ title: i.experience_title })) ?? [],
