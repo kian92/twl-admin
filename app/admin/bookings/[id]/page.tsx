@@ -71,6 +71,32 @@ function formatBookingCurrency(amount: number, currencyCode?: string) {
   }
 }
 
+function RichTextBlock({ html }: { html: string }) {
+  return (
+    <div
+      className="text-sm bg-muted p-3 rounded-md prose prose-sm max-w-none"
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
+}
+
+function formatPaymentStatusLabel(status: string) {
+  switch (status) {
+    case "balance_pending":
+      return "Balance Pending";
+    case "partial":
+      return "Partial";
+    case "unpaid":
+      return "Unpaid";
+    case "paid":
+      return "Paid";
+    case "refunded":
+      return "Refunded";
+    default:
+      return status.replace(/_/g, " ");
+  }
+}
+
 export default function BookingDetailsPage() {
   const params = useParams();
   const router = useRouter();
@@ -184,6 +210,9 @@ export default function BookingDetailsPage() {
         return "bg-green-100 text-green-700 border-green-200";
       case "unpaid":
         return "bg-orange-100 text-orange-700 border-orange-200";
+      case "partial":
+      case "balance_pending":
+        return "bg-amber-100 text-amber-700 border-amber-200";
       case "refunded":
         return "bg-purple-100 text-purple-700 border-purple-200";
       default:
@@ -337,7 +366,7 @@ export default function BookingDetailsPage() {
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">Payment Status</p>
                   <Badge className={getStatusColor(booking.payment_status)}>
-                    {booking.payment_status}
+                    {formatPaymentStatusLabel(booking.payment_status)}
                   </Badge>
                 </div>
               </div>
@@ -552,7 +581,7 @@ export default function BookingDetailsPage() {
                             <MapPin className="w-4 h-4" />
                             Meeting Point
                           </p>
-                          <p className="text-sm bg-muted p-3 rounded-md">{group.experience.meeting_point}</p>
+                          <RichTextBlock html={group.experience.meeting_point} />
                         </div>
                       )}
 
@@ -570,7 +599,7 @@ export default function BookingDetailsPage() {
                       {group.experience.cancellation_policy && (
                         <div>
                           <p className="text-sm font-medium text-muted-foreground mb-2">Cancellation Policy</p>
-                          <p className="text-sm bg-muted p-3 rounded-md">{group.experience.cancellation_policy}</p>
+                          <RichTextBlock html={group.experience.cancellation_policy} />
                         </div>
                       )}
 
@@ -649,6 +678,7 @@ export default function BookingDetailsPage() {
                     <SelectItem value="paid">Paid</SelectItem>
                     <SelectItem value="refunded">Refunded</SelectItem>
                     <SelectItem value="partial">Partial</SelectItem>
+                    <SelectItem value="balance_pending">Balance Pending</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
