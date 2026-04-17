@@ -30,6 +30,8 @@ create table if not exists public.experiences (
   min_group_size integer not null default 1,
   max_group_size integer not null default 15,
   category text not null,
+  commission_group text,
+  commission_value_text text,
   image_url text,
   rating numeric,
   review_count integer,

@@ -16,7 +16,6 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Check user role to determine filtering
     const { data: profile } = await supabase
       .from("admin_profiles")
       .select("role")
@@ -58,6 +57,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const { data: profile } = await supabase
+      .from("admin_profiles")
+      .select("role")
+      .eq("id", session.user.id)
+      .maybeSingle<{ role: string | null }>()
+
     const payload = await request.json().catch(() => null)
     if (!payload) {
       return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 })
@@ -70,6 +75,10 @@ export async function POST(request: Request) {
     }
 
     const normalized = normalizeExperiencePayload(parsed.data)
+    if (profile?.role !== "admin") {
+      normalized.commission_group = null
+      normalized.commission_value_text = null
+    }
     
     // Generate base slug
     const baseSlug = slugify(normalized.title)

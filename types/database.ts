@@ -59,6 +59,8 @@ export interface Database {
           min_group_size: number
           max_group_size: number | null
           category: string
+          commission_group: string | null
+          commission_value_text: string | null
           image_url: string | null
           rating: number | null
           review_count: number | null
@@ -114,6 +116,8 @@ export interface Database {
           min_group_size?: number
           max_group_size?: number | null
           category: string
+          commission_group?: string | null
+          commission_value_text?: string | null
           // image_url?: string | null
           rating?: number | null
           review_count?: number | null
@@ -168,6 +172,8 @@ export interface Database {
           min_group_size?: number
           max_group_size?: number | null
           category?: string
+          commission_group?: string | null
+          commission_value_text?: string | null
           // image_url?: string | null
           rating?: number | null
           review_count?: number | null

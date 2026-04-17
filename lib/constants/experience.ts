@@ -12,6 +12,8 @@ export const EXPERIENCE_SELECT_FIELDS = `
   min_group_size,
   max_group_size,
   category,
+  commission_group,
+  commission_value_text,
   image_url,
   rating,
   review_count,

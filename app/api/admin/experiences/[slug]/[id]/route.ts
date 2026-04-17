@@ -4,11 +4,17 @@ import { createSupabaseServerClient } from "@/lib/supabase/server"
 import { experiencePayloadSchema, normalizeExperiencePayload } from "@/lib/validations/experience"
 
 import { EXPERIENCE_SELECT_FIELDS } from "@/lib/constants/experience"
+import type { Database } from "@/types/database"
 
 interface ExperienceSlugInfo {
   slug: string
   title: string
+  created_by: string | null
+  commission_group: string | null
+  commission_value_text: string | null
 }
+
+type ExperienceRow = Database["public"]["Tables"]["experiences"]["Row"]
 
 export async function GET(
   _request: Request,
@@ -37,7 +43,7 @@ export async function GET(
       .from("experiences")
       .select(EXPERIENCE_SELECT_FIELDS)
       .eq("slug", slug)
-      .maybeSingle()
+      .maybeSingle<ExperienceRow>()
 
     if (error) {
       console.error("Failed to fetch experience", error)
@@ -101,9 +107,9 @@ export async function PUT(
     // ✅ Fetch the current experience
     const { data: current } = await supabase
     .from("experiences")
-    .select("slug, title, created_by")
+    .select("slug, title, created_by, commission_group, commission_value_text")
     .eq("id", id)
-    .maybeSingle<ExperienceSlugInfo & { created_by: string | null }>()
+    .maybeSingle<ExperienceSlugInfo>()
 
     if (!current) {
     return NextResponse.json({ error: "Experience not found" }, { status: 404 })
@@ -112,6 +118,11 @@ export async function PUT(
     // If user is a supplier, verify they own this experience
     if (profile?.role === "supplier" && current.created_by !== session.user.id) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 })
+    }
+
+    if (profile?.role !== "admin") {
+      normalized.commission_group = current.commission_group
+      normalized.commission_value_text = current.commission_value_text
     }
 
     // ✅ Determine new slug
@@ -234,4 +245,3 @@ export async function DELETE(
     return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
   }
 }
-

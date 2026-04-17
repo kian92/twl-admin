@@ -43,6 +43,12 @@ import { useTranslations } from 'next-intl'
 
 type ExperienceRow = Database["public"]["Tables"]["experiences"]["Row"]
 
+const COMMISSION_GROUP_OPTIONS = [
+  { value: "Category 1", labelKey: "commissionGroupCategory1", defaultValue: "3%" },
+  { value: "Category 2", labelKey: "commissionGroupCategory2", defaultValue: "10%" },
+  { value: "Custom", labelKey: "commissionGroupCustom", defaultValue: "" },
+] as const
+
 interface ItineraryItem {
   day: number
   time: string
@@ -61,6 +67,8 @@ interface FormState {
   description: string
   duration: string
   category: string
+  commission_group: string
+  commission_value_text: string
   // image_url: string
   highlights: string
   inclusions: string
@@ -165,6 +173,7 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
 
   const router = useRouter()
   const { profile } = useAdmin()
+  const isAdmin = profile?.role === "admin"
   const t = useTranslations('experiences')
   const tForm = useTranslations('experiences.form')
   const [experience, setExperience] = useState<ExperienceRow | null>(null)
@@ -266,6 +275,8 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
           description: experienceData.description ?? "",
           duration: experienceData.duration,
           category: experienceData.category,
+          commission_group: experienceData.commission_group ?? "Category 1",
+          commission_value_text: experienceData.commission_value_text ?? "3%",
           // image_url: experienceData.image_url ?? "",
           highlights: Array.isArray(experienceData.highlights) ? experienceData.highlights.join("\n") : (experienceData.highlights ?? ""),
           inclusions: Array.isArray(experienceData.inclusions) ? experienceData.inclusions.join("\n") : (experienceData.inclusions ?? ""),
@@ -514,6 +525,39 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
     setForm((prev) => (prev ? { ...prev, [field]: value } : prev))
   }
 
+  const handleCommissionGroupChange = (value: string) => {
+    const selectedOption = COMMISSION_GROUP_OPTIONS.find((option) => option.value === value)
+    setForm((prev) => (
+      prev
+        ? {
+            ...prev,
+            commission_group: value,
+            commission_value_text:
+              selectedOption && selectedOption.value !== "Custom"
+                ? selectedOption.defaultValue
+                : prev.commission_value_text,
+          }
+        : prev
+    ))
+  }
+
+  const handleCommissionValueChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value
+    const selectedOption = COMMISSION_GROUP_OPTIONS.find((option) => option.value === form?.commission_group)
+    setForm((prev) => (
+      prev
+        ? {
+            ...prev,
+            commission_value_text: value,
+            commission_group:
+              selectedOption && selectedOption.value !== "Custom" && value !== selectedOption.defaultValue
+                ? "Custom"
+                : prev.commission_group,
+          }
+        : prev
+    ))
+  }
+
   const addItineraryItem = () => {
     setItinerary([...itinerary, { day: 1, time: "", activity: "" }])
   }
@@ -722,6 +766,8 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
         min_group_size: Number.isFinite(firstPackage.min_group_size) ? firstPackage.min_group_size : 1,
         max_group_size: Number.isFinite(firstPackage.max_group_size) ? firstPackage.max_group_size : null,
         category: form.category,
+        commission_group: isAdmin ? (form.commission_group || null) : experience.commission_group,
+        commission_value_text: isAdmin ? (form.commission_value_text || null) : experience.commission_value_text,
         // image_url: form.image_url,
         highlights: highlightsList,
         inclusions: inclusionsList,
@@ -809,16 +855,16 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
         const childPrice = Number(pkg.child_price) || 0;
 
         // Age handling - convert to number if valid, otherwise use defaults
-        const adultMinAge = pkg.adult_min_age !== undefined && pkg.adult_min_age !== null && pkg.adult_min_age !== ''
+        const adultMinAge = pkg.adult_min_age !== undefined && pkg.adult_min_age !== null
           ? Number(pkg.adult_min_age)
           : 18;
-        const adultMaxAge = pkg.adult_max_age !== undefined && pkg.adult_max_age !== null && pkg.adult_max_age !== ''
+        const adultMaxAge = pkg.adult_max_age !== undefined && pkg.adult_max_age !== null
           ? Number(pkg.adult_max_age)
           : null;
-        const childMinAge = pkg.child_min_age !== undefined && pkg.child_min_age !== null && pkg.child_min_age !== ''
+        const childMinAge = pkg.child_min_age !== undefined && pkg.child_min_age !== null
           ? Number(pkg.child_min_age)
           : 3;
-        const childMaxAge = pkg.child_max_age !== undefined && pkg.child_max_age !== null && pkg.child_max_age !== ''
+        const childMaxAge = pkg.child_max_age !== undefined && pkg.child_max_age !== null
           ? Number(pkg.child_max_age)
           : 17;
         const infantPrice = pkg.infant_price ? Number(pkg.infant_price) : undefined;
@@ -1070,6 +1116,44 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
             </div>
           </CardContent>
         </Card>
+
+        {isAdmin && (
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('form.commission')}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="commission_group">{t('form.commissionGroup')}</Label>
+                  <Select value={form.commission_group || "Custom"} onValueChange={handleCommissionGroupChange}>
+                    <SelectTrigger id="commission_group">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COMMISSION_GROUP_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {t(`form.${option.labelKey}`)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="commission_value_text">{t('form.commissionValue')}</Label>
+                  <Input
+                    id="commission_value_text"
+                    value={form.commission_value_text}
+                    onChange={handleCommissionValueChange}
+                    placeholder={t('form.commissionValuePlaceholder')}
+                  />
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">{t('form.commissionHelper')}</p>
+              <p className="text-xs text-muted-foreground">{t('form.commissionCustomHint')}</p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Packages & Pricing */}
         <PackageFormSection

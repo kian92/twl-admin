@@ -46,6 +46,8 @@ export const experiencePayloadSchema = z.object({
   min_group_size: z.number().int().positive().optional(),
   max_group_size: z.number().int().positive().optional().nullable(),
   category: z.string().min(1).or(z.literal("")),
+  commission_group: z.string().optional().nullable(),
+  commission_value_text: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
   // image_url: z.string().url().optional().nullable(),
   highlights: z.string().optional().nullable(),
@@ -93,6 +95,9 @@ export const experiencePayloadSchema = z.object({
   )
 
 type ExperienceInsert = Database["public"]["Tables"]["experiences"]["Insert"]
+type NormalizedExperiencePayload = Omit<ExperienceInsert, "slug"> & {
+  slug?: string
+}
 
 export type ExperiencePayload = z.infer<typeof experiencePayloadSchema>
 
@@ -119,7 +124,7 @@ const normalizeFaqs = (values?: ExperiencePayload["faqs"]) => {
   return cleaned.length > 0 ? cleaned : null
 }
 
-export function normalizeExperiencePayload(payload: ExperiencePayload): Omit<ExperienceInsert, 'slug'> {
+export function normalizeExperiencePayload(payload: ExperiencePayload): NormalizedExperiencePayload {
   return {
     title: payload.title || "Untitled Experience",
     location: payload.location || "",
@@ -137,6 +142,8 @@ export function normalizeExperiencePayload(payload: ExperiencePayload): Omit<Exp
     min_group_size: payload.min_group_size ?? 1,
     max_group_size: payload.max_group_size ?? null,
     category: payload.category || "",
+    commission_group: trimString(payload.commission_group),
+    commission_value_text: trimString(payload.commission_value_text),
     description: payload.description ?? null,
     // image_url: trimString(payload.image_url),
     highlights: trimString(payload.highlights),

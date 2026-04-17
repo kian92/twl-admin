@@ -43,6 +43,12 @@ type ExperienceInsert = Omit<Database["public"]["Tables"]["experiences"]["Insert
   is_destination_featured?: boolean
 }
 
+const COMMISSION_GROUP_OPTIONS = [
+  { value: "Category 1", labelKey: "commissionGroupCategory1", defaultValue: "3%" },
+  { value: "Category 2", labelKey: "commissionGroupCategory2", defaultValue: "10%" },
+  { value: "Custom", labelKey: "commissionGroupCustom", defaultValue: "" },
+] as const
+
 interface ItineraryItem {
   day: number
   time: string
@@ -90,6 +96,8 @@ const initialForm: ExperienceInsert = {
   max_group_size: null,
   is_destination_featured: false,
   status: "active",
+  commission_group: "Category 1",
+  commission_value_text: "3%",
 }
 
 const categories = ["Adventure", "Culture", "Relaxation", "Wellness", "Nature"]
@@ -172,6 +180,7 @@ export default function NewExperiencePage() {
   const tCommon = useTranslations('common')
   const router = useRouter()
   const { profile } = useAdmin()
+  const isAdmin = profile?.role === "admin"
   const [form, setForm] = useState(initialForm)
   const [highlights, setHighlights] = useState("")
   const [inclusions, setInclusions] = useState("")
@@ -248,6 +257,31 @@ export default function NewExperiencePage() {
 
   const handleSelectChange = (field: keyof ExperienceInsert) => (value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const handleCommissionGroupChange = (value: string) => {
+    const selectedOption = COMMISSION_GROUP_OPTIONS.find((option) => option.value === value)
+    setForm((prev) => ({
+      ...prev,
+      commission_group: value,
+      commission_value_text:
+        selectedOption && selectedOption.value !== "Custom"
+          ? selectedOption.defaultValue
+          : prev.commission_value_text ?? "",
+    }))
+  }
+
+  const handleCommissionValueChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value
+    const selectedOption = COMMISSION_GROUP_OPTIONS.find((option) => option.value === form.commission_group)
+    setForm((prev) => ({
+      ...prev,
+      commission_value_text: value,
+      commission_group:
+        selectedOption && selectedOption.value !== "Custom" && value !== selectedOption.defaultValue
+          ? "Custom"
+          : prev.commission_group ?? "Custom",
+    }))
   }
 
   const addItineraryItem = () => {
@@ -620,6 +654,44 @@ export default function NewExperiencePage() {
             </div>
           </CardContent>
         </Card>
+
+        {isAdmin && (
+          <Card>
+            <CardHeader>
+              <CardTitle>{tForm('commission')}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="commission_group">{tForm('commissionGroup')}</Label>
+                  <Select value={form.commission_group ?? "Custom"} onValueChange={handleCommissionGroupChange}>
+                    <SelectTrigger id="commission_group">
+                      <SelectValue placeholder={tForm('commissionGroup')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COMMISSION_GROUP_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {tForm(option.labelKey)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="commission_value_text">{tForm('commissionValue')}</Label>
+                  <Input
+                    id="commission_value_text"
+                    value={form.commission_value_text ?? ""}
+                    onChange={handleCommissionValueChange}
+                    placeholder={tForm('commissionValuePlaceholder')}
+                  />
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">{tForm('commissionHelper')}</p>
+              <p className="text-xs text-muted-foreground">{tForm('commissionCustomHint')}</p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Packages & Pricing */}
         <PackageFormSection
