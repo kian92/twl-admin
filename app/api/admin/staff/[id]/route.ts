@@ -20,6 +20,28 @@ const ensureServiceClient = () => {
   })
 }
 
+async function cleanupStaffReferences(serviceClient: ReturnType<typeof ensureServiceClient>, id: string) {
+  const { error: clearCreatedByError } = await (serviceClient as any)
+    .from("experiences")
+    .update({ created_by: null })
+    .eq("created_by", id)
+
+  if (clearCreatedByError) {
+    console.error("Failed to clear experience creator references", clearCreatedByError)
+    throw new Error("Failed to detach staff from created experiences")
+  }
+
+  const { error: clearUpdatedByError } = await (serviceClient as any)
+    .from("experiences")
+    .update({ updated_by: null })
+    .eq("updated_by", id)
+
+  if (clearUpdatedByError) {
+    console.error("Failed to clear experience updater references", clearUpdatedByError)
+    throw new Error("Failed to detach staff from updated experiences")
+  }
+}
+
 async function requireAdminRole() {
   const supabase = await createSupabaseServerClient()
   const {
@@ -155,12 +177,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     const { id } = await params
 
     const serviceClient = ensureServiceClient()
-
-    const { error: authError } = await serviceClient.auth.admin.deleteUser(id)
-    if (authError) {
-      console.error("Failed to delete auth user", authError)
-      return NextResponse.json({ error: authError.message }, { status: authError.status ?? 500 })
-    }
+    await cleanupStaffReferences(serviceClient, id)
 
     const { error: profileError } = await (supabase as any)
       .from("admin_profiles")
@@ -169,6 +186,12 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     if (profileError) {
       console.error("Failed to delete admin profile", profileError)
       return NextResponse.json({ error: "Failed to delete admin profile" }, { status: 500 })
+    }
+
+    const { error: authError } = await serviceClient.auth.admin.deleteUser(id)
+    if (authError) {
+      console.error("Failed to delete auth user", authError)
+      return NextResponse.json({ error: authError.message }, { status: authError.status ?? 500 })
     }
 
     return NextResponse.json({ success: true })
