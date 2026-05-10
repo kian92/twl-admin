@@ -33,7 +33,7 @@ export interface AddOnItem {
   supplier_currency?: string;
   supplier_cost?: number;
   addon_exchange_rate?: number;
-  price_by_currency?: CurrencyPriceMap;
+  prices_by_currency?: CurrencyPriceMap;
   // Chinese language fields
   name_zh?: string;
   description_zh?: string;
@@ -457,6 +457,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
       supplier_currency: updated[packageIndex].supplier_currency || 'USD',
       supplier_cost: undefined,
       addon_exchange_rate: updated[packageIndex].exchange_rate || 1.0,
+      prices_by_currency: { USD: 0, SGD: 0, MYR: 0 },
     };
 
     updated[packageIndex].addons!.push(newAddon);
@@ -488,12 +489,39 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
     // Suppliers cannot trigger auto-conversion (they don't see/control exchange rate)
     if (!isSupplier && (field === 'supplier_cost' || field === 'addon_exchange_rate' || field === 'supplier_currency')) {
       if (addon.supplier_cost && addon.addon_exchange_rate) {
-        updated[packageIndex].addons![addonIndex].price = roundCurrency(
-          convertToUSD(addon.supplier_cost, addon.addon_exchange_rate)
-        );
+        const usdPrice = roundCurrency(convertToUSD(addon.supplier_cost, addon.addon_exchange_rate));
+        updated[packageIndex].addons![addonIndex].price = usdPrice;
+        updated[packageIndex].addons![addonIndex].prices_by_currency = {
+          ...normalizeCurrencyPriceMap(addon.prices_by_currency),
+          USD: usdPrice,
+        };
       }
     }
 
+    onChange(updated);
+  };
+
+  const updateAddonPriceForCurrency = (
+    packageIndex: number,
+    addonIndex: number,
+    currency: SupportedSellingCurrency,
+    value: number,
+  ) => {
+    const updated = [...packages];
+    if (!updated[packageIndex].addons) return;
+    const addon = updated[packageIndex].addons![addonIndex];
+    const nextMap = {
+      ...normalizeCurrencyPriceMap(addon.prices_by_currency),
+      [currency]: Number(value) || 0,
+    };
+    const pkgCurrency = getSelectedSellingCurrency(updated[packageIndex]);
+    updated[packageIndex].addons![addonIndex] = {
+      ...addon,
+      prices_by_currency: nextMap,
+      // Keep legacy `price` in sync with the package's current selling currency
+      // so any consumer still reading addon.price gets a sensible value.
+      price: currency === pkgCurrency ? Number(value) || 0 : addon.price,
+    };
     onChange(updated);
   };
 
@@ -1822,7 +1850,7 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                                 </div>
                               </div>
 
-                              <div className="grid gap-3 md:grid-cols-3">
+                              <div className="grid gap-3 md:grid-cols-2">
                                 <div className="space-y-2">
                                   <Label>{t('pricingType')}</Label>
                                   <Select
@@ -1840,29 +1868,6 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                                   </Select>
                                 </div>
                                 <div className="space-y-2">
-                                  <Label>Price ({pkg.selling_currency || 'USD'}) *</Label>
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    value={addon.price}
-                                    onChange={(e) => updateAddon(index, addonIndex, 'price', parseFloat(e.target.value) || 0)}
-                                    placeholder={isSupplier ? "Will be set by admin" : "0.00"}
-                                    required
-                                    disabled={isSupplier || Boolean(addon.supplier_cost && addon.addon_exchange_rate)}
-                                  />
-                                  {isSupplier && (
-                                    <p className="text-xs text-muted-foreground">
-                                      Admin will convert from your cost price
-                                    </p>
-                                  )}
-                                  {!isSupplier && addon.supplier_cost && addon.addon_exchange_rate && (
-                                    <p className="text-xs text-muted-foreground">
-                                      {t('autoCalculated')}
-                                    </p>
-                                  )}
-                                </div>
-                                <div className="space-y-2">
                                   <Label>{t('maxQuantity')}</Label>
                                   <Input
                                     type="number"
@@ -1872,6 +1877,48 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                                     placeholder="1"
                                   />
                                 </div>
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label>Selling Price *</Label>
+                                <div className="grid gap-3 md:grid-cols-3">
+                                  {supportedSellingCurrencies.map((currency) => {
+                                    const map = normalizeCurrencyPriceMap(addon.prices_by_currency);
+                                    const isUsdAutoFilled =
+                                      currency === 'USD' && !isSupplier && Boolean(addon.supplier_cost && addon.addon_exchange_rate);
+                                    return (
+                                      <div key={currency} className="space-y-1">
+                                        <Label className="text-xs text-muted-foreground">{currency}</Label>
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          step="0.01"
+                                          value={map[currency] || 0}
+                                          onChange={(e) =>
+                                            updateAddonPriceForCurrency(
+                                              index,
+                                              addonIndex,
+                                              currency,
+                                              parseFloat(e.target.value) || 0,
+                                            )
+                                          }
+                                          placeholder={isSupplier ? 'Will be set by admin' : '0.00'}
+                                          disabled={isSupplier || isUsdAutoFilled}
+                                        />
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                                {isSupplier && (
+                                  <p className="text-xs text-muted-foreground">
+                                    Admin will convert from your cost price
+                                  </p>
+                                )}
+                                {!isSupplier && addon.supplier_cost && addon.addon_exchange_rate && (
+                                  <p className="text-xs text-muted-foreground">
+                                    USD {t('autoCalculated')}; enter SGD and MYR manually.
+                                  </p>
+                                )}
                               </div>
 
                               <div className="flex items-center space-x-2">

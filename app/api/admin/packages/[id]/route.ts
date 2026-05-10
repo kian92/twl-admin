@@ -269,27 +269,31 @@ export async function PUT(
 
       // Create new add-ons if any
       if (Array.isArray(body.addons) && body.addons.length > 0) {
-        const addonsToInsert = body.addons.map((addon: any, index: number) => ({
-          package_id: id,
-          addon_name: addon.name,
-          addon_code: addon.addon_code || null,
-          description: addon.description || null,
-          pricing_type: addon.pricing_type || 'per_person',
-          price: addon.price,
-          currency: sellingCurrency,
-          supplier_currency: addon.supplier_currency || 'USD',
-          supplier_cost: addon.supplier_cost || null,
-          addon_exchange_rate: addon.addon_exchange_rate || 1.0,
-          min_quantity: addon.min_quantity || 1,
-          max_quantity: addon.max_quantity || null,
-          is_required: addon.is_required || false,
-          category: addon.category || null,
-          display_order: index,
-          is_active: true,
-          // Chinese language fields
-          addon_name_zh: addon.name_zh || null,
-          description_zh: addon.description_zh || null,
-        }));
+        const addonsToInsert = body.addons.map((addon: any, index: number) => {
+          const pricesByCurrency = normalizeSellingPrices(addon.prices_by_currency, addon.price);
+          return {
+            package_id: id,
+            addon_name: addon.name,
+            addon_code: addon.addon_code || null,
+            description: addon.description || null,
+            pricing_type: addon.pricing_type || 'per_person',
+            price: pricesByCurrency[sellingCurrency as 'USD' | 'SGD' | 'MYR'] || addon.price,
+            currency: sellingCurrency,
+            prices_by_currency: pricesByCurrency,
+            supplier_currency: addon.supplier_currency || 'USD',
+            supplier_cost: addon.supplier_cost || null,
+            addon_exchange_rate: addon.addon_exchange_rate || 1.0,
+            min_quantity: addon.min_quantity || 1,
+            max_quantity: addon.max_quantity || null,
+            is_required: addon.is_required || false,
+            category: addon.category || null,
+            display_order: index,
+            is_active: true,
+            // Chinese language fields
+            addon_name_zh: addon.name_zh || null,
+            description_zh: addon.description_zh || null,
+          };
+        });
 
         const { error: addonsError } = await supabase
           .from('package_addons')

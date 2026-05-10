@@ -474,21 +474,30 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                   display_order: pkg.display_order ?? index + 1,
                   available_from: pkg.available_from || '',
                   available_to: pkg.available_to || '',
-                  addons: pkg.addons?.map((addon: any) => ({
-                    id: addon.id,
-                    name: addon.addon_name,
-                    description: addon.description || '',
-                    name_zh: addon.addon_name_zh || '',
-                    description_zh: addon.description_zh || '',
-                    price: Math.floor(addon.price),
-                    is_required: addon.is_required || false,
-                    max_quantity: addon.max_quantity || 1,
-                    pricing_type: addon.pricing_type || 'per_person',
-                    category: addon.category || 'Other',
-                    supplier_currency: addon.supplier_currency || 'USD',
-                    supplier_cost: addon.supplier_cost,
-                    addon_exchange_rate: addon.addon_exchange_rate || 1.0
-                  })) || []
+                  addons: pkg.addons?.map((addon: any) => {
+                    const raw = addon.prices_by_currency || {};
+                    const prices_by_currency = {
+                      USD: Number(raw.USD) || 0,
+                      SGD: Number(raw.SGD) || 0,
+                      MYR: Number(raw.MYR) || 0,
+                    };
+                    return {
+                      id: addon.id,
+                      name: addon.addon_name,
+                      description: addon.description || '',
+                      name_zh: addon.addon_name_zh || '',
+                      description_zh: addon.description_zh || '',
+                      price: Math.floor(addon.price),
+                      is_required: addon.is_required || false,
+                      max_quantity: addon.max_quantity || 1,
+                      pricing_type: addon.pricing_type || 'per_person',
+                      category: addon.category || 'Other',
+                      supplier_currency: addon.supplier_currency || 'USD',
+                      supplier_cost: addon.supplier_cost,
+                      addon_exchange_rate: addon.addon_exchange_rate || 1.0,
+                      prices_by_currency,
+                    };
+                  }) || []
                 };
               })
               setPackages(formattedPackages)
