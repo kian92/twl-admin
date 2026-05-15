@@ -55,3 +55,34 @@ export function isValidExchangeRate(rate: number): boolean {
 export function roundCurrency(amount: number, decimals: number = 2): number {
   return Math.round(amount * Math.pow(10, decimals)) / Math.pow(10, decimals);
 }
+
+// FX rates used to cross-fill missing customer-facing currency prices.
+// Keep in sync with supabase/migrations/20260515_backfill_multi_currency_selling_prices.sql.
+export const FX_USD_TO_MYR = 4.7;
+export const FX_USD_TO_SGD = 1.35;
+
+export type MultiCurrencyPrices = { USD: number; SGD: number; MYR: number };
+
+/**
+ * If at least one of USD/SGD/MYR has a value, fill the missing (=0) currencies
+ * by converting through USD using FX_USD_TO_MYR / FX_USD_TO_SGD.
+ * Existing non-zero values are preserved. Outputs are floored (no decimals).
+ */
+export function crossFillByFx(prices: MultiCurrencyPrices): MultiCurrencyPrices {
+  const usd = Number(prices.USD) || 0;
+  const sgd = Number(prices.SGD) || 0;
+  const myr = Number(prices.MYR) || 0;
+
+  // Derive a USD reference from whichever currency is set.
+  let usdRef = usd;
+  if (!usdRef && sgd) usdRef = sgd / FX_USD_TO_SGD;
+  if (!usdRef && myr) usdRef = myr / FX_USD_TO_MYR;
+
+  if (!usdRef) return { USD: 0, SGD: 0, MYR: 0 };
+
+  return {
+    USD: usd || Math.floor(usdRef),
+    SGD: sgd || Math.floor(usdRef * FX_USD_TO_SGD),
+    MYR: myr || Math.floor(usdRef * FX_USD_TO_MYR),
+  };
+}

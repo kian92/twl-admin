@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { crossFillByFx } from '@/lib/utils/currency-converter';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -46,11 +47,12 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const sellingCurrency = ['USD', 'SGD', 'MYR'].includes(body.selling_currency) ? body.selling_currency : 'USD';
-    const normalizeSellingPrices = (prices: any, fallbackPrice: number) => ({
-      USD: Number(prices?.USD) || (sellingCurrency === 'USD' ? Number(fallbackPrice) || 0 : 0),
-      SGD: Number(prices?.SGD) || (sellingCurrency === 'SGD' ? Number(fallbackPrice) || 0 : 0),
-      MYR: Number(prices?.MYR) || (sellingCurrency === 'MYR' ? Number(fallbackPrice) || 0 : 0),
-    });
+    const normalizeSellingPrices = (prices: any, fallbackPrice: number) =>
+      crossFillByFx({
+        USD: Number(prices?.USD) || (sellingCurrency === 'USD' ? Number(fallbackPrice) || 0 : 0),
+        SGD: Number(prices?.SGD) || (sellingCurrency === 'SGD' ? Number(fallbackPrice) || 0 : 0),
+        MYR: Number(prices?.MYR) || (sellingCurrency === 'MYR' ? Number(fallbackPrice) || 0 : 0),
+      });
 
     // Validate that the experience exists
     const { data: experience, error: experienceError } = await supabase
