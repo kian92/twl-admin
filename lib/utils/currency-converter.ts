@@ -56,33 +56,66 @@ export function roundCurrency(amount: number, decimals: number = 2): number {
   return Math.round(amount * Math.pow(10, decimals)) / Math.pow(10, decimals);
 }
 
-// FX rates used to cross-fill missing customer-facing currency prices.
+// Fallback FX rates used to cross-fill missing customer-facing currency prices
+// when no admin-configured rate is available (see public.fx_rates / getFxRates).
 // Keep in sync with supabase/migrations/20260515_backfill_multi_currency_selling_prices.sql.
 export const FX_USD_TO_MYR = 4.7;
 export const FX_USD_TO_SGD = 1.35;
 
 export type MultiCurrencyPrices = { USD: number; SGD: number; MYR: number };
+export type FxRates = { usdToSgd: number; usdToMyr: number };
+
+export const DEFAULT_FX_RATES: FxRates = {
+  usdToSgd: FX_USD_TO_SGD,
+  usdToMyr: FX_USD_TO_MYR,
+};
 
 /**
  * If at least one of USD/SGD/MYR has a value, fill the missing (=0) currencies
- * by converting through USD using FX_USD_TO_MYR / FX_USD_TO_SGD.
+ * by converting through USD using the given (or default) FX rates.
  * Existing non-zero values are preserved. Outputs are floored (no decimals).
  */
-export function crossFillByFx(prices: MultiCurrencyPrices): MultiCurrencyPrices {
+export function crossFillByFx(
+  prices: MultiCurrencyPrices,
+  rates: FxRates = DEFAULT_FX_RATES
+): MultiCurrencyPrices {
   const usd = Number(prices.USD) || 0;
   const sgd = Number(prices.SGD) || 0;
   const myr = Number(prices.MYR) || 0;
+  const { usdToSgd, usdToMyr } = rates;
 
   // Derive a USD reference from whichever currency is set.
   let usdRef = usd;
-  if (!usdRef && sgd) usdRef = sgd / FX_USD_TO_SGD;
-  if (!usdRef && myr) usdRef = myr / FX_USD_TO_MYR;
+  if (!usdRef && sgd) usdRef = sgd / usdToSgd;
+  if (!usdRef && myr) usdRef = myr / usdToMyr;
 
   if (!usdRef) return { USD: 0, SGD: 0, MYR: 0 };
 
   return {
     USD: usd || Math.floor(usdRef),
-    SGD: sgd || Math.floor(usdRef * FX_USD_TO_SGD),
-    MYR: myr || Math.floor(usdRef * FX_USD_TO_MYR),
+    SGD: sgd || Math.floor(usdRef * usdToSgd),
+    MYR: myr || Math.floor(usdRef * usdToMyr),
+  };
+}
+
+/**
+ * Fetch the admin-configured FX rates from public.fx_rates, falling back to
+ * DEFAULT_FX_RATES for any currency missing a row or on query failure.
+ */
+export async function getFxRates(supabase: {
+  from: (table: string) => any;
+}): Promise<FxRates> {
+  const { data, error } = await supabase
+    .from('fx_rates')
+    .select('currency_code, rate_to_usd');
+
+  if (error || !data) return DEFAULT_FX_RATES;
+
+  const sgdRow = data.find((row: any) => row.currency_code === 'SGD');
+  const myrRow = data.find((row: any) => row.currency_code === 'MYR');
+
+  return {
+    usdToSgd: sgdRow && isValidExchangeRate(Number(sgdRow.rate_to_usd)) ? Number(sgdRow.rate_to_usd) : DEFAULT_FX_RATES.usdToSgd,
+    usdToMyr: myrRow && isValidExchangeRate(Number(myrRow.rate_to_usd)) ? Number(myrRow.rate_to_usd) : DEFAULT_FX_RATES.usdToMyr,
   };
 }

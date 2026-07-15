@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useAdmin } from "@/components/admin-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,6 +19,70 @@ export default function SettingsPage() {
   const [savingProfile, setSavingProfile] = useState(false)
   const [changingPassword, setChangingPassword] = useState(false)
   const [passwordStatus, setPasswordStatus] = useState<{ type: "success" | "error"; message: string } | null>(null)
+
+  const isAdmin = profile?.role === "admin"
+  const [sgdRate, setSgdRate] = useState("")
+  const [myrRate, setMyrRate] = useState("")
+  const [loadingFxRates, setLoadingFxRates] = useState(true)
+  const [savingFxRates, setSavingFxRates] = useState(false)
+
+  useEffect(() => {
+    if (!isAdmin) {
+      setLoadingFxRates(false)
+      return
+    }
+
+    let cancelled = false
+    ;(async () => {
+      try {
+        const response = await fetch("/api/admin/fx-rates")
+        const payload = await response.json().catch(() => [])
+        if (!response.ok) throw new Error(payload?.error ?? t('fxRates.loadFailed'))
+        if (cancelled) return
+
+        const rows = Array.isArray(payload) ? payload : []
+        const sgd = rows.find((row: any) => row.currency_code === "SGD")
+        const myr = rows.find((row: any) => row.currency_code === "MYR")
+        if (sgd) setSgdRate(String(sgd.rate_to_usd))
+        if (myr) setMyrRate(String(myr.rate_to_usd))
+      } catch (err: any) {
+        if (!cancelled) toast.error(err?.message || t('fxRates.loadFailed'))
+      } finally {
+        if (!cancelled) setLoadingFxRates(false)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [isAdmin, t])
+
+  const handleSaveFxRates = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSavingFxRates(true)
+    try {
+      const updates = [
+        { currency_code: "SGD" as const, rate_to_usd: Number(sgdRate) },
+        { currency_code: "MYR" as const, rate_to_usd: Number(myrRate) },
+      ]
+
+      for (const update of updates) {
+        const response = await fetch("/api/admin/fx-rates", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(update),
+        })
+        const payload = await response.json().catch(() => ({}))
+        if (!response.ok) throw new Error(payload?.error ?? t('fxRates.saveFailed'))
+      }
+
+      toast.success(t('fxRates.saved'))
+    } catch (err: any) {
+      toast.error(err?.message || t('fxRates.saveFailed'))
+    } finally {
+      setSavingFxRates(false)
+    }
+  }
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -205,6 +269,52 @@ export default function SettingsPage() {
           </form>
         </CardContent>
       </Card>
+
+      {/* FX Rates (admin only) */}
+      {isAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('fxRates.title')}</CardTitle>
+            <CardDescription>{t('fxRates.description')}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSaveFxRates} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="sgdRate">{t('fxRates.sgdLabel')}</Label>
+                <Input
+                  id="sgdRate"
+                  type="number"
+                  min="0"
+                  step="0.0001"
+                  value={sgdRate}
+                  onChange={(e) => setSgdRate(e.target.value)}
+                  disabled={loadingFxRates}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="myrRate">{t('fxRates.myrLabel')}</Label>
+                <Input
+                  id="myrRate"
+                  type="number"
+                  min="0"
+                  step="0.0001"
+                  value={myrRate}
+                  onChange={(e) => setMyrRate(e.target.value)}
+                  disabled={loadingFxRates}
+                  required
+                />
+              </div>
+
+              <Button type="submit" disabled={savingFxRates || loadingFxRates}>
+                {savingFxRates ? t('fxRates.saving') : t('fxRates.saveChanges')}
+              </Button>
+              <p className="text-xs text-muted-foreground">{t('fxRates.note')}</p>
+            </form>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

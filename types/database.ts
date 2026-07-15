@@ -9,6 +9,25 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      fx_rates: {
+        Row: {
+          currency_code: "SGD" | "MYR"
+          rate_to_usd: number
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          currency_code: "SGD" | "MYR"
+          rate_to_usd: number
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          rate_to_usd?: number
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+      }
       admin_profiles: {
         Row: {
           id: string

@@ -14,7 +14,7 @@ import { useTranslations } from 'next-intl';
 import { CURRENCIES, formatCurrency } from '@/lib/constants/currencies';
 import { DualLanguageInput } from './DualLanguageInput';
 import { DualLanguageArrayInput } from './DualLanguageArrayInput';
-import { convertToUSD, roundCurrency } from '@/lib/utils/currency-converter';
+import { convertToUSD, roundCurrency, crossFillByFx, DEFAULT_FX_RATES, type FxRates } from '@/lib/utils/currency-converter';
 import { BlockedDatesManager } from './BlockedDatesManager';
 import type { PackagePricingTier } from '@/types/pricing';
 
@@ -136,6 +136,33 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
   const supportedSellingCurrencies: SupportedSellingCurrency[] = ['USD', 'SGD', 'MYR'];
   const sellingCurrencies = CURRENCIES.filter((currency) => supportedSellingCurrencies.includes(currency.code as SupportedSellingCurrency));
 
+  const [fxRates, setFxRates] = useState<FxRates>(DEFAULT_FX_RATES);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const response = await fetch('/api/admin/fx-rates');
+        const rows = await response.json().catch(() => []);
+        if (cancelled || !response.ok || !Array.isArray(rows)) return;
+
+        const sgd = rows.find((row: any) => row.currency_code === 'SGD');
+        const myr = rows.find((row: any) => row.currency_code === 'MYR');
+        setFxRates({
+          usdToSgd: sgd ? Number(sgd.rate_to_usd) : DEFAULT_FX_RATES.usdToSgd,
+          usdToMyr: myr ? Number(myr.rate_to_usd) : DEFAULT_FX_RATES.usdToMyr,
+        });
+      } catch {
+        // Keep DEFAULT_FX_RATES fallback on failure.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const normalizeCurrencyPriceMap = (prices?: CurrencyPriceMap): Record<SupportedSellingCurrency, number> => ({
     USD: Number(prices?.USD) || 0,
     SGD: Number(prices?.SGD) || 0,
@@ -164,14 +191,28 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
     const updated = [...packages];
     const pkg = syncCurrentCurrencyPriceMaps(updated[index]);
 
+    // Cross-fill the newly selected currency (and any other still-empty ones)
+    // from whichever currency already has a value, so switching currencies
+    // shows a live-converted price instead of $0.
+    const adultPrices = crossFillByFx(normalizeCurrencyPriceMap(pkg.adult_selling_prices), fxRates);
+    const childPrices = crossFillByFx(normalizeCurrencyPriceMap(pkg.child_selling_prices), fxRates);
+    const infantPrices = crossFillByFx(normalizeCurrencyPriceMap(pkg.infant_selling_prices), fxRates);
+    const seniorPrices = crossFillByFx(normalizeCurrencyPriceMap(pkg.senior_selling_prices), fxRates);
+    const vehiclePrices = crossFillByFx(normalizeCurrencyPriceMap(pkg.vehicle_selling_prices), fxRates);
+
     updated[index] = {
       ...pkg,
       selling_currency: currency,
-      adult_price: normalizeCurrencyPriceMap(pkg.adult_selling_prices)[currency],
-      child_price: normalizeCurrencyPriceMap(pkg.child_selling_prices)[currency],
-      infant_price: normalizeCurrencyPriceMap(pkg.infant_selling_prices)[currency],
-      senior_price: normalizeCurrencyPriceMap(pkg.senior_selling_prices)[currency],
-      vehicle_price: normalizeCurrencyPriceMap(pkg.vehicle_selling_prices)[currency],
+      adult_selling_prices: adultPrices,
+      child_selling_prices: childPrices,
+      infant_selling_prices: infantPrices,
+      senior_selling_prices: seniorPrices,
+      vehicle_selling_prices: vehiclePrices,
+      adult_price: adultPrices[currency],
+      child_price: childPrices[currency],
+      infant_price: infantPrices[currency],
+      senior_price: seniorPrices[currency],
+      vehicle_price: vehiclePrices[currency],
     };
 
     onChange(updated);
@@ -188,13 +229,17 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
     const currency = getSelectedSellingCurrency(pkg);
     const normalizedMap = normalizeCurrencyPriceMap(pkg[mapField]);
 
+    // Cross-fill the other currencies via the configured FX rates, but only into
+    // slots that are still empty — a manually typed value in another currency is preserved.
+    const newMap = crossFillByFx({
+      ...normalizedMap,
+      [currency]: Number(value) || 0,
+    }, fxRates);
+
     updated[index] = {
       ...pkg,
       [field]: value,
-      [mapField]: {
-        ...normalizedMap,
-        [currency]: Number(value) || 0,
-      },
+      [mapField]: newMap,
     };
 
     onChange(updated);
@@ -814,6 +859,19 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                               className="w-32"
                             />
                             <span className="text-sm text-muted-foreground">USD</span>
+                            {(pkg.supplier_currency === 'SGD' || pkg.supplier_currency === 'MYR') && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  const rate = pkg.supplier_currency === 'SGD' ? fxRates.usdToSgd : fxRates.usdToMyr;
+                                  updateSupplierCost(index, 'exchange_rate', roundCurrency(1 / rate, 6));
+                                }}
+                              >
+                                {t('useCurrentRate')}
+                              </Button>
+                            )}
                           </div>
                           <p className="text-xs text-muted-foreground">
                             {t('exchangeRateHelper')}

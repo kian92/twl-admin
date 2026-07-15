@@ -170,6 +170,7 @@
       "selectCurrency": "选择货币",
       "exchangeRate": "汇率",
       "exchangeRateHelper": "输入当前对美元的汇率。例如：如果 1 欧元 = 1.10 美元，请输入 1.10",
+      "useCurrentRate": "使用当前汇率",
       "adultCost": "成人成本（供应商）",
       "childCost": "儿童成本（供应商）",
       "infantCost": "婴儿成本（供应商）",
@@ -345,6 +346,18 @@
       "passwordChanged": "密码更改成功！",
       "passwordChangeSuccess": "密码更改成功。",
       "failedToChangePassword": "更改密码失败"
+    },
+    "fxRates": {
+      "title": "汇率设置",
+      "description": "当只输入一种货币的价格时，用于自动填充其他货币售价的汇率（1美元 = X）",
+      "sgdLabel": "美元兑新加坡元",
+      "myrLabel": "美元兑马来西亚令吉",
+      "saveChanges": "保存更改",
+      "saving": "保存中...",
+      "loadFailed": "加载汇率失败",
+      "saveFailed": "保存汇率失败",
+      "saved": "汇率更新成功",
+      "note": "此汇率仅用于填充留空的货币价格，不会覆盖已填写的价格。"
     }
   },
   "blog": {

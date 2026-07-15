@@ -170,6 +170,7 @@
       "selectCurrency": "Select currency",
       "exchangeRate": "Exchange Rate",
       "exchangeRateHelper": "Enter the current exchange rate to USD. Example: If 1 EUR = 1.10 USD, enter 1.10",
+      "useCurrentRate": "Use current rate",
       "adultCost": "Adult Cost (Supplier)",
       "childCost": "Child Cost (Supplier)",
       "ageRanges": "Age Ranges",
@@ -345,6 +346,18 @@
       "passwordChanged": "Password changed successfully!",
       "passwordChangeSuccess": "Password changed successfully.",
       "failedToChangePassword": "Failed to change password"
+    },
+    "fxRates": {
+      "title": "Exchange Rates",
+      "description": "Rates used to auto-fill Selling Prices in other currencies when only one currency is entered (1 USD = X)",
+      "sgdLabel": "USD to SGD",
+      "myrLabel": "USD to MYR",
+      "saveChanges": "Save Changes",
+      "saving": "Saving...",
+      "loadFailed": "Failed to load exchange rates",
+      "saveFailed": "Failed to save exchange rates",
+      "saved": "Exchange rates updated successfully",
+      "note": "These rates only fill in currencies left blank — existing prices are never overwritten."
     }
   },
   "blog": {
