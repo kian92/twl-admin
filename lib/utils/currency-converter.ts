@@ -74,6 +74,10 @@ export const DEFAULT_FX_RATES: FxRates = {
  * If at least one of USD/SGD/MYR has a value, fill the missing (=0) currencies
  * by converting through USD using the given (or default) FX rates.
  * Existing non-zero values are preserved. Outputs are floored (no decimals).
+ *
+ * @deprecated Prefer deriveByFx, which always recomputes the non-reference
+ * currencies instead of trusting whatever was previously stored for them —
+ * this avoids stale/inconsistent values getting "frozen" across saves.
  */
 export function crossFillByFx(
   prices: MultiCurrencyPrices,
@@ -95,6 +99,35 @@ export function crossFillByFx(
     USD: usd || Math.floor(usdRef),
     SGD: sgd || Math.floor(usdRef * usdToSgd),
     MYR: myr || Math.floor(usdRef * usdToMyr),
+  };
+}
+
+/**
+ * Derive USD/SGD/MYR prices from a single reference currency + amount, using
+ * the given (or default) FX rates. Unlike crossFillByFx, this always
+ * recomputes the two non-reference currencies — it never trusts a
+ * previously stored value for them, so stale/inconsistent data can't persist
+ * across saves. The reference currency's own value is returned unchanged.
+ */
+export function deriveByFx(
+  referenceCurrency: keyof MultiCurrencyPrices,
+  referenceAmount: number,
+  rates: FxRates = DEFAULT_FX_RATES
+): MultiCurrencyPrices {
+  const amount = Number(referenceAmount) || 0;
+  const { usdToSgd, usdToMyr } = rates;
+
+  if (!amount) return { USD: 0, SGD: 0, MYR: 0 };
+
+  const usdRef =
+    referenceCurrency === 'USD' ? amount :
+    referenceCurrency === 'SGD' ? amount / usdToSgd :
+    amount / usdToMyr;
+
+  return {
+    USD: referenceCurrency === 'USD' ? amount : Math.floor(usdRef),
+    SGD: referenceCurrency === 'SGD' ? amount : Math.floor(usdRef * usdToSgd),
+    MYR: referenceCurrency === 'MYR' ? amount : Math.floor(usdRef * usdToMyr),
   };
 }
 
