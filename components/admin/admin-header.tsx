@@ -31,12 +31,14 @@ export function AdminHeader() {
     try {
       await signOut()
       toast.success("Signed out successfully")
-      router.push("/admin/login")
-      // Force a hard reload to clear all state
+      // Hard reload immediately so no stale session state (contexts, cached
+      // fetches) from this session can survive into the next login — a soft
+      // router.push here left a window where a fast re-login as a different
+      // role could pick up leftover state from the previous role.
       if (typeof window !== 'undefined') {
-        setTimeout(() => {
-          window.location.href = "/admin/login"
-        }, 100)
+        window.location.href = "/admin/login"
+      } else {
+        router.push("/admin/login")
       }
     } catch (error) {
       console.error("Sign out error:", error)

@@ -198,9 +198,10 @@ export function AdminProvider({
         throw error
       }
 
-      // Clear local storage
+      // supabase.auth.signOut() above already clears the actual session
+      // (cookie-based, via @supabase/ssr) — this only clears any incidental
+      // sessionStorage other components may have cached during this session.
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('supabase.auth.token')
         sessionStorage.clear()
       }
     } catch (error) {
