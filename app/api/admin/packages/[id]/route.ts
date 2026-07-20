@@ -49,11 +49,18 @@ export async function PUT(
     const body = await request.json();
     const sellingCurrency = ['USD', 'SGD', 'MYR'].includes(body.selling_currency) ? body.selling_currency : 'USD';
     const fxRates = await getFxRates(supabase);
-    // Always derive from the fallback price in the currently selected selling
-    // currency — never trust whatever the client sent for the other two
-    // currencies, since stale/inconsistent values must not persist across saves.
-    const normalizeSellingPrices = (_prices: any, fallbackPrice: number) =>
-      deriveByFx(sellingCurrency as 'USD' | 'SGD' | 'MYR', Number(fallbackPrice) || 0, fxRates);
+    // Derive from the USD value the client maintains as ground truth, not from
+    // fallbackPrice (whatever's shown in the currently selected display
+    // currency) — that value may already be a floored, once-converted number,
+    // and re-deriving from it a second time compounds rounding error. Only
+    // fall back to fallbackPrice-in-sellingCurrency when no USD value is
+    // available yet (e.g. a brand new tier with no prices map at all).
+    const normalizeSellingPrices = (prices: any, fallbackPrice: number) => {
+      const usd = Number(prices?.USD) || 0;
+      return usd
+        ? deriveByFx('USD', usd, fxRates)
+        : deriveByFx(sellingCurrency as 'USD' | 'SGD' | 'MYR', Number(fallbackPrice) || 0, fxRates);
+    };
 
     // Validate that experience_id is not being changed, or if it is, that it exists
     if (body.experience_id) {
