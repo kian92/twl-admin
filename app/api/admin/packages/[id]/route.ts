@@ -32,7 +32,28 @@ export async function GET(
       return NextResponse.json({ error: error.message }, { status: 404 });
     }
 
-    return NextResponse.json(packageData, { status: 200 });
+    const fxRates = await getFxRates(supabase);
+    const normalizedPackage = {
+      ...packageData,
+      pricing_tiers: (packageData.pricing_tiers || []).map((tier: any) => {
+        if (!tier.supplier_cost || tier.supplier_currency !== tier.currency) return tier;
+
+        const markupType = tier.markup_type || 'none';
+        const markupValue = Number(tier.markup_value) || 0;
+        const applyMarkup = (amount: number) =>
+          markupType === 'percentage'
+            ? amount * (1 + markupValue / 100)
+            : markupType === 'fixed'
+              ? amount + markupValue
+              : amount;
+        const sellingPrices = deriveByFx('USD', applyMarkup(Number(tier.base_price) || 0), fxRates);
+        sellingPrices[tier.currency as 'USD' | 'SGD' | 'MYR'] = applyMarkup(Number(tier.supplier_cost) || 0);
+
+        return { ...tier, selling_price: sellingPrices[tier.currency as 'USD' | 'SGD' | 'MYR'], selling_prices: sellingPrices };
+      }),
+    };
+
+    return NextResponse.json(normalizedPackage, { status: 200 });
   } catch (err) {
     console.error('Failed to fetch package:', err);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
@@ -49,17 +70,17 @@ export async function PUT(
     const body = await request.json();
     const sellingCurrency = ['USD', 'SGD', 'MYR'].includes(body.selling_currency) ? body.selling_currency : 'USD';
     const fxRates = await getFxRates(supabase);
-    // Derive from the USD value the client maintains as ground truth, not from
-    // fallbackPrice (whatever's shown in the currently selected display
-    // currency) — that value may already be a floored, once-converted number,
-    // and re-deriving from it a second time compounds rounding error. Only
-    // fall back to fallbackPrice-in-sellingCurrency when no USD value is
-    // available yet (e.g. a brand new tier with no prices map at all).
+    // Preserve the selected selling-currency amount as the reference. It may
+    // intentionally equal the supplier amount when both currencies match;
+    // re-deriving it from USD through the global FX rate would change it.
     const normalizeSellingPrices = (prices: any, fallbackPrice: number) => {
-      const usd = Number(prices?.USD) || 0;
-      return usd
-        ? deriveByFx('USD', usd, fxRates)
-        : deriveByFx(sellingCurrency as 'USD' | 'SGD' | 'MYR', Number(fallbackPrice) || 0, fxRates);
+      const selectedPrice = Number(prices?.[sellingCurrency]) || Number(fallbackPrice) || 0;
+      const derived = deriveByFx(sellingCurrency as 'USD' | 'SGD' | 'MYR', selectedPrice, fxRates);
+      return {
+        USD: Number(prices?.USD) || derived.USD,
+        SGD: Number(prices?.SGD) || derived.SGD,
+        MYR: Number(prices?.MYR) || derived.MYR,
+      };
     };
 
     // Validate that experience_id is not being changed, or if it is, that it exists
@@ -159,7 +180,7 @@ export async function PUT(
           package_id: id,
           tier_type: 'adult',
           tier_label: body.adult_tier_label || 'Adult (18+ years)',
-          min_age: body.adult_min_age ?? 18,
+          min_age: body.adult_min_age ?? null,
           max_age: body.adult_max_age ?? null,
           base_price: body.base_adult_price || 0,
           supplier_currency: body.supplier_currency || 'USD',
@@ -182,8 +203,8 @@ export async function PUT(
           package_id: id,
           tier_type: 'child',
           tier_label: body.child_tier_label || 'Child (3-17 years)',
-          min_age: body.child_min_age ?? 3,
-          max_age: body.child_max_age ?? 17,
+          min_age: body.child_min_age ?? null,
+          max_age: body.child_max_age ?? null,
           base_price: body.base_child_price || 0,
           supplier_currency: body.supplier_currency || 'USD',
           supplier_cost: body.supplier_cost_child || 0,

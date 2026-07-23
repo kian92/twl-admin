@@ -380,9 +380,14 @@ export default function NewExperiencePage() {
       const adultPrice = Number.isFinite(firstPackage.adult_price) ? firstPackage.adult_price : 0
       const childPrice = Number.isFinite(firstPackage.child_price) ? firstPackage.child_price : 0
 
+      // experiences.adult_min_age/child_min_age/child_max_age are NOT NULL
+      // columns (legacy backwards-compatibility mirror of the first package's
+      // tier) — unlike package_pricing_tiers.min_age/max_age, which are
+      // nullable and are what the Age Ranges UI actually edits, these can't be
+      // blank, so they keep their original schema defaults when unset.
       const adultMinAge = typeof firstPackage.adult_min_age === "number"
         ? firstPackage.adult_min_age
-        : 0
+        : 18
 
       const adultMaxAge = typeof firstPackage.adult_max_age === "number"
         ? firstPackage.adult_max_age
@@ -390,11 +395,11 @@ export default function NewExperiencePage() {
 
       const childMinAge = typeof firstPackage.child_min_age === "number"
         ? firstPackage.child_min_age
-        : 0
+        : 3
 
       const childMaxAge = typeof firstPackage.child_max_age === "number"
         ? firstPackage.child_max_age
-        : 0
+        : 17
 
 
       const payload: ExperienceInsert = {

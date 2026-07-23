@@ -109,11 +109,11 @@ export interface PackageFormData {
   senior_price?: number;
   vehicle_price?: number;
 
-  // Age(child and adult)
-  adult_min_age?: number;
+  // Age(child and adult) — null/undefined means no restriction, not a default value
+  adult_min_age?: number | null;
   adult_max_age?: number | null;
-  child_min_age?: number;
-  child_max_age?: number;
+  child_min_age?: number | null;
+  child_max_age?: number | null;
 
   // Custom Pricing Tiers (overrides simple fields when enabled)
   use_custom_tiers?: boolean;
@@ -178,16 +178,41 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
     const updated = [...packages];
     const pkg = updated[index];
 
-    // Switching currency is a pure display conversion — always re-derive from
-    // the stored USD value (the ground truth kept in sync by every price edit),
-    // never from whatever currency happens to be displayed right now. Deriving
-    // from the displayed value would compound Math.floor rounding on every
-    // switch and make the price drift with repeated clicks.
-    const adultPrices = deriveByFx('USD', normalizeCurrencyPriceMap(pkg.adult_selling_prices).USD, fxRates);
-    const childPrices = deriveByFx('USD', normalizeCurrencyPriceMap(pkg.child_selling_prices).USD, fxRates);
-    const infantPrices = deriveByFx('USD', normalizeCurrencyPriceMap(pkg.infant_selling_prices).USD, fxRates);
-    const seniorPrices = deriveByFx('USD', normalizeCurrencyPriceMap(pkg.senior_selling_prices).USD, fxRates);
-    const vehiclePrices = deriveByFx('USD', normalizeCurrencyPriceMap(pkg.vehicle_selling_prices).USD, fxRates);
+    // Currency maps are calculated when a price/cost is edited. Switching the
+    // display currency must not re-convert them: the selected-currency value
+    // may intentionally be the exact supplier amount (for example SGD cost
+    // sold in SGD), while its USD equivalent uses the supplier exchange rate.
+    const pricesFor = (prices?: CurrencyPriceMap) => {
+      const normalized = normalizeCurrencyPriceMap(prices);
+      return normalized[currency] || !normalized.USD
+        ? normalized
+        : deriveByFx('USD', normalized.USD, fxRates);
+    };
+    const pricesForCost = (supplierCost: number, baseUsd: number, prices?: CurrencyPriceMap) => {
+      if (pkg.supplier_currency !== currency || !supplierCost) return pricesFor(prices);
+
+      const markupValue = Number(pkg.markup_value) || 0;
+      const supplierAmount =
+        pkg.markup_type === 'percentage'
+          ? supplierCost * (1 + markupValue / 100)
+          : pkg.markup_type === 'fixed'
+            ? supplierCost + markupValue
+            : supplierCost;
+      const usdAmount =
+        pkg.markup_type === 'percentage'
+          ? baseUsd * (1 + markupValue / 100)
+          : pkg.markup_type === 'fixed'
+            ? baseUsd + markupValue
+            : baseUsd;
+      const result = deriveByFx('USD', usdAmount, fxRates);
+      result[currency] = supplierAmount;
+      return result;
+    };
+    const adultPrices = pricesForCost(pkg.supplier_cost_adult || 0, pkg.base_adult_price || 0, pkg.adult_selling_prices);
+    const childPrices = pricesForCost(pkg.supplier_cost_child || 0, pkg.base_child_price || 0, pkg.child_selling_prices);
+    const infantPrices = pricesForCost(pkg.supplier_cost_infant || 0, pkg.base_infant_price || 0, pkg.infant_selling_prices);
+    const seniorPrices = pricesForCost(pkg.supplier_cost_senior || 0, pkg.base_senior_price || 0, pkg.senior_selling_prices);
+    const vehiclePrices = pricesForCost(pkg.supplier_cost_vehicle || 0, pkg.base_vehicle_price || 0, pkg.vehicle_selling_prices);
 
     updated[index] = {
       ...pkg,
@@ -408,6 +433,26 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
     return basePrice;
   };
 
+  const calculateAutomaticSellingPrices = (
+    supplierCost: number,
+    baseUsd: number,
+    supplierCurrency: string,
+    sellingCurrency: SupportedSellingCurrency,
+    markupType: string,
+    markupValue: number
+  ) => {
+    // Avoid converting through USD and then back through a different global
+    // rate when buying and selling in the same currency.
+    if (supplierCurrency === sellingCurrency && supplierCost) {
+      const sellingAmount = calculateSellingPrice(supplierCost, markupType, markupValue);
+      const prices = deriveByFx('USD', calculateSellingPrice(baseUsd, markupType, markupValue), fxRates);
+      prices[sellingCurrency] = sellingAmount;
+      return prices;
+    }
+
+    return deriveByFx('USD', calculateSellingPrice(baseUsd, markupType, markupValue), fxRates);
+  };
+
   // Handle supplier currency cost updates and auto-convert to base prices
   const updateSupplierCost = (index: number, field: string, value: any) => {
     const updated = [...packages];
@@ -434,24 +479,26 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
         updated[index].base_vehicle_price = roundCurrency(convertToUSD(pkg.supplier_cost_vehicle, exchangeRate));
       }
 
-      // Also recalculate selling prices with markup. base_*_price and the markup
-      // are always in USD, so the result must be converted into whichever
-      // selling currency is selected — never written in directly as-is.
+      // Also recalculate selling prices with markup. When supplier and selling
+      // currencies match, retain that exact amount; otherwise convert via USD.
       const markupType = pkg.markup_type || 'none';
       const markupValue = pkg.markup_value || 0;
       const sellingCurrency = getSelectedSellingCurrency(updated[index]);
 
-      const adultUsd = calculateSellingPrice(updated[index].base_adult_price || 0, markupType, markupValue);
-      const childUsd = calculateSellingPrice(updated[index].base_child_price || 0, markupType, markupValue);
-      const infantUsd = calculateSellingPrice(updated[index].base_infant_price || 0, markupType, markupValue);
-      const seniorUsd = calculateSellingPrice(updated[index].base_senior_price || 0, markupType, markupValue);
-      const vehicleUsd = calculateSellingPrice(updated[index].base_vehicle_price || 0, markupType, markupValue);
-
-      const adultPrices = deriveByFx('USD', adultUsd, fxRates);
-      const childPrices = deriveByFx('USD', childUsd, fxRates);
-      const infantPrices = deriveByFx('USD', infantUsd, fxRates);
-      const seniorPrices = deriveByFx('USD', seniorUsd, fxRates);
-      const vehiclePrices = deriveByFx('USD', vehicleUsd, fxRates);
+      const automaticPrices = (supplierCost: number, baseUsd: number) =>
+        calculateAutomaticSellingPrices(
+          supplierCost,
+          baseUsd,
+          pkg.supplier_currency || 'USD',
+          sellingCurrency,
+          markupType,
+          markupValue
+        );
+      const adultPrices = automaticPrices(pkg.supplier_cost_adult || 0, updated[index].base_adult_price || 0);
+      const childPrices = automaticPrices(pkg.supplier_cost_child || 0, updated[index].base_child_price || 0);
+      const infantPrices = automaticPrices(pkg.supplier_cost_infant || 0, updated[index].base_infant_price || 0);
+      const seniorPrices = automaticPrices(pkg.supplier_cost_senior || 0, updated[index].base_senior_price || 0);
+      const vehiclePrices = automaticPrices(pkg.supplier_cost_vehicle || 0, updated[index].base_vehicle_price || 0);
 
       updated[index] = {
         ...updated[index],
@@ -475,10 +522,8 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
     const updated = [...packages];
     updated[index] = { ...updated[index], [field]: value };
 
-    // Auto-calculate selling prices when base price or markup changes.
-    // base_*_price and the markup are always in USD, so the result must be
-    // converted into whichever selling currency is selected — never written
-    // in directly as-is.
+    // Auto-calculate selling prices when base price or markup changes, retaining
+    // the supplier amount when supplier and selling currencies match.
     const pkg = updated[index];
     const markupType = pkg.markup_type || 'none';
     const markupValue = pkg.markup_value || 0;
@@ -486,17 +531,20 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
     if (field.startsWith('base_') || field === 'markup_type' || field === 'markup_value') {
       const sellingCurrency = getSelectedSellingCurrency(pkg);
 
-      const adultUsd = calculateSellingPrice(pkg.base_adult_price || 0, markupType, markupValue);
-      const childUsd = calculateSellingPrice(pkg.base_child_price || 0, markupType, markupValue);
-      const infantUsd = calculateSellingPrice(pkg.base_infant_price || 0, markupType, markupValue);
-      const seniorUsd = calculateSellingPrice(pkg.base_senior_price || 0, markupType, markupValue);
-      const vehicleUsd = calculateSellingPrice(pkg.base_vehicle_price || 0, markupType, markupValue);
-
-      const adultPrices = deriveByFx('USD', adultUsd, fxRates);
-      const childPrices = deriveByFx('USD', childUsd, fxRates);
-      const infantPrices = deriveByFx('USD', infantUsd, fxRates);
-      const seniorPrices = deriveByFx('USD', seniorUsd, fxRates);
-      const vehiclePrices = deriveByFx('USD', vehicleUsd, fxRates);
+      const automaticPrices = (supplierCost: number, baseUsd: number) =>
+        calculateAutomaticSellingPrices(
+          supplierCost,
+          baseUsd,
+          pkg.supplier_currency || 'USD',
+          sellingCurrency,
+          markupType,
+          markupValue
+        );
+      const adultPrices = automaticPrices(pkg.supplier_cost_adult || 0, pkg.base_adult_price || 0);
+      const childPrices = automaticPrices(pkg.supplier_cost_child || 0, pkg.base_child_price || 0);
+      const infantPrices = automaticPrices(pkg.supplier_cost_infant || 0, pkg.base_infant_price || 0);
+      const seniorPrices = automaticPrices(pkg.supplier_cost_senior || 0, pkg.base_senior_price || 0);
+      const vehiclePrices = automaticPrices(pkg.supplier_cost_vehicle || 0, pkg.base_vehicle_price || 0);
 
       updated[index] = {
         ...updated[index],
@@ -673,12 +721,12 @@ export function PackageFormSection({ packages, onChange, userRole }: PackageForm
                   <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground">
                     Adult: {formatCurrency(Math.floor(pkg.adult_price), pkg.selling_currency || 'USD')}
-                    {pkg.adult_min_age !== undefined && (
-                      <> ({pkg.adult_min_age}{pkg.adult_max_age ? `–${pkg.adult_max_age}` : '+'})</>
+                    {pkg.adult_min_age != null && (
+                      <> ({pkg.adult_min_age}{pkg.adult_max_age != null ? `–${pkg.adult_max_age}` : '+'})</>
                     )}
                     {" | "}
                     Child: {formatCurrency(Math.floor(pkg.child_price), pkg.selling_currency || 'USD')}
-                    {pkg.child_min_age !== undefined && pkg.child_max_age !== undefined && (
+                    {pkg.child_min_age != null && pkg.child_max_age != null && (
                       <> ({pkg.child_min_age}–{pkg.child_max_age})</>
                     )}
                   </span>

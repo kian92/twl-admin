@@ -381,12 +381,31 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                   const tierCurrency = tier?.currency || sellingCurrency;
                   const tierSellingPrice = Math.floor(tier?.selling_price || tier?.base_price || 0);
                   const savedPrices = tier?.selling_prices && typeof tier.selling_prices === 'object' ? tier.selling_prices : {};
-
-                  return {
+                  const prices = {
                     USD: Number(savedPrices.USD) || (tierCurrency === 'USD' ? tierSellingPrice : 0),
                     SGD: Number(savedPrices.SGD) || (tierCurrency === 'SGD' ? tierSellingPrice : 0),
                     MYR: Number(savedPrices.MYR) || (tierCurrency === 'MYR' ? tierSellingPrice : 0),
                   };
+
+                  // Older saves may have converted a same-currency supplier
+                  // cost through a floored USD amount, leaving a one-dollar
+                  // discrepancy (for example SGD 1189 becoming SGD 1188).
+                  // The supplier amount is authoritative when both currencies
+                  // match, so repair the displayed/saved reference value.
+                  const tierSupplierCurrency = tier?.supplier_currency || supplierCurrency;
+                  const supplierCost = Number(tier?.supplier_cost) || 0;
+                  if (supplierCost && tierSupplierCurrency === tierCurrency) {
+                    const tierMarkupType = tier?.markup_type || markupType;
+                    const tierMarkupValue = Number(tier?.markup_value ?? markupValue) || 0;
+                    prices[tierCurrency as 'USD' | 'SGD' | 'MYR'] =
+                      tierMarkupType === 'percentage'
+                        ? supplierCost * (1 + tierMarkupValue / 100)
+                        : tierMarkupType === 'fixed'
+                          ? supplierCost + tierMarkupValue
+                          : supplierCost;
+                  }
+
+                  return prices;
                 };
 
                 const adultSellingPrices = getSellingPrices(adultTier);
@@ -456,11 +475,13 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
                   senior_price: seniorSellingPrices[sellingCurrency as 'USD' | 'SGD' | 'MYR'] || 0,
                   vehicle_price: vehicleSellingPrices[sellingCurrency as 'USD' | 'SGD' | 'MYR'] || 0,
 
-                  // Age(child and adult) - for simple mode
-                  adult_min_age: adultTier?.min_age ?? 18,
+                  // Age(child and adult) - for simple mode. null means the
+                  // admin intentionally left it blank — preserve that instead
+                  // of reintroducing a default on load.
+                  adult_min_age: adultTier?.min_age ?? null,
                   adult_max_age: adultTier?.max_age ?? null,
-                  child_min_age: childTier?.min_age ?? 3,
-                  child_max_age: childTier?.max_age ?? 17,
+                  child_min_age: childTier?.min_age ?? null,
+                  child_max_age: childTier?.max_age ?? null,
 
                   // Custom pricing tiers
                   use_custom_tiers: useCustomTiers,
@@ -863,19 +884,20 @@ export default function EditExperiencePage({ params }: { params: Promise<{ slug:
         const adultPrice = Number(pkg.adult_price) || 0;
         const childPrice = Number(pkg.child_price) || 0;
 
-        // Age handling - convert to number if valid, otherwise use defaults
+        // Age handling - convert to number if set, otherwise leave blank (null)
+        // rather than silently substituting a default age restriction.
         const adultMinAge = pkg.adult_min_age !== undefined && pkg.adult_min_age !== null
           ? Number(pkg.adult_min_age)
-          : 18;
+          : null;
         const adultMaxAge = pkg.adult_max_age !== undefined && pkg.adult_max_age !== null
           ? Number(pkg.adult_max_age)
           : null;
         const childMinAge = pkg.child_min_age !== undefined && pkg.child_min_age !== null
           ? Number(pkg.child_min_age)
-          : 3;
+          : null;
         const childMaxAge = pkg.child_max_age !== undefined && pkg.child_max_age !== null
           ? Number(pkg.child_max_age)
-          : 17;
+          : null;
         const infantPrice = pkg.infant_price ? Number(pkg.infant_price) : undefined;
         const seniorPrice = pkg.senior_price ? Number(pkg.senior_price) : undefined;
         const vehiclePrice = pkg.vehicle_price ? Number(pkg.vehicle_price) : undefined;
